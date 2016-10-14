@@ -1,0 +1,18 @@
+[package]
+name = "core"
+version = "0.1.0"
+authors = ["Maxim Sokhatskyi <maxim@synrc.com>"]
+license = "DHARMA LICENSE"
+repository = "https://github.com/synrc/core"
+homepage = "https://github.com/synrc/core"
+documentation = "http://5ht.co/core.htm"
+description = """
+Abstract Processing Core
+"""
+
+[dependencies]
+log = "0.3"
+mio = "0.6"
+
+[dev-dependencies]
+env_logger = { version = "0.3", default-features = false }
