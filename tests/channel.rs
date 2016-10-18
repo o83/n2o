@@ -1,10 +1,8 @@
 extern crate kernel;
 
 use kernel::abstractions::futures::future::Future;
-// use kernel::abstractions::futures::done::{done};
 use kernel::abstractions::poll::Async;
 use kernel::abstractions::queues::channel;
-// use kernel::abstractions::queues::channel::{Sender};
 use kernel::abstractions::tasks::task;
 use std::sync::Arc;
 

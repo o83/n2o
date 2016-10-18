@@ -1,11 +1,9 @@
 #[macro_use]
 extern crate kernel;
 
-// use kernel::abstractions::futures::future;
 use kernel::abstractions::futures::failed::failed;
 use kernel::abstractions::futures::finished::finished;
 use kernel::abstractions::futures::future::Future;
-// use kernel::abstractions::poll::{Poll};
 use kernel::abstractions::queues::channel;
 use kernel::abstractions::queues::channel::Receiver;
 use kernel::abstractions::streams::stream::*;
