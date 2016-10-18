@@ -1,5 +1,5 @@
 [package]
-name = "core"
+name = "kernel"
 version = "0.1.0"
 authors = ["Maxim Sokhatskyi <maxim@synrc.com>"]
 license = "DHARMA LICENSE"

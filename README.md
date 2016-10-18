@@ -1,3 +1,3 @@
-Erlang Virtual Machine written in Rust
-======================================
+Abstract Streams Schedulers
+===========================
 
