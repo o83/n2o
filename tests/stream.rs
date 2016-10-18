@@ -1,13 +1,13 @@
 #[macro_use]
 extern crate kernel;
 
-use kernel::abstractions::futures::future;
+// use kernel::abstractions::futures::future;
 use kernel::abstractions::futures::failed::failed;
 use kernel::abstractions::futures::finished::finished;
 use kernel::abstractions::futures::future::Future;
-use kernel::abstractions::poll::{Poll};
+// use kernel::abstractions::poll::{Poll};
 use kernel::abstractions::queues::channel;
-use kernel::abstractions::queues::channel::{Receiver};
+use kernel::abstractions::queues::channel::Receiver;
 use kernel::abstractions::streams::stream::*;
 use kernel::abstractions::streams::iter::*;
 
@@ -18,18 +18,18 @@ use support::*;
 fn list() -> Receiver<i32, u32> {
     let (tx, rx) = channel::create();
     tx.send(Ok(1))
-      .and_then(|tx| tx.send(Ok(2)))
-      .and_then(|tx| tx.send(Ok(3)))
-      .forget();
+        .and_then(|tx| tx.send(Ok(2)))
+        .and_then(|tx| tx.send(Ok(3)))
+        .forget();
     rx
 }
 
 fn err_list() -> Receiver<i32, u32> {
     let (tx, rx) = channel::create();
     tx.send(Ok(1))
-      .and_then(|tx| tx.send(Ok(2)))
-      .and_then(|tx| tx.send(Err(3)))
-      .forget();
+        .and_then(|tx| tx.send(Ok(2)))
+        .and_then(|tx| tx.send(Err(3)))
+        .forget();
     rx
 }
 
@@ -46,7 +46,8 @@ fn map_err() {
 #[test]
 fn fold() {
     assert_done(|| list().fold(0, |a, b| finished::<i32, u32>(a + b)), Ok(6));
-    assert_done(|| err_list().fold(0, |a, b| finished::<i32, u32>(a + b)), Err(3));
+    assert_done(|| err_list().fold(0, |a, b| finished::<i32, u32>(a + b)),
+                Err(3));
 }
 
 #[test]
@@ -56,33 +57,37 @@ fn filter() {
 
 #[test]
 fn filter_map() {
-    assert_done(|| list().filter_map(|x| {
-        if x % 2 == 0 {
-            Some(x + 10)
-        } else {
-            None
-        }
-    }).collect(), Ok(vec![12]));
+    assert_done(|| {
+                    list()
+                        .filter_map(|x| { if x % 2 == 0 { Some(x + 10) } else { None } })
+                        .collect()
+                },
+                Ok(vec![12]));
 }
 
 #[test]
 fn and_then() {
-    assert_done(|| list().and_then(|a| Ok(a + 1)).collect(), Ok(vec![2, 3, 4]));
+    assert_done(|| list().and_then(|a| Ok(a + 1)).collect(),
+                Ok(vec![2, 3, 4]));
     assert_done(|| list().and_then(|a| failed::<i32, u32>(a as u32)).collect(),
                 Err(1));
 }
 
 #[test]
 fn then() {
-    assert_done(|| list().then(|a| a.map(|e| e + 1)).collect(), Ok(vec![2, 3, 4]));
+    assert_done(|| list().then(|a| a.map(|e| e + 1)).collect(),
+                Ok(vec![2, 3, 4]));
 
 }
 
 #[test]
 fn or_else() {
-    assert_done(|| err_list().or_else(|a| {
-        finished::<i32, u32>(a as i32)
-    }).collect(), Ok(vec![1, 2, 3]));
+    assert_done(|| {
+                    err_list()
+                        .or_else(|a| finished::<i32, u32>(a as i32))
+                        .collect()
+                },
+                Ok(vec![1, 2, 3]));
 }
 
 #[test]

@@ -1,10 +1,10 @@
 extern crate kernel;
 
-use kernel::abstractions::futures::future::{Future};
-use kernel::abstractions::futures::done::{done};
+use kernel::abstractions::futures::future::Future;
+// use kernel::abstractions::futures::done::{done};
 use kernel::abstractions::poll::Async;
 use kernel::abstractions::queues::channel;
-use kernel::abstractions::queues::channel::{Sender};
+// use kernel::abstractions::queues::channel::{Sender};
 use kernel::abstractions::tasks::task;
 use std::sync::Arc;
 
@@ -30,8 +30,7 @@ fn drop_rx() {
 struct Unpark;
 
 impl task::Unpark for Unpark {
-    fn unpark(&self) {
-    }
+    fn unpark(&self) {}
 }
 
 #[test]
@@ -53,7 +52,7 @@ fn poll_future_then_drop() {
 
     // Second poll doesn't
     match t.poll_future(Arc::new(Unpark)) {
-        Ok(Async::NotReady) => {},
+        Ok(Async::NotReady) => {}
         _ => panic!(),
     };
 
