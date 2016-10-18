@@ -2,7 +2,7 @@
 name = "kernel"
 version = "0.1.0"
 authors = ["Maxim Sokhatskyi <maxim@synrc.com>"]
-license = "DHARMA LICENSE"
+license = "MIT LICENSE"
 repository = "https://github.com/synrc/kernel"
 homepage = "https://github.com/synrc/kernel"
 documentation = "http://5ht.co/kernel.htm"
