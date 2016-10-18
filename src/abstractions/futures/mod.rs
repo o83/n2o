@@ -11,6 +11,7 @@ pub mod chain;
 pub mod or_else;
 pub mod then;
 pub mod and_then;
+pub mod oneshot;
 
 #[macro_use]
 pub mod future;

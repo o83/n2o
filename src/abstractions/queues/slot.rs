@@ -43,7 +43,7 @@ fn _assert() {
 impl<T> Slot<T> {
     pub fn new(val: Option<T>) -> Slot<T> {
         Slot {
-            state: AtomicUsize::new(if val.is_some() {DATA} else {0}),
+            state: AtomicUsize::new(if val.is_some() { DATA } else { 0 }),
             slot: Lock::new(val),
             on_full: Lock::new(None),
             on_empty: Lock::new(None),
@@ -54,7 +54,7 @@ impl<T> Slot<T> {
         let mut state = State(self.state.load(Ordering::SeqCst));
         assert!(!state.flag(ON_EMPTY));
         if state.flag(DATA) {
-            return Err(TryProduceError(t))
+            return Err(TryProduceError(t));
         }
 
         let mut slot = self.slot.try_lock().expect("interference with consumer?");
@@ -65,18 +65,19 @@ impl<T> Slot<T> {
         loop {
             assert!(!state.flag(ON_EMPTY));
             let new_state = state.set_flag(DATA, true).set_flag(ON_FULL, false);
-            let old = self.state.compare_and_swap(state.0,
-                                                  new_state.0,
-                                                  Ordering::SeqCst);
+            let old = self.state.compare_and_swap(state.0, new_state.0, Ordering::SeqCst);
             if old == state.0 {
-                break
+                break;
             }
             state.0 = old;
         }
 
         if state.flag(ON_FULL) {
-            let cb = self.on_full.try_lock().expect("interference2")
-                                 .take().expect("ON_FULL but no callback");
+            let cb = self.on_full
+                .try_lock()
+                .expect("interference2")
+                .take()
+                .expect("ON_FULL but no callback");
             cb.call_box(self);
         }
         Ok(())
@@ -89,7 +90,7 @@ impl<T> Slot<T> {
         assert!(!state.flag(ON_EMPTY));
         if !state.flag(DATA) {
             f(self, item);
-            return Token(0)
+            return Token(0);
         }
         assert!(!state.flag(ON_FULL));
 
@@ -103,22 +104,23 @@ impl<T> Slot<T> {
             assert!(!state.flag(ON_FULL));
             assert!(!state.flag(ON_EMPTY));
             let new_state = state.set_flag(ON_EMPTY, true)
-                                 .set_token(state.token() + 1);
-            let old = self.state.compare_and_swap(state.0,
-                                                  new_state.0,
-                                                  Ordering::SeqCst);
+                .set_token(state.token() + 1);
+            let old = self.state.compare_and_swap(state.0, new_state.0, Ordering::SeqCst);
 
             if old == state.0 {
-                return Token(new_state.token())
+                return Token(new_state.token());
             }
             state.0 = old;
 
             if !state.flag(DATA) {
-                let cb = self.on_empty.try_lock().expect("on_empty interference2")
-                                      .take().expect("on_empty not empty??");
+                let cb = self.on_empty
+                    .try_lock()
+                    .expect("on_empty interference2")
+                    .take()
+                    .expect("on_empty not empty??");
                 let (cb, item) = cb;
                 cb.call_box(self, item);
-                return Token(0)
+                return Token(0);
             }
         }
     }
@@ -129,7 +131,7 @@ impl<T> Slot<T> {
         let mut state = State(self.state.load(Ordering::SeqCst));
         assert!(!state.flag(ON_FULL));
         if !state.flag(DATA) {
-            return Err(TryConsumeError(()))
+            return Err(TryConsumeError(()));
         }
         let mut slot = self.slot.try_lock().expect("interference with producer?");
         let val = slot.take().expect("DATA but not data");
@@ -138,18 +140,19 @@ impl<T> Slot<T> {
         loop {
             assert!(!state.flag(ON_FULL));
             let new_state = state.set_flag(DATA, false).set_flag(ON_EMPTY, false);
-            let old = self.state.compare_and_swap(state.0,
-                                                  new_state.0,
-                                                  Ordering::SeqCst);
+            let old = self.state.compare_and_swap(state.0, new_state.0, Ordering::SeqCst);
             if old == state.0 {
-                break
+                break;
             }
             state.0 = old;
         }
         assert!(!state.flag(ON_FULL));
         if state.flag(ON_EMPTY) {
-            let cb = self.on_empty.try_lock().expect("interference3")
-                                  .take().expect("ON_EMPTY but no callback");
+            let cb = self.on_empty
+                .try_lock()
+                .expect("interference3")
+                .take()
+                .expect("ON_EMPTY but no callback");
             let (cb, item) = cb;
             cb.call_box(self, item);
         }
@@ -163,7 +166,7 @@ impl<T> Slot<T> {
         assert!(!state.flag(ON_FULL));
         if state.flag(DATA) {
             f(self);
-            return Token(0)
+            return Token(0);
         }
         assert!(!state.flag(ON_EMPTY));
 
@@ -177,36 +180,36 @@ impl<T> Slot<T> {
             assert!(!state.flag(ON_EMPTY));
             assert!(!state.flag(ON_FULL));
             let new_state = state.set_flag(ON_FULL, true)
-                                 .set_token(state.token() + 1);
-            let old = self.state.compare_and_swap(state.0,
-                                                  new_state.0,
-                                                  Ordering::SeqCst);
+                .set_token(state.token() + 1);
+            let old = self.state.compare_and_swap(state.0, new_state.0, Ordering::SeqCst);
             if old == state.0 {
-                return Token(new_state.token())
+                return Token(new_state.token());
             }
             state.0 = old;
 
             if state.flag(DATA) {
-                let cb = self.on_full.try_lock().expect("on_full interference2")
-                                      .take().expect("on_full not full??");
+                let cb = self.on_full
+                    .try_lock()
+                    .expect("on_full interference2")
+                    .take()
+                    .expect("on_full not full??");
                 cb.call_box(self);
-                return Token(0)
+                return Token(0);
             }
         }
     }
 
     pub fn cancel(&self, token: Token) {
-        // Tokens with a value of "0" are sentinels which don't actually do
-        // anything.
+
         let token = token.0;
         if token == 0 {
-            return
+            return;
         }
 
         let mut state = State(self.state.load(Ordering::SeqCst));
         loop {
             if state.token() != token {
-                return
+                return;
             }
 
             let new_state = if state.flag(ON_FULL) {
@@ -216,24 +219,28 @@ impl<T> Slot<T> {
                 assert!(!state.flag(ON_FULL));
                 state.set_flag(ON_EMPTY, false)
             } else {
-                return
+                return;
             };
-            let old = self.state.compare_and_swap(state.0,
-                                                  new_state.0,
-                                                  Ordering::SeqCst);
+            let old = self.state.compare_and_swap(state.0, new_state.0, Ordering::SeqCst);
             if old == state.0 {
-                break
+                break;
             }
             state.0 = old;
         }
 
         if state.flag(ON_FULL) {
-            let cb = self.on_full.try_lock().expect("on_full interference3")
-                                 .take().expect("on_full not full??");
+            let cb = self.on_full
+                .try_lock()
+                .expect("on_full interference3")
+                .take()
+                .expect("on_full not full??");
             drop(cb);
         } else {
-            let cb = self.on_empty.try_lock().expect("on_empty interference3")
-                                  .take().expect("on_empty not empty??");
+            let cb = self.on_empty
+                .try_lock()
+                .expect("on_empty interference3")
+                .take()
+                .expect("on_empty not empty??");
             drop(cb);
         }
     }
@@ -251,7 +258,7 @@ trait FnBox<T>: Send {
 }
 
 impl<T, F> FnBox<T> for F
-    where F: FnOnce(&Slot<T>) + Send,
+    where F: FnOnce(&Slot<T>) + Send
 {
     fn call_box(self: Box<F>, other: &Slot<T>) {
         (*self)(other)
@@ -263,7 +270,7 @@ trait FnBox2<T>: Send {
 }
 
 impl<T, F> FnBox2<T> for F
-    where F: FnOnce(&Slot<T>, Option<T>) + Send,
+    where F: FnOnce(&Slot<T>, Option<T>) + Send
 {
     fn call_box(self: Box<F>, other: &Slot<T>, item: Option<T>) {
         (*self)(other, item)
@@ -276,11 +283,7 @@ impl State {
     }
 
     fn set_flag(&self, f: usize, val: bool) -> State {
-        State(if val {
-            self.0 | f
-        } else {
-            self.0 & !f
-        })
+        State(if val { self.0 | f } else { self.0 & !f })
     }
 
     fn token(&self) -> usize {
@@ -371,7 +374,7 @@ mod tests {
         impl Sender {
             fn send(&self, val: usize) {
                 if self.slot.try_produce(val).is_ok() {
-                    return
+                    return;
                 }
                 let me = thread::current();
                 self.hit.store(0, Ordering::SeqCst);
@@ -390,7 +393,7 @@ mod tests {
         impl Receiver {
             fn recv(&self) -> usize {
                 if let Ok(i) = self.slot.try_consume() {
-                    return i
+                    return i;
                 }
 
                 let me = thread::current();
@@ -410,8 +413,14 @@ mod tests {
         let slot = Arc::new(Slot::new(None));
         let slot2 = slot.clone();
 
-        let tx = Sender { slot: slot2, hit: Arc::new(AtomicUsize::new(0)) };
-        let rx = Receiver { slot: slot, hit: Arc::new(AtomicUsize::new(0)) };
+        let tx = Sender {
+            slot: slot2,
+            hit: Arc::new(AtomicUsize::new(0)),
+        };
+        let rx = Receiver {
+            slot: slot,
+            hit: Arc::new(AtomicUsize::new(0)),
+        };
 
         let a = thread::spawn(move || {
             for i in 0..N {
@@ -433,7 +442,9 @@ mod tests {
 
         let add = || {
             let hits = hits.clone();
-            move |_: &Slot<u32>| { hits.fetch_add(1, Ordering::SeqCst); }
+            move |_: &Slot<u32>| {
+                hits.fetch_add(1, Ordering::SeqCst);
+            }
         };
         let add_empty = || {
             let hits = hits.clone();

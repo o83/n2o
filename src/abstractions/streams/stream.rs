@@ -14,7 +14,8 @@ use abstractions::streams::and_then::AndThen;
 use abstractions::streams::take::Take;
 use abstractions::streams::wait::Wait;
 use abstractions::streams::collect::Collect;
-use abstractions::streams::{future, skip, flatten, map, map_err, collect, take, fold, filter, filter_map, or_else, and_then, then, wait};
+use abstractions::streams::{future, skip, flatten, map, map_err, collect, take, fold, filter,
+                            filter_map, or_else, and_then, then, wait};
 use abstractions::streams::future::StreamFuture;
 
 macro_rules! if_std {
@@ -24,20 +25,20 @@ macro_rules! if_std {
     )*)
 }
 
-if_std! {
-    use std;
+// if_std! {
+use std;
 
-    pub type BoxStream<T, E> = ::std::boxed::Box<Stream<Item = T, Error = E> + Send>;
+pub type BoxStream<T, E> = ::std::boxed::Box<Stream<Item = T, Error = E> + Send>;
 
-    impl<S: ?Sized + Stream> Stream for ::std::boxed::Box<S> {
-        type Item = S::Item;
-        type Error = S::Error;
+impl<S: ?Sized + Stream> Stream for ::std::boxed::Box<S> {
+    type Item = S::Item;
+    type Error = S::Error;
 
-        fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-            (**self).poll()
-        }
+    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+        (**self).poll()
     }
 }
+// }
 
 pub trait Stream {
     type Item;
@@ -51,7 +52,6 @@ pub trait Stream {
         wait::new(self)
     }
 
-    #[cfg(feature = "use_std")]
     fn boxed(self) -> BoxStream<Self::Item, Self::Error>
         where Self: Sized + Send + 'static
     {
