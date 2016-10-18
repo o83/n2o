@@ -26,7 +26,6 @@ macro_rules! if_std {
 }
 
 // if_std! {
-use std;
 
 pub type BoxStream<T, E> = ::std::boxed::Box<Stream<Item = T, Error = E> + Send>;
 

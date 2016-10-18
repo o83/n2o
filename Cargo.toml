@@ -1,6 +1,6 @@
 [package]
 name = "kernel"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Maxim Sokhatskyi <maxim@synrc.com>"]
 license = "MIT"
 repository = "https://github.com/voxoz/kernel"

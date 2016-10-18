@@ -4,7 +4,6 @@ use std::mem;
 use std::net::{self, SocketAddr, Shutdown};
 
 use abstractions::streams::stream::Stream;
-use abstractions::futures::future;
 use abstractions::futures::oneshot::oneshot;
 use abstractions::futures::future::Future;
 use abstractions::futures::failed::failed;

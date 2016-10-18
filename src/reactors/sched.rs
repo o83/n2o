@@ -7,21 +7,17 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 use std::time::{Instant, Duration};
 
-use abstractions::futures::future;
 use abstractions::futures::lazy;
 use abstractions::futures::future::Future;
 use abstractions::streams::stream::IntoFuture;
 use abstractions::poll::Async;
 use abstractions::tasks::task;
-use reactors::tls::*;
 use abstractions::tasks::task::{Unpark, Task, Spawn};
 use mio;
 use slab::Slab;
 use reactors::heap::{Heap, Slot};
 use reactors::channel::{Sender, Receiver, channel};
-use reactors::poll_evented::PollEvented;
-use reactors::timeout::Timeout;
-use streams::timers::interval::Interval;
+
 
 static NEXT_LOOP_ID: AtomicUsize = ATOMIC_USIZE_INIT;
 scoped_thread_local!(static CURRENT_LOOP: Core);
