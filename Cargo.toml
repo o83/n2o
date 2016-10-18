@@ -3,9 +3,9 @@ name = "kernel"
 version = "0.1.0"
 authors = ["Maxim Sokhatskyi <maxim@synrc.com>"]
 license = "DHARMA LICENSE"
-repository = "https://github.com/synrc/core"
-homepage = "https://github.com/synrc/core"
-documentation = "http://5ht.co/core.htm"
+repository = "https://github.com/synrc/kernel"
+homepage = "https://github.com/synrc/kernel"
+documentation = "http://5ht.co/kernel.htm"
 description = """
 Abstract Processing Core
 """
