@@ -2,9 +2,9 @@
 name = "kernel"
 version = "0.1.0"
 authors = ["Maxim Sokhatskyi <maxim@synrc.com>"]
-license = "MIT LICENSE"
-repository = "https://github.com/synrc/kernel"
-homepage = "https://github.com/synrc/kernel"
+license = "MIT"
+repository = "https://github.com/voxoz/kernel"
+homepage = "https://github.com/voxoz/kernel"
 documentation = "http://5ht.co/kernel.htm"
 description = """
 Abstract Processing Core
