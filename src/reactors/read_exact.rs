@@ -8,7 +8,8 @@
 use std::io::{self, Read};
 use std::mem;
 
-use futures::{Poll, Future};
+use abstractions::poll::Poll;
+use abstractions::futures::future::Future;
 
 /// A future which can be used to easily read exactly enough bytes to fill
 /// a buffer.

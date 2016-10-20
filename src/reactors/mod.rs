@@ -1,6 +1,7 @@
 
 pub mod channel;
 pub mod heap;
+#[macro_use]
 pub mod io_token;
 pub mod mpsc_queue;
 pub mod poll_evented;
