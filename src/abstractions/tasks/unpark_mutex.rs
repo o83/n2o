@@ -28,12 +28,9 @@ impl<D> UnparkMutex<D> {
         loop {
             match status {
                 WAITING => {
-                    match self.status.compare_exchange(WAITING, POLLING,
-                                                       SeqCst, SeqCst) {
+                    match self.status.compare_exchange(WAITING, POLLING, SeqCst, SeqCst) {
                         Ok(_) => {
-                            let data = unsafe {
-                                (*self.inner.get()).take().unwrap()
-                            };
+                            let data = unsafe { (*self.inner.get()).take().unwrap() };
                             return Ok(data);
                         }
                         Err(cur) => status = cur,
@@ -41,8 +38,7 @@ impl<D> UnparkMutex<D> {
                 }
 
                 POLLING => {
-                    match self.status.compare_exchange(POLLING, REPOLL,
-                                                       SeqCst, SeqCst) {
+                    match self.status.compare_exchange(POLLING, REPOLL, SeqCst, SeqCst) {
                         Ok(_) => return Err(()),
                         Err(cur) => status = cur,
                     }
@@ -61,9 +57,7 @@ impl<D> UnparkMutex<D> {
         *self.inner.get() = Some(data);
 
         match self.status.compare_exchange(POLLING, WAITING, SeqCst, SeqCst) {
-            // no unparks came in while we were running
             Ok(_) => Ok(()),
-
             Err(status) => {
                 assert_eq!(status, REPOLL);
                 self.status.store(POLLING, SeqCst);

@@ -1,6 +1,6 @@
 use abstractions::futures::future::Future;
 use abstractions::poll::Poll;
-use abstractions::futures::done::{done, Done};
+use abstractions::futures::done::{self, Done};
 use abstractions::streams::flatten::Flatten;
 use abstractions::streams::skip::Skip;
 use abstractions::streams::filter::Filter;
@@ -200,6 +200,6 @@ impl<T, E> IntoFuture for Result<T, E> {
     type Error = E;
 
     fn into_future(self) -> Done<T, E> {
-        done(self)
+        done::new(self)
     }
 }

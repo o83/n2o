@@ -8,7 +8,7 @@ pub struct Empty<T, E> {
     _data: PhantomData<(T, E)>,
 }
 
-pub fn empty<T, E>() -> Empty<T, E> {
+pub fn new<T, E>() -> Empty<T, E> {
     Empty { _data: PhantomData }
 }
 

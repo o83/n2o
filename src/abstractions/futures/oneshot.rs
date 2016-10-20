@@ -27,7 +27,7 @@ struct Inner<T> {
     tx_task: Lock<Option<Task>>,
 }
 
-pub fn oneshot<T>() -> (Complete<T>, Oneshot<T>) {
+pub fn new<T>() -> (Complete<T>, Oneshot<T>) {
     let inner = Arc::new(Inner {
         complete: AtomicBool::new(false),
         data: Lock::new(None),

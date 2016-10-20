@@ -8,7 +8,7 @@ pub struct Failed<T, E> {
     e: Option<E>,
 }
 
-pub fn failed<T, E>(e: E) -> Failed<T, E> {
+pub fn new<T, E>(e: E) -> Failed<T, E> {
     Failed {
         _t: PhantomData,
         e: Some(e),

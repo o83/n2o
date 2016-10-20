@@ -489,7 +489,7 @@ impl Handle {
         where F: FnOnce() -> R + 'static,
               R: IntoFuture<Item = (), Error = ()> + 'static
     {
-        self.spawn(lazy::lazy(f))
+        self.spawn(lazy::new(f))
     }
 }
 

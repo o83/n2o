@@ -7,7 +7,7 @@ pub struct Done<T, E> {
     inner: Option<Result<T, E>>,
 }
 
-pub fn done<T, E>(r: Result<T, E>) -> Done<T, E> {
+pub fn new<T, E>(r: Result<T, E>) -> Done<T, E> {
     Done { inner: Some(r) }
 }
 

@@ -8,7 +8,7 @@ pub struct Finished<T, E> {
     _e: PhantomData<E>,
 }
 
-pub fn finished<T, E>(t: T) -> Finished<T, E> {
+pub fn new<T, E>(t: T) -> Finished<T, E> {
     Finished {
         t: Some(t),
         _e: PhantomData,

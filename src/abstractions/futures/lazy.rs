@@ -15,7 +15,7 @@ enum _Lazy<F, R> {
     Moved,
 }
 
-pub fn lazy<F, R>(f: F) -> Lazy<F, R>
+pub fn new<F, R>(f: F) -> Lazy<F, R>
     where F: FnOnce() -> R,
           R: IntoFuture
 {

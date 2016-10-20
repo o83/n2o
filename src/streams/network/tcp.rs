@@ -4,10 +4,10 @@ use std::mem;
 use std::net::{self, SocketAddr, Shutdown};
 
 use abstractions::streams::stream::Stream;
-use abstractions::futures::oneshot::oneshot;
+use abstractions::futures::oneshot;
 use abstractions::futures::future::Future;
-use abstractions::futures::failed::failed;
-use abstractions::futures::done::done;
+use abstractions::futures::failed;
+use abstractions::futures::done;
 use abstractions::poll::{Poll, Async};
 use mio;
 
@@ -78,7 +78,7 @@ impl TcpListener {
         let stream = MyIncoming { inner: self };
         Incoming {
             inner: stream.and_then(move |(tcp, addr)| {
-                    let (tx, rx) = oneshot();
+                    let (tx, rx) = oneshot::new();
                     remote.spawn(move |handle| {
                         let res = PollEvented::new(tcp, handle)
                             .map(move |io| (TcpStream { io: io }, addr));
@@ -140,14 +140,14 @@ impl TcpStream {
     pub fn connect(addr: &SocketAddr, handle: &Handle) -> TcpStreamNew {
         let future = match mio::tcp::TcpStream::connect(addr) {
             Ok(tcp) => TcpStream::new(tcp, handle),
-            Err(e) => failed(e).boxed(),
+            Err(e) => failed::new(e).boxed(),
         };
         TcpStreamNew { inner: future }
     }
 
     fn new(connected_stream: mio::tcp::TcpStream, handle: &Handle) -> IoFuture<TcpStream> {
         let tcp = PollEvented::new(connected_stream, handle);
-        done(tcp)
+        done::new(tcp)
             .and_then(|io| TcpStreamConnect::Waiting(TcpStream { io: io }))
             .boxed()
     }
@@ -158,7 +158,7 @@ impl TcpStream {
                           -> IoFuture<TcpStream> {
         match mio::tcp::TcpStream::connect_stream(stream, addr) {
             Ok(tcp) => TcpStream::new(tcp, handle),
-            Err(e) => failed(e).boxed(),
+            Err(e) => failed::new(e).boxed(),
         }
     }
 
