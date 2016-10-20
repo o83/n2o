@@ -1,6 +1,7 @@
 
 pub mod channel;
 pub mod heap;
+#[macro_use]
 pub mod io_token;
 pub mod mpsc_queue;
 pub mod poll_evented;
@@ -10,3 +11,4 @@ pub mod tls;
 pub mod sched;
 pub mod timeout;
 pub mod split;
+pub mod read_exact;
