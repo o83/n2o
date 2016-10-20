@@ -7,16 +7,9 @@
 
 use std::io::{self, Read};
 use std::mem;
-
 use abstractions::poll::Poll;
 use abstractions::futures::future::Future;
 
-/// A future which can be used to easily read exactly enough bytes to fill
-/// a buffer.
-///
-/// Created by the [`read_exact`] function.
-///
-/// [`read_exact`]: fn.read_exact.html
 pub struct ReadExact<A, T> {
     state: State<A, T>,
 }
@@ -26,16 +19,6 @@ enum State<A, T> {
     Empty,
 }
 
-/// Creates a future which will read exactly enough bytes to fill `buf`,
-/// returning an error if EOF is hit sooner.
-///
-/// The returned future will resolve to both the I/O stream as well as the
-/// buffer once the read operation is completed.
-///
-/// In the case of an error the buffer and the object will be discarded, with
-/// the error yielded. In the case of success the object will be destroyed and
-/// the buffer will be returned, with all data read from the stream appended to
-/// the buffer.
 pub fn read_exact<A, T>(a: A, buf: T) -> ReadExact<A, T>
     where A: Read,
           T: AsMut<[u8]>

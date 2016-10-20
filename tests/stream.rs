@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate kernel;
 
-use kernel::abstractions::futures::failed::failed;
-use kernel::abstractions::futures::finished::finished;
+use kernel::abstractions::futures::failed;
+use kernel::abstractions::futures::finished;
 use kernel::abstractions::futures::future::Future;
 use kernel::abstractions::queues::channel;
 use kernel::abstractions::queues::channel::Receiver;
@@ -43,8 +43,9 @@ fn map_err() {
 
 #[test]
 fn fold() {
-    assert_done(|| list().fold(0, |a, b| finished::<i32, u32>(a + b)), Ok(6));
-    assert_done(|| err_list().fold(0, |a, b| finished::<i32, u32>(a + b)),
+    assert_done(|| list().fold(0, |a, b| finished::new::<i32, u32>(a + b)),
+                Ok(6));
+    assert_done(|| err_list().fold(0, |a, b| finished::new::<i32, u32>(a + b)),
                 Err(3));
 }
 
@@ -67,7 +68,7 @@ fn filter_map() {
 fn and_then() {
     assert_done(|| list().and_then(|a| Ok(a + 1)).collect(),
                 Ok(vec![2, 3, 4]));
-    assert_done(|| list().and_then(|a| failed::<i32, u32>(a as u32)).collect(),
+    assert_done(|| list().and_then(|a| failed::new::<i32, u32>(a as u32)).collect(),
                 Err(1));
 }
 
@@ -82,7 +83,7 @@ fn then() {
 fn or_else() {
     assert_done(|| {
                     err_list()
-                        .or_else(|a| finished::<i32, u32>(a as i32))
+                        .or_else(|a| finished::new::<i32, u32>(a as i32))
                         .collect()
                 },
                 Ok(vec![1, 2, 3]));
