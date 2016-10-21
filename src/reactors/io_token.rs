@@ -1,13 +1,14 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::io;
+use std::io::{self, Read, Write};
+use abstractions::futures::future::Future;
 use abstractions::futures::future::BoxFuture;
 use abstractions::poll::{Async, Poll};
 use abstractions::streams::stream::BoxStream;
 use abstractions::tasks::task;
 use mio;
 use reactors::sched::{Message, Remote, Handle, Direction};
-use reactors::split;
+use reactors::split::{self, ReadHalf, WriteHalf};
 
 pub type IoFuture<T> = BoxFuture<T, io::Error>;
 pub type IoStream<T> = BoxStream<T, io::Error>;
@@ -60,7 +61,6 @@ macro_rules! try_nb {
     })
 }
 
-use reactors::split::{ReadHalf, WriteHalf};
 
 pub trait Io: io::Read + io::Write {
     fn poll_read(&mut self) -> Async<()> {
@@ -84,4 +84,68 @@ pub trait FramedIo {
     fn poll_write(&mut self) -> Async<()>;
     fn write(&mut self, req: Self::In) -> Poll<(), io::Error>;
     fn flush(&mut self) -> Poll<(), io::Error>;
+}
+
+pub struct Copy<R, W> {
+    reader: R,
+    read_done: bool,
+    writer: W,
+    pos: usize,
+    cap: usize,
+    amt: u64,
+    buf: Box<[u8]>,
+}
+
+pub fn copy<R, W>(reader: R, writer: W) -> Copy<R, W>
+    where R: Read,
+          W: Write,
+{
+    Copy {
+        reader: reader,
+        read_done: false,
+        writer: writer,
+        amt: 0,
+        pos: 0,
+        cap: 0,
+        buf: Box::new([0; 2048]),
+    }
+}
+
+impl<R, W> Future for Copy<R, W>
+    where R: Read,
+          W: Write,
+{
+    type Item = u64;
+    type Error = io::Error;
+
+    fn poll(&mut self) -> Poll<u64, io::Error> {
+        loop {
+            // If our buffer is empty, then we need to read some data to
+            // continue.
+            if self.pos == self.cap && !self.read_done {
+                let n = try_nb!(self.reader.read(&mut self.buf));
+                if n == 0 {
+                    self.read_done = true;
+                } else {
+                    self.pos = 0;
+                    self.cap = n;
+                }
+            }
+
+            // If our buffer has some data, let's write it out!
+            while self.pos < self.cap {
+                let i = try_nb!(self.writer.write(&self.buf[self.pos..self.cap]));
+                self.pos += i;
+                self.amt += i as u64;
+            }
+
+            // If we've written al the data and we've seen EOF, flush out the
+            // data and finish the transfer.
+            // done with the entire transfer.
+            if self.pos == self.cap && self.read_done {
+                try_nb!(self.writer.flush());
+                return Ok(self.amt.into())
+            }
+        }
+    }
 }

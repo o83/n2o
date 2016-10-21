@@ -9,13 +9,14 @@ use abstractions::streams::fold::Fold;
 use abstractions::streams::map::Map;
 use abstractions::streams::map_err::MapErr;
 use abstractions::streams::then::Then;
+use abstractions::streams::for_each::ForEach;
 use abstractions::streams::or_else::OrElse;
 use abstractions::streams::and_then::AndThen;
 use abstractions::streams::take::Take;
 use abstractions::streams::wait::Wait;
 use abstractions::streams::collect::Collect;
 use abstractions::streams::{future, skip, flatten, map, map_err, collect, take, fold, filter,
-                            filter_map, or_else, and_then, then, wait};
+                            filter_map, or_else, and_then, then, wait, for_each};
 use abstractions::streams::future::StreamFuture;
 
 macro_rules! if_std {
@@ -149,6 +150,14 @@ pub trait Stream {
     {
         take::new(self, amt)
     }
+
+    fn for_each<F>(self, f: F) -> ForEach<Self, F>
+        where F: FnMut(Self::Item) -> Result<(), Self::Error>,
+              Self: Sized
+    {
+        for_each::new(self, f)
+    }
+
 
     #[cfg(feature = "use_std")]
     fn buffered(self, amt: usize) -> Buffered<Self>

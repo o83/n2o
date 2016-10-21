@@ -15,6 +15,7 @@ pub mod future;
 pub mod iter;
 pub mod collect;
 pub mod wait;
+pub mod for_each;
 
 #[macro_use]
 pub mod stream;
