@@ -1,6 +1,10 @@
+#![feature(heap_api, oom, alloc, box_syntax, optin_builtin_traits)]
 
 #[macro_use]
 extern crate core;
+
+#[macro_use]
+extern crate alloc;
 
 #[macro_use]
 extern crate slab;

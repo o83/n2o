@@ -16,6 +16,9 @@ impl<T, E> Future for Done<T, E> {
     type Error = E;
 
     fn poll(&mut self) -> Poll<T, E> {
-        self.inner.take().expect("cannot poll Done twice").map(Async::Ready)
+        self.inner
+            .take()
+            .expect("cannot poll Done twice")
+            .map(Async::Ready)
     }
 }

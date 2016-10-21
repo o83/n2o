@@ -61,27 +61,14 @@ macro_rules! try_nb {
 }
 
 use reactors::split::{ReadHalf, WriteHalf};
-// use reactors::copy::{copy, Copy};
-// use reactors::flush::{flush, Flush};
-// use reactors::read_exact::{read_exact, ReadExact};
-// use reactors::read_to_end::{read_to_end, ReadToEnd};
-// use reactors::read::{read, Read};
-// use reactors::read_until::{read_until, ReadUntil};
-//
-// use reactors::window::Window;
-// use reactors::write_all::{write_all, WriteAll};
-//
 
 pub trait Io: io::Read + io::Write {
     fn poll_read(&mut self) -> Async<()> {
         Async::Ready(())
     }
-
-
     fn poll_write(&mut self) -> Async<()> {
         Async::Ready(())
     }
-
     fn split(self) -> (ReadHalf<Self>, WriteHalf<Self>)
         where Self: Sized
     {
