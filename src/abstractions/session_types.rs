@@ -12,34 +12,30 @@ use std::sync::mpsc::Select;
 use std::collections::HashMap;
 
 #[must_use]
-pub struct Chan<E, P> (Sender<Box<u8>>, Receiver<Box<u8>>, PhantomData<(E, P)>);
+pub struct Chan<E, P>(Sender<Box<u8>>, Receiver<Box<u8>>, PhantomData<(E, P)>);
 
-unsafe fn write_chan<A: marker::Send + 'static, E, P>
-    (&Chan(ref tx, _, _): &Chan<E, P>, x: A)
-{
+unsafe fn write_chan<A: marker::Send + 'static, E, P>(&Chan(ref tx, _, _): &Chan<E, P>, x: A) {
     let tx: &Sender<Box<A>> = transmute(tx);
     tx.send(Box::new(x)).unwrap();
 }
 
-unsafe fn read_chan<A: marker::Send + 'static, E, P>
-    (&Chan(_, ref rx, _): &Chan<E, P>) -> A
-{
+unsafe fn read_chan<A: marker::Send + 'static, E, P>(&Chan(_, ref rx, _): &Chan<E, P>) -> A {
     let rx: &Receiver<Box<A>> = transmute(rx);
     *rx.recv().unwrap()
 }
 
 #[allow(missing_copy_implementations)]
 pub struct Z;
-pub struct S<N> ( PhantomData<N> );
+pub struct S<N>(PhantomData<N>);
 #[allow(missing_copy_implementations)]
 pub struct Eps;
 
-pub struct Recv<A, P> ( PhantomData<(A, P)> );
-pub struct Send<A, P> ( PhantomData<(A, P)> );
-pub struct Choose<P, Q> ( PhantomData<(P, Q)> );
-pub struct Offer<P, Q> ( PhantomData<(P, Q)> );
-pub struct Rec<P> ( PhantomData<P> );
-pub struct Var<N> ( PhantomData<N> );
+pub struct Recv<A, P>(PhantomData<(A, P)>);
+pub struct Send<A, P>(PhantomData<(A, P)>);
+pub struct Choose<P, Q>(PhantomData<(P, Q)>);
+pub struct Offer<P, Q>(PhantomData<(P, Q)>);
+pub struct Rec<P>(PhantomData<P>);
+pub struct Var<N>(PhantomData<N>);
 
 pub unsafe trait HasDual {
     type Dual;
@@ -49,19 +45,19 @@ unsafe impl HasDual for Eps {
     type Dual = Eps;
 }
 
-unsafe impl <A, P: HasDual> HasDual for Send<A, P> {
+unsafe impl<A, P: HasDual> HasDual for Send<A, P> {
     type Dual = Recv<A, P::Dual>;
 }
 
-unsafe impl <A, P: HasDual> HasDual for Recv<A, P> {
+unsafe impl<A, P: HasDual> HasDual for Recv<A, P> {
     type Dual = Send<A, P::Dual>;
 }
 
-unsafe impl <P: HasDual, Q: HasDual> HasDual for Choose<P, Q> {
+unsafe impl<P: HasDual, Q: HasDual> HasDual for Choose<P, Q> {
     type Dual = Offer<P::Dual, Q::Dual>;
 }
 
-unsafe impl <P: HasDual, Q: HasDual> HasDual for Offer<P, Q> {
+unsafe impl<P: HasDual, Q: HasDual> HasDual for Offer<P, Q> {
     type Dual = Choose<P::Dual, Q::Dual>;
 }
 
@@ -69,20 +65,20 @@ unsafe impl HasDual for Var<Z> {
     type Dual = Var<Z>;
 }
 
-unsafe impl <N> HasDual for Var<S<N>> {
+unsafe impl<N> HasDual for Var<S<N>> {
     type Dual = Var<S<N>>;
 }
 
-unsafe impl <P: HasDual> HasDual for Rec<P> {
+unsafe impl<P: HasDual> HasDual for Rec<P> {
     type Dual = Rec<P::Dual>;
 }
 
 pub enum Branch<L, R> {
     Left(L),
-    Right(R)
+    Right(R),
 }
 
-impl <E, P> Drop for Chan<E, P> {
+impl<E, P> Drop for Chan<E, P> {
     fn drop(&mut self) {
         panic!("Session channel prematurely dropped");
     }
@@ -95,7 +91,8 @@ impl<E> Chan<E, Eps> {
         let mut receiver = unsafe { mem::uninitialized() };
         mem::swap(&mut self.0, &mut sender);
         mem::swap(&mut self.1, &mut receiver);
-        drop(sender);drop(receiver); // drop them
+        drop(sender);
+        drop(receiver); // drop them
         mem::forget(self);
     }
 }
@@ -166,24 +163,31 @@ impl<Z, A, B, C, D, E> Chan<Z, Choose<A, Choose<B, Choose<C, Choose<D, E>>>>> {
     }
 }
 
-impl<Z, A, B, C, D, E, F> Chan<Z, Choose<A, Choose<B, Choose<C, Choose<D,
-                          Choose<E, F>>>>>> {
+impl<Z, A, B, C, D, E, F> Chan<Z, Choose<A, Choose<B, Choose<C, Choose<D, Choose<E, F>>>>>> {
     #[must_use]
     pub fn skip5(self) -> Chan<Z, F> {
         self.sel2().sel2().sel2().sel2().sel2()
     }
 }
 
-impl<Z, A, B, C, D, E, F, G> Chan<Z, Choose<A, Choose<B, Choose<C, Choose<D,
-                             Choose<E, Choose<F, G>>>>>>> {
+impl<Z, A, B, C, D, E, F, G> Chan<Z,
+                                  Choose<A,
+                                         Choose<B,
+                                                Choose<C, Choose<D, Choose<E, Choose<F, G>>>>>>> {
     #[must_use]
     pub fn skip6(self) -> Chan<Z, G> {
         self.sel2().sel2().sel2().sel2().sel2().sel2()
     }
 }
 
-impl<Z, A, B, C, D, E, F, G, H> Chan<Z, Choose<A, Choose<B, Choose<C, Choose<D,
-                                        Choose<E, Choose<F, Choose<G, H>>>>>>>> {
+impl<Z, A, B, C, D, E, F, G, H> Chan<Z,
+                                     Choose<A,
+                                            Choose<B,
+                                                   Choose<C,
+                                                          Choose<D,
+                                                                 Choose<E,
+                                                                        Choose<F,
+                                                                               Choose<G, H>>>>>>>> {
     #[must_use]
     pub fn skip7(self) -> Chan<Z, H> {
         self.sel2().sel2().sel2().sel2().sel2().sel2().sel2()
@@ -228,8 +232,7 @@ impl<E, P, N> Chan<(P, E), Var<S<N>>> {
 #[cfg(feature = "chan_select")]
 #[must_use]
 pub fn hselect<E, P, A>(mut chans: Vec<Chan<E, Recv<A, P>>>)
-                        -> (Chan<E, Recv<A, P>>, Vec<Chan<E, Recv<A, P>>>)
-{
+                        -> (Chan<E, Recv<A, P>>, Vec<Chan<E, Recv<A, P>>>) {
     let i = iselect(&chans);
     let c = chans.remove(i);
     (c, chans)
@@ -250,14 +253,20 @@ pub fn iselect<E, P, A>(chans: &Vec<Chan<E, Recv<A, P>>>) -> usize {
             handles.push(handle);
         }
 
-        for handle in handles.iter_mut() { // Add
-            unsafe { handle.add(); }
+        for handle in handles.iter_mut() {
+            // Add
+            unsafe {
+                handle.add();
+            }
         }
 
         let id = sel.wait();
 
-        for handle in handles.iter_mut() { // Clean up
-            unsafe { handle.remove(); }
+        for handle in handles.iter_mut() {
+            // Clean up
+            unsafe {
+                handle.remove();
+            }
         }
 
         id
@@ -273,22 +282,14 @@ pub struct ChanSelect<'c, T> {
 #[cfg(feature = "chan_select")]
 impl<'c, T> ChanSelect<'c, T> {
     pub fn new() -> ChanSelect<'c, T> {
-        ChanSelect {
-            chans: Vec::new()
-        }
+        ChanSelect { chans: Vec::new() }
     }
 
-    pub fn add_recv_ret<E, P, A: marker::Send>(&mut self,
-                                               chan: &'c Chan<E, Recv<A, P>>,
-                                               ret: T)
-    {
+    pub fn add_recv_ret<E, P, A: marker::Send>(&mut self, chan: &'c Chan<E, Recv<A, P>>, ret: T) {
         self.chans.push((unsafe { transmute(chan) }, ret));
     }
 
-    pub fn add_offer_ret<E, P, Q>(&mut self,
-                                  chan: &'c Chan<E, Offer<P, Q>>,
-                                  ret: T)
-    {
+    pub fn add_offer_ret<E, P, Q>(&mut self, chan: &'c Chan<E, Offer<P, Q>>, ret: T) {
         self.chans.push((unsafe { transmute(chan) }, ret));
     }
 
@@ -306,13 +307,17 @@ impl<'c, T> ChanSelect<'c, T> {
         }
 
         for handle in handles.iter_mut() {
-            unsafe { handle.add(); }
+            unsafe {
+                handle.add();
+            }
         }
 
         let id = sel.wait();
 
         for handle in handles.iter_mut() {
-            unsafe { handle.remove(); }
+            unsafe {
+                handle.remove();
+            }
         }
         map.remove(&id).unwrap()
     }
@@ -324,16 +329,12 @@ impl<'c, T> ChanSelect<'c, T> {
 
 #[cfg(feature = "chan_select")]
 impl<'c> ChanSelect<'c, usize> {
-    pub fn add_recv<E, P, A: marker::Send>(&mut self,
-                                           c: &'c Chan<E, Recv<A, P>>)
-    {
+    pub fn add_recv<E, P, A: marker::Send>(&mut self, c: &'c Chan<E, Recv<A, P>>) {
         let index = self.chans.len();
         self.add_recv_ret(c, index);
     }
 
-    pub fn add_offer<E, P, Q>(&mut self,
-                              c: &'c Chan<E, Offer<P, Q>>)
-    {
+    pub fn add_offer<E, P, Q>(&mut self, c: &'c Chan<E, Offer<P, Q>>) {
         let index = self.chans.len();
         self.add_offer_ret(c, index);
     }

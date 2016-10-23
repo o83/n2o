@@ -5,12 +5,7 @@ use std::thread::spawn;
 
 type Id = String;
 type Atm = Recv<Id, Choose<Rec<AtmInner>, Eps>>;
-
-type AtmInner = Offer<AtmDeposit,
-                Offer<AtmWithdraw,
-                Offer<AtmBalance,
-                      Eps>>>;
-
+type AtmInner = Offer<AtmDeposit, Offer<AtmWithdraw, Offer<AtmBalance, Eps>>>;
 type AtmDeposit = Recv<u64, Send<u64, Var<Z>>>;
 type AtmWithdraw = Recv<u64, Choose<Var<Z>, Var<Z>>>;
 type AtmBalance = Send<u64, Var<Z>>;
@@ -62,7 +57,7 @@ fn atm(c: Chan<(), Atm>) {
 fn deposit_client(c: Chan<(), Client>) {
     let c = match c.send("Deposit Client".to_string()).offer() {
         Left(c) => c.enter(),
-        Right(_) => panic!("deposit_client: expected to be approved")
+        Right(_) => panic!("deposit_client: expected to be approved"),
     };
 
     let (c, new_balance) = c.sel1().send(200).recv();
@@ -73,7 +68,7 @@ fn deposit_client(c: Chan<(), Client>) {
 fn withdraw_client(c: Chan<(), Client>) {
     let c = match c.send("Withdraw Client".to_string()).offer() {
         Left(c) => c.enter(),
-        Right(_) => panic!("withdraw_client: expected to be approved")
+        Right(_) => panic!("withdraw_client: expected to be approved"),
     };
 
     match c.sel2().sel1().send(100).offer() {

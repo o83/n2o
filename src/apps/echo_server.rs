@@ -1,14 +1,11 @@
 #[macro_use]
 extern crate kernel;
 use kernel::abstractions::session_types::*;
-
 use std::thread::spawn;
-
 type Srv = Offer<Eps, Recv<String, Var<Z>>>;
+
 fn srv(c: Chan<(), Rec<Srv>>) {
-
     let mut c = c.enter();
-
     loop {
         c = offer!{ c,
             CLOSE => {

@@ -1,5 +1,3 @@
-// This is an implementation of the extended arithmetic server from
-// Vasconcelos-Gay-Ravara (2006) with some additional functionality
 
 #[macro_use]
 extern crate kernel;
@@ -7,13 +5,11 @@ use kernel::abstractions::session_types::*;
 
 use std::thread::spawn;
 
-// Offers: Add, Negate, Sqrt, Eval
-type Srv =
-    Offer<Eps,
-    Offer<Recv<i64, Recv<i64, Send<i64, Var<Z>>>>,
-    Offer<Recv<i64, Send<i64, Var<Z>>>,
-    Offer<Recv<f64, Choose<Send<f64, Var<Z>>, Var<Z>>>,
-    Recv<fn(i64) -> bool, Recv<i64, Send<bool, Var<Z>>>>>>>>;
+type Srv = Offer<Eps,
+                 Offer<Recv<i64, Recv<i64, Send<i64, Var<Z>>>>,
+                       Offer<Recv<i64, Send<i64, Var<Z>>>,
+                             Offer<Recv<f64, Choose<Send<f64, Var<Z>>, Var<Z>>>,
+                                   Recv<fn(i64) -> bool, Recv<i64, Send<bool, Var<Z>>>>>>>>;
 
 fn server(c: Chan<(), Rec<Srv>>) {
     let mut c = c.enter();
@@ -53,9 +49,7 @@ fn server(c: Chan<(), Rec<Srv>>) {
 // uses of session types, but they do showcase subtyping, recursion and how to
 // work the types in general.
 
-type AddCli<R> =
-    Choose<Eps,
-    Choose<Send<i64, Send<i64, Recv<i64, Var<Z>>>>, R>>;
+type AddCli<R> = Choose<Eps, Choose<Send<i64, Send<i64, Recv<i64, Var<Z>>>>, R>>;
 
 fn add_client<R>(c: Chan<(), Rec<AddCli<R>>>) {
     let (c, n) = c.enter().sel2().sel1().send(42).send(1).recv();
@@ -63,11 +57,7 @@ fn add_client<R>(c: Chan<(), Rec<AddCli<R>>>) {
     c.zero().sel1().close()
 }
 
-type NegCli<R, S> =
-    Choose<Eps,
-    Choose<R,
-    Choose<Send<i64, Recv<i64, Var<Z>>>,
-    S>>>;
+type NegCli<R, S> = Choose<Eps, Choose<R, Choose<Send<i64, Recv<i64, Var<Z>>>, S>>>;
 
 fn neg_client<R, S>(c: Chan<(), Rec<NegCli<R, S>>>) {
     let (c, n) = c.enter().skip2().sel1().send(42).recv();
@@ -75,12 +65,11 @@ fn neg_client<R, S>(c: Chan<(), Rec<NegCli<R, S>>>) {
     c.zero().sel1().close();
 }
 
-type SqrtCli<R, S, T> =
-    Choose<Eps,
-    Choose<R,
-    Choose<S,
-    Choose<Send<f64, Offer<Recv<f64, Var<Z>>, Var<Z>>>,
-    T>>>>;
+type SqrtCli<R, S, T> = Choose<Eps,
+                               Choose<R,
+                                      Choose<S,
+                                             Choose<Send<f64, Offer<Recv<f64, Var<Z>>, Var<Z>>>,
+                                                    T>>>>;
 
 fn sqrt_client<R, S, T>(c: Chan<(), Rec<SqrtCli<R, S, T>>>) {
     match c.enter().skip3().sel1().send(42.0).offer() {
@@ -98,12 +87,12 @@ fn sqrt_client<R, S, T>(c: Chan<(), Rec<SqrtCli<R, S, T>>>) {
 
 // `fn_client` sends a function over the channel
 
-type PrimeCli<R, S, T> =
-    Choose<Eps,
-    Choose<R,
-    Choose<S,
-    Choose<T,
-    Send<fn(i64) -> bool, Send<i64, Recv<bool, Var<Z>>>>>>>>;
+type PrimeCli<R, S, T> = Choose<Eps,
+                                Choose<R,
+                                       Choose<S,
+                                              Choose<T,
+                                                     Send<fn(i64) -> bool,
+                                                          Send<i64, Recv<bool, Var<Z>>>>>>>>;
 
 fn fn_client<R, S, T>(c: Chan<(), Rec<PrimeCli<R, S, T>>>) {
     fn even(n: i64) -> bool {
@@ -127,11 +116,7 @@ fn fn_client<R, S, T>(c: Chan<(), Rec<PrimeCli<R, S, T>>>) {
 // sends the whole channel to `get_neg`. `get_neg` then receives the negated
 // integer and prints it.
 
-type AskNeg<R, S> =
-    Choose<Eps,
-    Choose<R,
-    Choose<Send<i64, Recv<i64, Var<Z>>>,
-    S>>>;
+type AskNeg<R, S> = Choose<Eps, Choose<R, Choose<Send<i64, Recv<i64, Var<Z>>>, S>>>;
 
 
 fn ask_neg<R: std::marker::Send + 'static, S: std::marker::Send + 'static>(c1: Chan<(), Rec<AskNeg<R, S>>>,
