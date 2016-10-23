@@ -29,8 +29,8 @@ unsafe impl<T: Sync> Sync for Buffer<T> { }
 unsafe impl<T: Send> Send for Consumer<T> { }
 unsafe impl<T: Send> Send for Producer<T> { }
 
-impl<T> !Sync for Consumer<T> {}
-impl<T> !Sync for Producer<T> {}
+unsafe impl<T> Sync for Consumer<T> {}
+unsafe impl<T> Sync for Producer<T> {}
 
 impl<T> Buffer<T> {
 
