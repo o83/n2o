@@ -229,10 +229,10 @@ impl<S: AsyncPipeStub + 'static> PipeState<S> for HandshakeRx<S> {
 mod tests {
     use std::rc::Rc;
     use std::cell::RefCell;
-
     use mio;
-
     use network::tcp::handshake::*;
+    use network::tests::*;
+    use network::tcp::state::PipeState;
 
     #[test]
     fn on_enter_tx_should_register() {
