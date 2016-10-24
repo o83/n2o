@@ -12,3 +12,4 @@ pub mod sched;
 pub mod timeout;
 pub mod split;
 pub mod read_exact;
+pub use self::read_exact::{read_exact, ReadExact};

@@ -6,10 +6,10 @@ use kernel::abstractions::session_types::*;
 use std::thread::spawn;
 
 type Srv = Offer<Eps,
-                 Offer<Recv<i64, Recv<i64, Send<i64, Var<Z>>>>,
-                       Offer<Recv<i64, Send<i64, Var<Z>>>,
-                             Offer<Recv<f64, Choose<Send<f64, Var<Z>>, Var<Z>>>,
-                                   Recv<fn(i64) -> bool, Recv<i64, Send<bool, Var<Z>>>>>>>>;
+           Offer<Recv<i64, Recv<i64, Send<i64, Var<Z>>>>,
+           Offer<Recv<i64, Send<i64, Var<Z>>>,
+           Offer<Recv<f64, Choose<Send<f64, Var<Z>>, Var<Z>>>,
+           Recv<fn(i64) -> bool, Recv<i64, Send<bool, Var<Z>>>>>>>>;
 
 fn server(c: Chan<(), Rec<Srv>>) {
     let mut c = c.enter();
@@ -66,19 +66,19 @@ fn neg_client<R, S>(c: Chan<(), Rec<NegCli<R, S>>>) {
 }
 
 type SqrtCli<R, S, T> = Choose<Eps,
-                               Choose<R,
-                                      Choose<S,
-                                             Choose<Send<f64, Offer<Recv<f64, Var<Z>>, Var<Z>>>,
-                                                    T>>>>;
+                        Choose<R,
+                        Choose<S,
+                        Choose<Send<f64, Offer<Recv<f64, Var<Z>>, Var<Z>>>,
+                        T>>>>;
 
 fn sqrt_client<R, S, T>(c: Chan<(), Rec<SqrtCli<R, S, T>>>) {
     match c.enter().skip3().sel1().send(42.0).offer() {
-        Left(c) => {
+        Branch::Left(c) => {
             let (c, n) = c.recv();
             println!("{}", n);
             c.zero().sel1().close();
         }
-        Right(c) => {
+        Branch::Right(c) => {
             println!("Couldn't take square root!");
             c.zero().sel1().close();
         }
@@ -88,11 +88,11 @@ fn sqrt_client<R, S, T>(c: Chan<(), Rec<SqrtCli<R, S, T>>>) {
 // `fn_client` sends a function over the channel
 
 type PrimeCli<R, S, T> = Choose<Eps,
-                                Choose<R,
-                                       Choose<S,
-                                              Choose<T,
-                                                     Send<fn(i64) -> bool,
-                                                          Send<i64, Recv<bool, Var<Z>>>>>>>>;
+                         Choose<R,
+                         Choose<S,
+                         Choose<T,
+                         Send<fn(i64) -> bool,
+                         Send<i64, Recv<bool, Var<Z>>>>>>>>;
 
 fn fn_client<R, S, T>(c: Chan<(), Rec<PrimeCli<R, S, T>>>) {
     fn even(n: i64) -> bool {
