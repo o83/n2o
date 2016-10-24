@@ -56,8 +56,8 @@ fn atm(c: Chan<(), Atm>) {
 
 fn deposit_client(c: Chan<(), Client>) {
     let c = match c.send("Deposit Client".to_string()).offer() {
-        Left(c) => c.enter(),
-        Right(_) => panic!("deposit_client: expected to be approved"),
+        Branch::Left(c) => c.enter(),
+        Branch::Right(_) => panic!("deposit_client: expected to be approved"),
     };
 
     let (c, new_balance) = c.sel1().send(200).recv();
@@ -67,16 +67,16 @@ fn deposit_client(c: Chan<(), Client>) {
 
 fn withdraw_client(c: Chan<(), Client>) {
     let c = match c.send("Withdraw Client".to_string()).offer() {
-        Left(c) => c.enter(),
-        Right(_) => panic!("withdraw_client: expected to be approved"),
+        Branch::Left(c) => c.enter(),
+        Branch::Right(_) => panic!("withdraw_client: expected to be approved"),
     };
 
     match c.sel2().sel1().send(100).offer() {
-        Left(c) => {
+        Branch::Left(c) => {
             println!("withdraw_client: Successfully withdrew 100");
             c.zero().skip3().close();
         }
-        Right(c) => {
+        Branch::Right(c) => {
             println!("withdraw_client: Could not withdraw. Depositing instead.");
             c.zero().sel1().send(50).recv().0.zero().skip3().close();
         }

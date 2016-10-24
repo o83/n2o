@@ -3,8 +3,8 @@ name = "kernel"
 version = "0.1.1"
 authors = ["Maxim Sokhatskyi <maxim@synrc.com>"]
 license = "MIT"
-repository = "https://github.com/voxoz/kernel"
-homepage = "https://github.com/voxoz/kernel"
+repository = "https://github.com/AlgoTradingHub/kernel"
+homepage = "https://github.com/AlgoTradingHub/kernel"
 documentation = "http://5ht.co/kernel.htm"
 description = """
 Abstract Reactive Streams
@@ -17,6 +17,22 @@ path = "src/apps/echo.rs"
 [[bin]]
 name = "echo_server"
 path = "src/apps/echo_server.rs"
+
+[[bin]]
+name = "many_clients"
+path = "src/apps/many_clients.rs"
+
+[[bin]]
+name = "arithmetic"
+path = "src/apps/arithmetic.rs"
+
+[[bin]]
+name = "atm"
+path = "src/apps/atm.rs"
+
+[[bin]]
+name = "planeclip"
+path = "src/apps/planeclip.rs"
 
 [dependencies]
 log = "0.3"
