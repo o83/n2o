@@ -8,6 +8,7 @@ extern crate alloc;
 extern crate slab;
 extern crate mio;
 
-pub mod abstractions;
-pub mod streams;
+pub mod abstractions; // Futures, Streams
+pub mod streams;      // Network Stream Instances of Tokio
+pub mod network;      // Network Stack Second Edition
 pub mod reactors;

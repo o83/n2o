@@ -9,7 +9,6 @@ type AtmInner = Offer<AtmDeposit, Offer<AtmWithdraw, Offer<AtmBalance, Eps>>>;
 type AtmDeposit = Recv<u64, Send<u64, Var<Z>>>;
 type AtmWithdraw = Recv<u64, Choose<Var<Z>, Var<Z>>>;
 type AtmBalance = Send<u64, Var<Z>>;
-
 type Client = <Atm as HasDual>::Dual;
 
 fn approved(id: &Id) -> bool {
