@@ -1,7 +1,7 @@
 Abstract Event Processing
 =========================
 
-[![Build Status](https://travis-ci.org/voxoz/kernel.svg?branch=master)](https://travis-ci.org/voxoz/kernel)
+[![Build Status](https://travis-ci.org/AlgoTradingHub/kernel.svg?branch=master)](https://travis-ci.org/AlgoTradingHub/kernel)
 [![Gitter Chat](https://img.shields.io/gitter/room/badges/shields.svg)](https://gitter.im/voxoz/kernel)
 
 Features
