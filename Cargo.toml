@@ -15,6 +15,10 @@ name = "echo"
 path = "src/apps/echo.rs"
 
 [[bin]]
+name = "connect"
+path = "src/apps/connect.rs"
+
+[[bin]]
 name = "echo_server"
 path = "src/apps/echo_server.rs"
 
