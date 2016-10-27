@@ -231,8 +231,9 @@ mod tests {
     use std::rc::Rc;
     use std::cell::RefCell;
     use mio;
-    use network::tcp::handshake::*;
+    use network;
     use network::tests::*;
+    use network::tcp::handshake::*;
     use network::tcp::state::PipeState;
 
     #[test]

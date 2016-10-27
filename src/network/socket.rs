@@ -5,12 +5,12 @@ use std::io;
 use std::boxed::FnBox;
 use std::time::Duration;
 
-use network::endpoint::{self, Acceptor, Pipe, SocketId, EndpointId, EndpointTmpl, EndpointSpec,
-                        EndpointDesc};
 use network::message::Message;
 use reactors::dispatcher::{self, Context, Schedulable, Scheduled};
 use network::device;
 use network::tcp::pipe::Event;
+use network::endpoint::{self, Acceptor, Pipe, SocketId, EndpointId, EndpointTmpl, EndpointSpec,
+                        EndpointDesc};
 
 pub enum Request {
     Connect(String),
@@ -160,9 +160,7 @@ impl Socket {
 
     fn on_bind_success(&mut self, ctx: &mut Context, eid: EndpointId, spec: EndpointSpec) {
         let acceptor = self.connect_acceptor(eid, spec);
-
         acceptor.open(ctx);
-
         self.acceptors.insert(eid, acceptor);
         self.send_reply(Reply::Bind(eid));
     }
@@ -367,15 +365,16 @@ mod tests {
     use std::fmt;
     use std::rc::Rc;
     use std::sync::mpsc;
-    use std::io;
     use std::time::Duration;
-
-    use super::*;
-    use core::network;
-    use core::context::*;
-    use core::{SocketId, EndpointId, Message, EndpointTmpl};
-    use core::endpoint::Pipe;
-    use io_error::*;
+    use network;
+    use network::tcp::pipe;
+    use network::socket::*;
+    use network::message::Message;
+    use std::io::{self, Result, Error, ErrorKind};
+    use reactors::adapter::Network;
+    use reactors::dispatcher::{self, Context, Scheduled, Schedulable, Scheduler};
+    use network::endpoint::{self, Acceptor, Pipe, SocketId, EndpointId, EndpointTmpl,
+                            EndpointSpec, EndpointDesc};
 
     struct TestProto;
 
@@ -403,18 +402,18 @@ mod tests {
 
     struct FailingNetwork;
 
-    impl network::Network for FailingNetwork {
+    impl Network for FailingNetwork {
         fn connect(&mut self, _: SocketId, _: &EndpointTmpl) -> io::Result<EndpointId> {
-            Err(other_io_error("FailingNetwork can only fail"))
+            Err(Error::new(ErrorKind::Other, "FailingNetwork can only fail"))
         }
         fn reconnect(&mut self, _: SocketId, _: EndpointId, _: &EndpointTmpl) -> io::Result<()> {
-            Err(other_io_error("FailingNetwork can only fail"))
+            Err(Error::new(ErrorKind::Other, "FailingNetwork can only fail"))
         }
         fn bind(&mut self, _: SocketId, _: &EndpointTmpl) -> io::Result<EndpointId> {
-            Err(other_io_error("FailingNetwork can only fail"))
+            Err(Error::new(ErrorKind::Other, "FailingNetwork can only fail"))
         }
         fn rebind(&mut self, _: SocketId, _: EndpointId, _: &EndpointTmpl) -> io::Result<()> {
-            Err(other_io_error("FailingNetwork can only fail"))
+            Err(Error::new(ErrorKind::Other, "FailingNetwork can only fail"))
         }
         fn open(&mut self, _: EndpointId, _: bool) {}
         fn close(&mut self, _: EndpointId, _: bool) {}
@@ -424,7 +423,7 @@ mod tests {
 
     impl Scheduler for FailingNetwork {
         fn schedule(&mut self, _: Schedulable, _: Duration) -> io::Result<Scheduled> {
-            Err(other_io_error("FailingNetwork can only fail"))
+            Err(Error::new(ErrorKind::Other, "FailingNetwork can only fail"))
         }
         fn cancel(&mut self, _: Scheduled) {}
     }
@@ -436,7 +435,7 @@ mod tests {
     }
 
     impl Context for FailingNetwork {
-        fn raise(&mut self, _: Event) {}
+        fn raise(&mut self, _: pipe::Event) {}
     }
 
     #[test]
@@ -462,7 +461,7 @@ mod tests {
 
     struct WorkingNetwork(EndpointId);
 
-    impl network::Network for WorkingNetwork {
+    impl Network for WorkingNetwork {
         fn connect(&mut self, _: SocketId, _: &EndpointTmpl) -> io::Result<EndpointId> {
             Ok(self.0)
         }
@@ -495,7 +494,7 @@ mod tests {
     }
 
     impl Context for WorkingNetwork {
-        fn raise(&mut self, _: Event) {}
+        fn raise(&mut self, _: pipe::Event) {}
     }
 
     #[test]
