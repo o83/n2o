@@ -5,7 +5,6 @@
 extern crate log;
 extern crate core;
 extern crate alloc;
-extern crate slab;
 extern crate mio;
 
 pub mod abstractions;
