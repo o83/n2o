@@ -1,7 +1,9 @@
 use std::ops::Deref;
 use std::rc::Rc;
+use std::fmt;
 use mio::{self, Evented};
 use core::mem::transmute;
+use network::endpoint::EndpointRegistrar;
 use core::ptr::copy_nonoverlapping;
 use std::io::{self, Result, Error, ErrorKind, Read, Write};
 use mio::tcp::{TcpStream, Shutdown};
@@ -9,17 +11,45 @@ use network::tcp::send::SendOperation;
 use network::tcp::recv::RecvOperation;
 use network::message::Message;
 use network::tcp::handshake::*;
-use network::endpoint::Context;
+use reactors::dispatcher;
+use network::endpoint;
 use network::transport::Pipe;
 use network::tcp::state::transition;
 use network::tcp::state::PipeState;
 
+pub enum Command {
+    Open,
+    Close,
+    Send(Rc<Message>),
+    Recv,
+}
+
+impl fmt::Debug for Command {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.name())
+    }
+}
+
+impl Command {
+    fn name(&self) -> &'static str {
+        match *self {
+            Command::Open => "Open",
+            Command::Close => "Close",
+            Command::Send(_) => "Send",
+            Command::Recv => "Recv",
+        }
+    }
+}
+
+
 pub enum Event {
     Opened,
+    //   Check,
     Closed,
     CanSend,
     CanRecv,
     Sent,
+    // Close(bool),
     Received(Message),
     Accepted(Vec<Box<Pipe>>),
     Error(io::Error),
@@ -244,7 +274,7 @@ impl<S: AsyncPipeStub + 'static> PipeState<S> for Initial<S> {
         "Initial"
     }
 
-    fn open(self: Box<Self>, ctx: &mut Context) -> Box<PipeState<S>> {
+    fn open(self: Box<Self>, ctx: &mut endpoint::Context) -> Box<PipeState<S>> {
         transition::<Initial<S>, HandshakeTx<S>, S>(self, ctx)
     }
 }
@@ -267,8 +297,8 @@ impl<S: AsyncPipeStub + 'static> AsyncPipe<S> {
         AsyncPipe { state: Some(initial_state) }
     }
 
-    fn apply<F>(&mut self, ctx: &mut Context, transition: F)
-        where F: FnOnce(Box<PipeState<S>>, &mut Context) -> Box<PipeState<S>>
+    fn apply<F>(&mut self, ctx: &mut endpoint::Context, transition: F)
+        where F: FnOnce(Box<PipeState<S>>, &mut endpoint::Context) -> Box<PipeState<S>>
     {
         if let Some(old_state) = self.state.take() {
             let new_state = transition(old_state, ctx);
@@ -278,23 +308,23 @@ impl<S: AsyncPipeStub + 'static> AsyncPipe<S> {
 }
 
 impl<S: AsyncPipeStub> Pipe for AsyncPipe<S> {
-    fn ready(&mut self, ctx: &mut Context, events: mio::Ready) {
+    fn ready(&mut self, ctx: &mut endpoint::Context, events: mio::Ready) {
         self.apply(ctx, |s, ctx| s.ready(ctx, events))
     }
 
-    fn open(&mut self, ctx: &mut Context) {
+    fn open(&mut self, ctx: &mut endpoint::Context) {
         self.apply(ctx, |s, ctx| s.open(ctx))
     }
 
-    fn close(&mut self, ctx: &mut Context) {
+    fn close(&mut self, ctx: &mut endpoint::Context) {
         self.apply(ctx, |s, ctx| s.close(ctx))
     }
 
-    fn send(&mut self, ctx: &mut Context, msg: Rc<Message>) {
+    fn send(&mut self, ctx: &mut endpoint::Context, msg: Rc<Message>) {
         self.apply(ctx, |s, ctx| s.send(ctx, msg))
     }
 
-    fn recv(&mut self, ctx: &mut Context) {
+    fn recv(&mut self, ctx: &mut endpoint::Context) {
         self.apply(ctx, |s, ctx| s.recv(ctx))
     }
 }

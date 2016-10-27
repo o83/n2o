@@ -11,10 +11,6 @@ Abstract Reactive Streams
 """
 
 [[bin]]
-name = "echo"
-path = "src/apps/echo.rs"
-
-[[bin]]
 name = "fix"
 path = "src/apps/fix.rs"
 

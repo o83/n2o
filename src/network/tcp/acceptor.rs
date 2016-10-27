@@ -2,8 +2,9 @@
 use std::io;
 use mio;
 use mio::tcp::{TcpListener, TcpStream};
+use network::endpoint::{self, Context, EndpointRegistrar};
+use reactors::dispatcher;
 use network::transport::{Pipe, Destination, Acceptor};
-use network::endpoint::Context;
 use network::tcp::pipe::{Event, AsyncPipe, TcpPipeStub};
 
 pub struct TcpAcceptor {
@@ -55,18 +56,18 @@ impl TcpAcceptor {
 }
 
 impl Acceptor for TcpAcceptor {
-    fn ready(&mut self, ctx: &mut Context, events: mio::Ready) {
+    fn ready(&mut self, ctx: &mut endpoint::Context, events: mio::Ready) {
         if events.is_readable() {
             self.accept(ctx);
         }
     }
 
-    fn open(&mut self, ctx: &mut Context) {
+    fn open(&mut self, ctx: &mut endpoint::Context) {
         ctx.register(&self.listener, mio::Ready::readable(), mio::PollOpt::edge());
         ctx.raise(Event::Opened);
     }
 
-    fn close(&mut self, ctx: &mut Context) {
+    fn close(&mut self, ctx: &mut endpoint::Context) {
         ctx.deregister(&self.listener);
         ctx.raise(Event::Closed);
     }
