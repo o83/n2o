@@ -63,7 +63,7 @@ pub trait Process<Protocol, State> {
 // Timer Reactor Context
 
 pub struct TimersContext {
-    clock: u64,
+    cursor: u64,
     timers: Queue<Timer>,
 }
 
