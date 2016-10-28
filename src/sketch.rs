@@ -23,16 +23,16 @@ pub struct QueueContext<Message> {
 
 // Queue API
 
-pub trait Queue<Message>: Discipline {
-    fn push(&mut self, Message) -> ();
-    fn pop(&mut self) -> Message;
+pub trait Queue<T>: Discipline {
+    fn push(&mut self, T) -> ();
+    fn pop(&mut self) -> T;
 }
 
 // Task Scheduler/Reactor
 
 pub struct ReactorContext {
     cursor: u64,
-    tasks: Queue<Message>,
+    tasks: Queue<Task>,
 }
 
 pub trait Reactor: Discipline {
@@ -52,7 +52,7 @@ pub struct Task {
 
 pub struct ClockContext {
     clock: u64,
-    timers: VecDeque<Message>,
+    timers: Queue<Timer>,
 }
 
 // Timer API
@@ -74,11 +74,11 @@ pub struct Timer {
 
 pub struct Network {
     cursor: u64,
-    buffers: VecDeque<Socket>,
+    buffers: Queue<Socket>,
 }
 
 // Socket Context
 
 pub struct Socket {
-    buffer: VecDeque<Message>,
+    buffer: Queue<Message>,
 }
