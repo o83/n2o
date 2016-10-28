@@ -1,16 +1,24 @@
 
 use std::collections::VecDeque;
 use abstractions::poll::Async;
-use core::ops::FnMut;
+use core::ops::{FnOnce, FnMut};
+use std::io::{Error, Result};
 
-// Message
+// System Message with Custom Binary representation
 
 pub struct Message { }
 
-// For using with Tasks and Timers
+// For using with Tasks and Timers to select active subset
 
 pub trait Discipline {
-    fn select(&mut self, u64) -> Async<Message>;
+    fn select(&mut self, u64) -> Result<Async<u64>>;
+}
+
+// Queues Manager
+
+pub trait QueueManager: Discipline {
+    fn create(&mut self, Queue<Message>) -> u64;
+    fn destroy(&mut self, u64);
 }
 
 // Queue Buffer
@@ -23,29 +31,33 @@ pub struct QueueContext<Message> {
 
 // Queue API
 
-pub trait Queue<T>: Discipline {
-    fn push(&mut self, T) -> ();
-    fn pop(&mut self) -> T;
+pub trait Queue<Message> {
+    fn push(&mut self, Message) -> Queue<Message>;
+    fn pop(&mut self) -> Message;
 }
 
 // Task Scheduler/Reactor
 
-pub struct ReactorContext {
+pub struct ReactorContext<Task> {
     cursor: u64,
     tasks: Queue<Task>,
 }
 
-pub trait Reactor: Discipline {
-    fn add(&mut self, Task) -> u64;
-    fn remove(&mut self, u64);
+pub trait Reactor<Task>: Discipline {
+    fn spawn(&mut self, Task) -> u64;
+    fn kill(&mut self, u64);
     fn reschedule(&mut self);
 }
 
 // Task Context
 
-pub struct Task {
+pub struct Task<Protocol> {
     prio: u64,
-    lambda: FnMut(),
+    lambda: FnMut(Protocol),
+}
+
+pub trait Process<Protocol, State> {
+    fn send(&mut self, Protocol, State) -> State;
 }
 
 // Timer Reactor Context
