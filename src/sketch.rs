@@ -62,14 +62,14 @@ pub trait Process<Protocol, State> {
 
 // Timer Reactor Context
 
-pub struct ClockContext {
+pub struct TimersContext {
     clock: u64,
     timers: Queue<Timer>,
 }
 
 // Timer API
 
-pub trait Clock: Discipline {
+pub trait Timers: Discipline {
     fn add(&mut self, Timer) -> u64;
     fn remove(&mut self, u64);
     fn reschedule(&mut self);
@@ -86,7 +86,7 @@ pub struct Timer {
 
 pub struct Network {
     cursor: u64,
-    buffers: Queue<Socket>,
+    sockets: Queue<Socket>,
 }
 
 // Socket Context
