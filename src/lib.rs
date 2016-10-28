@@ -1,5 +1,5 @@
 
-#![feature(fnbox, heap_api, oom, alloc, box_syntax, optin_builtin_traits)]
+#![feature(fnbox, heap_api, unboxed_closures, oom, alloc, box_syntax, optin_builtin_traits)]
 #[macro_use]
 
 extern crate log;
@@ -12,3 +12,4 @@ pub mod abstractions;
 pub mod network;
 pub mod reactors;
 pub mod timers;
+pub mod sketch;
