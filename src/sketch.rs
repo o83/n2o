@@ -51,9 +51,10 @@ pub trait Reactor<Task>: Discipline {
 
 // Task Context
 
-pub struct Task<Protocol> {
+pub struct Task<Protocol, State> {
+    state: Vec<u8>,
     prio: u64,
-    lambda: FnMut(Protocol),
+    lambda: FnMut(Protocol, State) -> State,
 }
 
 pub trait Process<Protocol, State> {
