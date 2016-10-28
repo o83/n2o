@@ -1,10 +1,8 @@
 
 use std::io;
 use std::time::{Duration, Instant};
-
 use abstractions::poll::{Poll, Async};
 use abstractions::streams::stream::Stream;
-
 use reactors::tokio::sched::{Remote, Handle};
 use reactors::tokio::timeout::TimeoutToken;
 
