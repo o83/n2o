@@ -137,17 +137,23 @@ pub struct NetworkContext {
 
 pub struct NetworkPoll {}
 
-// X-SOCK native backend
+// X-SOCK native backend by traits
 
 pub trait Network {
-    fn open(u8);
-    fn close();
     fn client(i8, NetworkContext, Socket);
     fn server(i8, NetworkContext, Socket);
     fn create(NetworkPoll);
     fn destroy(NetworkPoll);
     fn add(NetworkPoll, Socket, cookie: u64);
     fn remove(NetworkPoll, Socket);
+}
+
+pub trait Device {
+    fn open(u8);
+    fn close();
+}
+
+pub trait NetworkQueue {
     fn poll(NetworkPoll, Instant, i8);
     fn send(Socket, VecDeque<u64>, u64, sent: u64);
     fn recv(Socket, VecDeque<u64>, u64, received: u64);
