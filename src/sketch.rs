@@ -1,14 +1,28 @@
 
+// THE KERNEL PROTO
+
 // Try to keep dependency list as minimal as possible
 
+use std::sync::atomic::{AtomicUsize, AtomicPtr, Ordering};
 use std::collections::VecDeque;
-use abstractions::poll::Async;
 use std::io::Result;
-use std::time::Instant;
+use std::time::{Instant, Duration};
+use std::os::unix::io::RawFd;
+
+// Future/Streams compatible protocol
+
+pub enum Async<T> {
+    Ready(T),
+    NotReady,
+}
 
 // System Message with Custom Binary representation
 
 pub struct Message {
+    body: Vec<u64>,
+}
+
+pub struct State {
     body: Vec<u64>,
 }
 
@@ -102,8 +116,14 @@ pub struct Task<Protocol, State> {
     lambda: Fn(Protocol, State) -> State,
 }
 
+pub struct Trace<Message, State> {
+    trace: Vec<(Message, State)>,
+    error: Vec<Message>,
+}
+
 pub trait Process<Protocol, State> {
     fn send(&mut self, Protocol, State) -> Result<Async<State>>;
+    fn recv(&mut self) -> Result<Async<(Protocol, State)>>;
 }
 
 // Timer Reactor Context
@@ -135,32 +155,68 @@ pub struct NetworkContext {
     sockets: Queue<Socket>,
 }
 
-pub struct NetworkPoll {}
+pub struct NetworkPoll(usize);
+pub struct PollOpt(usize);
+pub struct Ready(usize);
+pub struct Token(usize);
 
-// X-SOCK native backend by traits
+// Event loop
+
+pub struct Poll {
+    selector: Selector,
+    readiness_queue: PollQueue,
+}
+
+struct PollQueue {
+    all: Option<Box<ReadinessNode>>,
+    readiness: AtomicPtr<ReadinessNode>,
+    sleep_token: Box<ReadinessNode>,
+}
+
+struct ReadinessNode {
+    next: Option<Box<ReadinessNode>>,
+    prev: ReadyRef,
+    events: AtomicUsize,
+    queued: AtomicUsize,
+}
+
+struct ReadyRef {
+    ptr: *mut ReadinessNode,
+}
+
+struct RegistrationData {
+    token: Token,
+    interest: Ready,
+    opts: PollOpt,
+}
+
+pub struct epoll_event {
+    // backend specific info
+    events: u32,
+    u64: u64,
+}
+
+pub struct Events {
+    events: Vec<epoll_event>,
+}
+
+pub struct Selector {
+    id: usize,
+    epfd: RawFd,
+}
+
+// mio compatible API for Selector
 
 pub trait Network {
-    fn client(i8, NetworkContext, Socket);
-    fn server(i8, NetworkContext, Socket);
-    fn create(NetworkPoll);
-    fn destroy(NetworkPoll);
-    fn add(NetworkPoll, Socket, cookie: u64);
-    fn remove(NetworkPoll, Socket);
-}
-
-pub trait Device {
-    fn open(u8);
-    fn close();
-}
-
-pub trait NetworkQueue {
-    fn poll(NetworkPoll, Instant, i8);
-    fn send(Socket, VecDeque<u64>, u64, sent: u64);
-    fn recv(Socket, VecDeque<u64>, u64, received: u64);
+    fn create() -> Result<Selector>; // xsock_poll_create
+    fn poll(&mut self, evts: &mut Events, timeout: Option<Duration>) -> Result<bool>; // xsock_poll_poll
+    fn add(&mut self, fd: RawFd, opts: PollOpt) -> Result<()>; // xsock_poll_add
+    fn remove(&mut self, fd: RawFd) -> Result<()>; // xsock_poll_remove
 }
 
 // Socket Context
 
 pub struct Socket {
     buffer: VecDeque<u64>,
+    poll: Poll,
 }
