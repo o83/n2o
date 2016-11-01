@@ -3,10 +3,9 @@ use io::ready::Ready;
 use io::options::PollOpt;
 use io::token::Token;
 use io::event::Event;
-use io::posix::errno::Errno;
+use io::unix::errno::Errno;
 use libc::{c_int, c_void};
 use libc;
-use std;
 use io::unix::errno;
 use std::{self, mem};
 use std::io::{self, Result};
@@ -20,7 +19,7 @@ pub fn from_nix_error(err: ::io::unix::errno::Error) -> std::io::Error {
 
 pub mod ffi {
     use libc::{c_int, c_void};
-    use ::io::posix::epoll::EpollEvent;
+    use ::io::unix::epoll::EpollEvent;
     extern "C" {
         pub fn epoll_create(size: c_int) -> c_int;
         pub fn epoll_ctl(epfd: c_int, op: c_int, fd: c_int, event: *const EpollEvent) -> c_int;
