@@ -14,8 +14,8 @@ Features
 * 10-40ns latency
 * Free from Dependencies
 
-Test the System
----------------
+Test Network Server
+-------------------
 
 ```
   $ cargo build
@@ -32,6 +32,15 @@ In another process:
 ```
   $ ./target/debug/client
 ```
+
+Test Session Types
+------------------
+
+```
+  $ ./target/debug/fix
+```
+
+
 
 Reading
 -------
