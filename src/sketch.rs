@@ -210,7 +210,7 @@ pub struct Selector {
 pub trait Network {
     fn create() -> Result<Selector>; // xsock_poll_create
     fn poll(&mut self, evts: &mut Events, timeout: Option<Duration>) -> Result<bool>; // xsock_poll_poll
-    fn add(&mut self, fd: RawFd, opts: PollOpt) -> Result<()>; // xsock_poll_add
+    fn add(&mut self, fd: RawFd, cookie: u64) -> Result<()>; // xsock_poll_add
     fn remove(&mut self, fd: RawFd) -> Result<()>; // xsock_poll_remove
 }
 

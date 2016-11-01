@@ -73,7 +73,7 @@ impl TimeoutToken {
     }
 
     pub fn cancel_timeout(&self, handle: &Remote) {
-        debug!("cancel timeout {}", self.token);
+        println!("cancel timeout {}", self.token);
         handle.send(Message::CancelTimeout(self.token))
     }
 }

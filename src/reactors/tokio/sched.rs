@@ -188,8 +188,8 @@ impl Core {
                     }
                 }
             }
-            debug!("loop poll - {:?}", start.elapsed());
-            debug!("loop time - {:?}", Instant::now());
+            println!("loop poll - {:?}", start.elapsed());
+            println!("loop time - {:?}", Instant::now());
 
             let start = Instant::now();
             self.consume_timeouts(start);
@@ -198,7 +198,7 @@ impl Core {
             for i in 0..self.events.len() {
                 let event = self.events.get(i).unwrap();
                 let token = event.token();
-                trace!("event {:?} {:?}", event.kind(), event.token());
+                println!("event {:?} {:?}", event.kind(), event.token());
 
                 if token == TOKEN_MESSAGES {
                     CURRENT_LOOP.set(&self, || self.consume_queue());
@@ -212,7 +212,7 @@ impl Core {
                 }
             }
 
-            debug!("loop process - {} events, {:?}", amt, start.elapsed());
+            println!("loop process - {} events, {:?}", amt, start.elapsed());
         }
     }
 
@@ -285,7 +285,7 @@ impl Core {
             };
             let (_, slab_idx) = inner.timer_heap.pop().unwrap();
 
-            trace!("firing timeout: {}", slab_idx);
+            println!("firing timeout: {}", slab_idx);
             inner.timeouts[slab_idx].0.take().unwrap();
             let handle = inner.timeouts[slab_idx].1.fire();
             drop(inner);
@@ -296,12 +296,12 @@ impl Core {
     }
 
     fn notify_handle(&self, handle: Task) {
-        debug!("notifying a task handle");
+        println!("notifying a task handle");
         CURRENT_LOOP.set(&self, || handle.unpark());
     }
 
     fn consume_queue(&self) {
-        debug!("consuming notification queue");
+        println!("consuming notification queue");
         while let Some(msg) = self.rx.recv().unwrap() {
             self.notify(msg);
         }
@@ -333,7 +333,7 @@ impl Core {
 
 impl Inner {
     pub fn add_source(&mut self, source: &mio::Evented) -> io::Result<(Arc<AtomicUsize>, usize)> {
-        debug!("adding a new I/O source");
+        println!("adding a new I/O source");
         let sched = ScheduledIo {
             readiness: Arc::new(AtomicUsize::new(0)),
             reader: None,
@@ -352,12 +352,12 @@ impl Inner {
     }
 
     fn drop_source(&mut self, token: usize) {
-        debug!("dropping I/O source: {}", token);
+        println!("dropping I/O source: {}", token);
         self.io_dispatch.remove(token).unwrap();
     }
 
     fn schedule(&mut self, token: usize, wake: Task, dir: Direction) -> Option<Task> {
-        debug!("scheduling direction for: {}", token);
+        println!("scheduling direction for: {}", token);
         let sched = self.io_dispatch.get_mut(token).unwrap();
         let (slot, bit) = match dir {
             Direction::Read => (&mut sched.reader, 1),
@@ -380,12 +380,12 @@ impl Inner {
         let entry = self.timeouts.vacant_entry().unwrap();
         let slot = self.timer_heap.push((at, entry.index()));
         let entry = entry.insert((Some(slot), TimeoutState::NotFired));
-        debug!("added a timeout: {}", entry.index());
+        println!("added a timeout: {}", entry.index());
         return entry.index();
     }
 
     fn update_timeout(&mut self, token: usize, handle: Task) -> Option<Task> {
-        debug!("updating a timeout: {}", token);
+        println!("updating a timeout: {}", token);
         self.timeouts[token].1.block(handle)
     }
 
@@ -396,11 +396,11 @@ impl Inner {
         }
         let slot = self.timer_heap.push((at, token));
         *pair = (Some(slot), TimeoutState::NotFired);
-        debug!("set a timeout: {}", token);
+        println!("set a timeout: {}", token);
     }
 
     fn cancel_timeout(&mut self, token: usize) {
-        debug!("cancel a timeout: {}", token);
+        println!("cancel a timeout: {}", token);
         let pair = self.timeouts.remove(token);
         if let Some((Some(slot), _state)) = pair {
             self.timer_heap.remove(slot);

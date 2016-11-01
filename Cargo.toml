@@ -15,31 +15,20 @@ name = "fix"
 path = "src/apps/fix.rs"
 
 [[bin]]
-name = "connect"
-path = "src/apps/connect.rs"
+name = "client"
+path = "src/apps/client.rs"
 
 [[bin]]
-name = "echo_server"
-path = "src/apps/echo_server.rs"
-
-[[bin]]
-name = "many_clients"
-path = "src/apps/many_clients.rs"
-
-[[bin]]
-name = "arithmetic"
-path = "src/apps/arithmetic.rs"
-
-[[bin]]
-name = "atm"
-path = "src/apps/atm.rs"
-
-[[bin]]
-name = "planeclip"
-path = "src/apps/planeclip.rs"
+name = "server"
+path = "src/apps/main.rs"
 
 [dependencies]
 log = "0.3"
 mio = "0.6"
 rand = "*"
 slab = "0.3"
+bitflags = "0.4"
+
+[target.'cfg(unix)'.dependencies]
+nix    = "0.6.0"
+libc   = "0.2.14"
