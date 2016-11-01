@@ -23,6 +23,7 @@ name = "server"
 path = "src/apps/main.rs"
 
 [dependencies]
+net2     = "0.2.19"
 log = "0.3"
 mio = "0.6"
 rand = "*"

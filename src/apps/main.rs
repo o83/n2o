@@ -1,15 +1,15 @@
 extern crate mio;
 extern crate slab;
 extern crate core;
+extern crate kernel;
 
-mod server;
-mod connection;
 use std::net::SocketAddr;
-use mio::*;
-use mio::tcp::*;
-use server::*;
+use kernel::io::poll::*;
+use kernel::io::tcp::*;
+use kernel::io::server::*;
 
 fn main() {
+    println!("IO Server started");
     let addr = "127.0.0.1:8000".parse::<SocketAddr>()
         .ok().expect("Failed to parse host:port string");
     let sock = TcpListener::bind(&addr).ok().expect("Failed to bind address");

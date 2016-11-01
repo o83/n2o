@@ -1,44 +1,25 @@
 
+use std::io::{self, ErrorKind, Error};
+use std::rc::Rc;
+use io::token::Token;
+use io::ready::Ready;
+use io::poll::*;
+use io::options::*;
+use io::tcp::TcpStream;
+use slab;
 use core::mem::transmute;
 use core::ptr::copy_nonoverlapping;
-
-use std::io;
 use std::io::prelude::*;
-use std::io::{Error, ErrorKind};
-use std::rc::Rc;
 
-use mio::*;
-use mio::tcp::*;
-
-/// A stateful wrapper around a non-blocking stream. This connection is not
-/// the SERVER connection. This connection represents the client connections
-/// _accepted_ by the SERVER connection.
 pub struct Connection {
-    // handle to the accepted socket
     sock: TcpStream,
-
-    // token used to register with the poller
     pub token: Token,
-
-    // set of events we are interested in
     interest: Ready,
-
-    // messages waiting to be sent out
     send_queue: Vec<Rc<Vec<u8>>>,
-
-    // track whether a connection needs to be (re)registered
     is_idle: bool,
-
-    // track whether a connection is reset
     is_reset: bool,
-
-    // track whether a read received `WouldBlock` and store the number of
-    // byte we are supposed to read
     read_continuation: Option<u64>,
-
-    // track whether a write received `WouldBlock`
     write_continuation: bool,
-
 }
 
 impl Connection {
@@ -55,12 +36,6 @@ impl Connection {
         }
     }
 
-    /// Handle read event from poller.
-    ///
-    /// The Handler must continue calling until None is returned.
-    ///
-    /// The recieve buffer is sent back to `Server` so the message can be broadcast to all
-    /// listening connections.
     pub fn readable(&mut self) -> io::Result<Option<Vec<u8>>> {
 
         let msg_len = match try!(self.read_message_length()) {
@@ -147,12 +122,6 @@ impl Connection {
         Ok(Some(msg_len))
     }
 
-    /// Handle a writable event from the poller.
-    ///
-    /// Send one message from the send queue to the client. If the queue is empty, remove interest
-    /// in write events.
-    /// TODO: Figure out if sending more than one message is optimal. Maybe we should be trying to
-    /// flush until the kernel sends back EAGAIN?
     pub fn writable(&mut self) -> io::Result<()> {
 
         try!(self.send_queue.pop()
@@ -236,11 +205,6 @@ impl Connection {
         }
     }
 
-    /// Queue an outgoing message to the client.
-    ///
-    /// This will cause the connection to register interests in write events with the poller.
-    /// The connection can still safely have an interest in read events. The read and write buffers
-    /// operate independently of each other.
     pub fn send_message(&mut self, message: Rc<Vec<u8>>) -> io::Result<()> {
         println!("connection send_message; token={:?}", self.token);
 
@@ -253,9 +217,6 @@ impl Connection {
         Ok(())
     }
 
-    /// Register interest in read events with poll.
-    ///
-    /// This will let our connection accept reads starting next poller tick.
     pub fn register(&mut self, poll: &mut Poll) -> io::Result<()> {
         println!("connection register; token={:?}", self.token);
 

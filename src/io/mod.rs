@@ -7,4 +7,7 @@ pub mod options;
 pub mod token;
 pub mod readiness;
 pub mod registration;
+pub mod connection;
+pub mod server;
 pub mod unix;
+pub mod tcp;

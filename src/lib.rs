@@ -2,6 +2,7 @@
 #![feature(fnbox, static_in_const, heap_api, unboxed_closures, oom, alloc, box_syntax, optin_builtin_traits)]
 #[macro_use]
 extern crate libc;
+extern crate net2;
 extern crate nix;
 extern crate log;
 extern crate core;

@@ -1,25 +1,20 @@
+
 use std::io::{self, ErrorKind};
 use std::rc::Rc;
-
-use mio::*;
-use mio::tcp::*;
 use slab;
-
-use connection::Connection;
+use io::token::Token;
+use io::ready::Ready;
+use io::poll::*;
+use io::options::*;
+use io::tcp::*;
+use io::connection::Connection;
 
 type Slab<T> = slab::Slab<T, Token>;
 
 pub struct Server {
-    // main socket for our server
     sock: TcpListener,
-
-    // token of our server. we keep track of it here instead of doing `const SERVER = Token(0)`.
     token: Token,
-
-    // a list of connections _accepted_ by our server
     conns: Slab<Connection>,
-
-    // a list of events to process
     events: Events,
 }
 
@@ -27,16 +22,8 @@ impl Server {
     pub fn new(sock: TcpListener) -> Server {
         Server {
             sock: sock,
-
-            // Give our server token a number much larger than our slab capacity. The slab used to
-            // track an internal offset, but does not anymore.
             token: Token(10_000_000),
-
-            // SERVER is Token(1), so start after that
-            // we can deal with a max of 126 connections
             conns: Slab::with_capacity(128),
-
-            // list of events from the poller that the server needs to process
             events: Events::with_capacity(1024),
         }
     }
@@ -53,19 +40,10 @@ impl Server {
 
             println!("processing events... cnt={}; len={}", cnt, self.events.len());
 
-            // Iterate over the notifications. Each event provides the token
-            // it was registered with (which usually represents, at least, the
-            // handle that the event is about) as well as information about
-            // what kind of event occurred (readable, writable, signal, etc.)
             while i < cnt {
-                // TODO this would be nice if it would turn a Result type. trying to convert this
-                // into a io::Result runs into a problem because .ok_or() expects std::Result and
-                // not io::Result
                 let event = self.events.get(i).expect("Failed to get event");
-
                 println!("event={:?}; idx={:?}", event, i);
                 self.ready(poll, event.token(), event.kind());
-
                 i += 1;
             }
 
@@ -73,9 +51,6 @@ impl Server {
         }
     }
 
-    /// Register Server with the poller.
-    ///
-    /// This keeps the registration details neatly tucked away inside of our implementation.
     pub fn register(&mut self, poll: &mut Poll) -> io::Result<()> {
         poll.register(
             &self.sock,

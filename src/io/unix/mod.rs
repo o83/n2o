@@ -1,5 +1,6 @@
 
 pub mod errno;
+pub mod tcp;
 
 #[cfg(any(target_os = "linux"))]
 mod epoll;
