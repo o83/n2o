@@ -4,6 +4,7 @@ use io::token::Token;
 use io::ready::Ready;
 use io::event::Event;
 use io::evented::Evented;
+use io::unix;
 
 use std::{fmt, io, mem, ptr, usize};
 use std::cell::{UnsafeCell, Cell};
@@ -17,7 +18,7 @@ const MAX_REFCOUNT: usize = (isize::MAX) as usize;
 
 pub struct Poll {
     _marker: marker::PhantomData<Cell<()>>,
-    selector: ::io::posix::epoll::Selector,
+    selector: unix::Selector,
     readiness_queue: ReadinessQueue,
 }
 
@@ -80,7 +81,7 @@ const AWAKEN: Token = Token(usize::MAX);
 impl Poll {
     pub fn new() -> io::Result<Poll> {
         let poll = Poll {
-            selector: try!(::io::posix::epoll::Selector::new()),
+            selector: try!(unix::Selector::new()),
             readiness_queue: try!(ReadinessQueue::new()),
             _marker: marker::PhantomData,
         };
@@ -127,7 +128,7 @@ impl Poll {
         Ok(())
     }
 
-    pub fn poll(&self, events: &mut Events, timeout: Option<Duration>) -> io::Result<usize> {
+    pub fn poll(&self, events: &mut self::Events, timeout: Option<Duration>) -> io::Result<usize> {
         let timeout = if !self.readiness_queue.is_empty() {
             println!("custom readiness queue has pending events");
             Some(Duration::from_millis(0))
@@ -165,7 +166,7 @@ impl fmt::Debug for Poll {
 }
 
 pub struct Events {
-    inner: ::io::posix::epoll::Events,
+    inner: unix::Events,
 }
 
 pub struct EventsIter<'a> {
@@ -175,7 +176,7 @@ pub struct EventsIter<'a> {
 
 impl Events {
     pub fn with_capacity(capacity: usize) -> Events {
-        Events { inner: ::io::posix::epoll::Events::with_capacity(capacity) }
+        Events { inner: unix::Events::with_capacity(capacity) }
     }
 
     pub fn get(&self, idx: usize) -> Option<::io::event::Event> {
@@ -217,7 +218,7 @@ impl<'a> Iterator for EventsIter<'a> {
     }
 }
 
-pub fn selector(poll: &Poll) -> &::io::posix::epoll::Selector {
+pub fn selector(poll: &Poll) -> &unix::Selector {
     &poll.selector
 }
 
@@ -377,7 +378,7 @@ impl ReadinessQueue {
         })
     }
 
-    fn poll(&self, dst: &mut ::io::posix::epoll::Events) {
+    fn poll(&self, dst: &mut unix::Events) {
         let ready = self.take_ready();
 
         for node in ready {

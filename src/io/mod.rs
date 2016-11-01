@@ -5,4 +5,4 @@ pub mod evented;
 pub mod ready;
 pub mod options;
 pub mod token;
-pub mod posix;
+pub mod unix;

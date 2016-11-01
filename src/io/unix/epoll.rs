@@ -6,15 +6,15 @@ use io::event::Event;
 use io::posix::errno::Errno;
 use libc::{c_int, c_void};
 use libc;
-
-use io::posix::errno;
+use std;
+use io::unix::errno;
 use std::{self, mem};
 use std::io::{self, Result};
 use std::os::unix::io::RawFd;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::time::Duration;
 
-pub fn from_nix_error(err: ::io::posix::errno::Error) -> std::io::Error {
+pub fn from_nix_error(err: ::io::unix::errno::Error) -> std::io::Error {
     std::io::Error::from_raw_os_error(errno::int(err.errno()))
 }
 

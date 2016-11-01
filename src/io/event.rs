@@ -43,3 +43,9 @@ pub fn as_usize(events: Ready) -> usize {
 pub fn from_usize(events: usize) -> Ready {
     Ready(events)
 }
+
+#[allow(dead_code)]
+pub fn kind_mut(event: &mut Event) -> &mut Ready {
+    &mut event.kind
+}
+
