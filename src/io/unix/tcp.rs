@@ -8,11 +8,14 @@ use io::evented::Evented;
 use io::token::Token;
 use io::options::PollOpt;
 use io::ready::Ready;
-use io::unix::kqueue::from_nix_error;
 use io::poll::{self, Poll, Events};
 
 use nix::fcntl::FcntlArg::F_SETFL;
 use nix::fcntl::{fcntl, O_NONBLOCK};
+
+pub fn from_nix_error(err: ::nix::Error) -> io::Error {
+    io::Error::from_raw_os_error(err.errno() as i32)
+}
 
 pub fn set_nonblock(s: &AsRawFd) -> io::Result<()> {
     fcntl(s.as_raw_fd(), F_SETFL(O_NONBLOCK)).map_err(from_nix_error)
