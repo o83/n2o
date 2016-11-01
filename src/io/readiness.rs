@@ -5,7 +5,6 @@ use io::options::PollOpt;
 use io::token::Token;
 use io::ready::Ready;
 use io::event::Event;
-use io::evented::Evented;
 use io::unix;
 use std::{fmt, io, mem, ptr, usize};
 use std::cell::{UnsafeCell, Cell};

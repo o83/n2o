@@ -10,6 +10,3 @@ pub trait Evented {
     fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> Result<()>;
     fn deregister(&self, poll: &Poll) -> Result<()>;
 }
-
-#[cfg(unix)]
-const WOULDBLOCK: i32 = ::libc::EAGAIN;
