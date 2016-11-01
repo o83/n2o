@@ -14,6 +14,25 @@ Features
 * 10-40ns latency
 * Free from Dependencies
 
+Test the System
+---------------
+
+```
+  $ cargo build
+  $ cargo test
+  $ ./target/debug/server
+IO Server started
+registering with poller
+registering; token=Token(10000000); interests=Ready {Readable}
+Server run loop starting...
+```
+
+In another process:
+
+```
+  $ ./target/debug/client
+```
+
 Reading
 -------
 
