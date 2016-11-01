@@ -1,5 +1,5 @@
-Abstract Event Processing
-=========================
+Enso Operating System
+=====================
 
 [![Build Status](https://travis-ci.org/AlgoTradingHub/kernel.svg?branch=master)](https://travis-ci.org/AlgoTradingHub/kernel)
 [![Gitter Chat](https://img.shields.io/gitter/room/badges/shields.svg)](https://gitter.im/voxoz/kernel)
@@ -7,11 +7,12 @@ Abstract Event Processing
 Features
 --------
 
+* MIO Compatible Network Server with Connections
 * Future and Stream rich combinators
 * Session Types and π-calculus semantics
 * MPSC, SPMC, SPSC queues
 * 10-40ns latency
-* Dependency-Free Rust Event Processor
+* Free from Dependencies
 
 Reading
 -------
@@ -25,5 +26,6 @@ Credits
 
 * Viktor Sovietov
 * Anton Kundenko
+* Ievgenii Lysiuchenko
 * Mykola Oleksiienko
 * Maxim Sokhatsky
