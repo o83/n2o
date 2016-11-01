@@ -12,7 +12,6 @@ extern crate slab;
 extern crate bitflags;
 
 pub mod abstractions;
-pub mod network;
 pub mod reactors;
 pub mod timers;
 pub mod sketch;
