@@ -1,5 +1,8 @@
+use io::poll::Poll;
+use io::options::PollOpt;
 use io::token::Token;
 use io::ready::Ready;
+use std::io::{Read, Write, Result, Error, ErrorKind};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct Event {
@@ -49,3 +52,8 @@ pub fn kind_mut(event: &mut Event) -> &mut Ready {
     &mut event.kind
 }
 
+pub trait Evented {
+    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> Result<()>;
+    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> Result<()>;
+    fn deregister(&self, poll: &Poll) -> Result<()>;
+}

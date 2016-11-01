@@ -10,7 +10,7 @@ use io::options::*;
 use io::tcp;
 use io::unix;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use io::evented::Evented;
+use io::event::Evented;
 
 #[derive(Debug)]
 pub struct TcpStream {

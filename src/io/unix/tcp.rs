@@ -4,7 +4,7 @@ use std::net::{self, SocketAddr};
 use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
 use libc;
 use net2::TcpStreamExt;
-use io::evented::Evented;
+use io::event::Evented;
 use io::token::Token;
 use io::options::PollOpt;
 use io::ready::Ready;

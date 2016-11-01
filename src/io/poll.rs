@@ -2,8 +2,7 @@
 use io::options::PollOpt;
 use io::token::Token;
 use io::ready::Ready;
-use io::event::Event;
-use io::evented::Evented;
+use io::event::{Event, Evented};
 use io::unix;
 use io::readiness::*;
 use io::registration::*;
