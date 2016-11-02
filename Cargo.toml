@@ -15,6 +15,10 @@ name = "fix"
 path = "src/apps/fix.rs"
 
 [[bin]]
+name = "mio"
+path = "src/apps/mio.rs"
+
+[[bin]]
 name = "client"
 path = "src/apps/client.rs"
 
