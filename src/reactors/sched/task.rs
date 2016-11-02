@@ -11,8 +11,6 @@ use std::result::Result;
 pub struct Task<F> {
     id: u32,
     priority: u32,
-    rxs: Vec<usize>,
-    txs: Vec<usize>,
     coro: F,
 }
 
@@ -33,8 +31,6 @@ impl<F> Task<F> {
         Task {
             id: id,
             priority: priority,
-            rxs: Vec::new(),
-            txs: Vec::new(),
             coro: f,
         }
     }
