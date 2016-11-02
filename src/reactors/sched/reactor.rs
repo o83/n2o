@@ -6,13 +6,14 @@
 //
 
 use std::cmp::Ordering;
+use super::future::Future;
 use super::task::Task;
 
-pub struct Reactor<'a> {
-    tasks: Vec<Task<'a>>,
+pub struct Reactor<F> {
+    tasks: Vec<F>,
 }
 
-impl<'a> Reactor<'a> {
+impl<F: Future> Reactor<F> {
     pub fn new() -> Self {
         Reactor { tasks: Vec::new() }
     }
@@ -21,7 +22,7 @@ impl<'a> Reactor<'a> {
         // drop task from list
     }
 
-    pub fn spawn(&'a mut self, t: Task<'a>) {
+    pub fn spawn<'a>(&mut self, t: F) {
         self.tasks.push(t);
     }
 
@@ -49,20 +50,12 @@ impl<'a> Reactor<'a> {
         return partition_idx;
     }
 
-    pub fn run() {
-
-        loop {
-            // process tasks by their priorities:
-
+    pub fn run(&mut self) {
+        // loop {
+        // process tasks by their priorities:
+        for t in &mut self.tasks {
+            let res = t.poll();
         }
-    }
-}
-
-#[cfg(tests)]
-mod test {
-    #[test]
-    fn task_test() {
-        let t = Task::new(0, 1, || 12);
-        Ok(())
+        //
     }
 }
