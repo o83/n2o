@@ -8,35 +8,34 @@
 use super::future::{Poll, Future, Async};
 use std::result::Result;
 
-pub struct Task<'a> {
+pub struct Task<F> {
     id: u32,
     priority: u32,
     rxs: Vec<usize>,
     txs: Vec<usize>,
-    // coro: FnMut(),
-    tail: Option<&'a Task<'a>>,
+    coro: F,
 }
 
-impl<'a> Future for Task<'a> {
+impl<F> Future for Task<F>
+    where F: FnMut()
+{
     type Item = ();
     type Error = ();
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        // self.coro();
-        println!("POLL called!!!!");
+        (&mut self.coro)();
         Ok(Async::NotReady)
     }
 }
 
-impl<'a> Task<'a> {
-    pub fn new(id: u32, priority: u32 /* f: FnMut() */) -> Task<'a> {
+impl<F> Task<F> {
+    pub fn new(id: u32, priority: u32, f: F) -> Task<F> {
         Task {
             id: id,
             priority: priority,
             rxs: Vec::new(),
             txs: Vec::new(),
-            // coro: f,
-            tail: None,
+            coro: f,
         }
     }
 }

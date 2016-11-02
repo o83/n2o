@@ -11,7 +11,7 @@ use kernel::reactors::sched::task::Task;
 
 #[test]
 fn task_test() {
-    let t = Task::new(0, 1);
+    let t = Task::new(0, 1, || println!("FnMut called!"));
     let mut r = Reactor::new();
     r.spawn(t);
     r.run();
