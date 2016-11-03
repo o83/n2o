@@ -1,5 +1,6 @@
 
 // THE KERNEL PROTO
+// PROJECT LANDSCAPE discussed on meetings
 
 // Try to keep dependency list as minimal as possible
 
