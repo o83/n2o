@@ -17,7 +17,7 @@ pub struct Console {
 
 impl Console {
     pub fn new() -> Self {
-        let tok = 10_000_000;
+        let tok = 102;
         Console {
             tele: Tele::new(Token(tok)),
             token: Token(tok),

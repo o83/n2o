@@ -23,7 +23,7 @@ pub struct Poll {
 }
 type Tick = usize;
 
-const AWAKEN: Token = Token(usize::MAX);
+const AWAKEN: Token = Token(100);
 
 impl Poll {
     pub fn new() -> io::Result<Poll> {

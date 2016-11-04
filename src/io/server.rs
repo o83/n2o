@@ -24,7 +24,7 @@ impl Server {
     pub fn new(sock: TcpListener) -> Server {
         Server {
             sock: sock,
-            token: Token(10_000_000),
+            token: Token(101),
             conns: Slab::with_capacity(128),
             events: Events::with_capacity(1024),
         }
