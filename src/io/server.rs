@@ -38,7 +38,9 @@ impl Server {
 
             let mut i = 0;
 
-            println!("processing events... cnt={}; len={}", cnt, self.events.len());
+            println!("processing events... cnt={}; len={}",
+                     cnt,
+                     self.events.len());
 
             while i < cnt {
                 let event = self.events.get(i).expect("Failed to get event");
@@ -52,15 +54,11 @@ impl Server {
     }
 
     pub fn register(&mut self, poll: &mut Poll) -> io::Result<()> {
-        poll.register(
-            &self.sock,
-            self.token,
-            Ready::readable(),
-            PollOpt::edge()
-        ).or_else(|e| {
-            println!("Failed to register server {:?}, {:?}", self.token, e);
-            Err(e)
-        })
+        poll.register(&self.sock, self.token, Ready::readable(), PollOpt::edge())
+            .or_else(|e| {
+                println!("Failed to register server {:?}, {:?}", self.token, e);
+                Err(e)
+            })
     }
 
     fn tick(&mut self, poll: &mut Poll) {
@@ -189,9 +187,11 @@ impl Server {
             };
 
             match self.find_connection_by_token(token).register(poll) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => {
-                    println!("Failed to register {:?} connection with poller, {:?}", token, e);
+                    println!("Failed to register {:?} connection with poller, {:?}",
+                             token,
+                             e);
                     self.conns.remove(token);
                 }
             }
