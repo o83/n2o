@@ -1,5 +1,5 @@
 
-#![feature(fnbox, static_in_const, heap_api, unboxed_closures, oom, alloc, box_syntax, optin_builtin_traits)]
+#![feature(fnbox, static_in_const, heap_api, unboxed_closures, oom, alloc, box_syntax, optin_builtin_traits, question_mark, const_fn)]
 #[macro_use]
 extern crate libc;
 extern crate net2;
