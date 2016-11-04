@@ -37,6 +37,8 @@ mio = "0.6"
 rand = "*"
 slab = "0.3"
 bitflags = "0.4"
+num = "0.1.36"
+byteorder = "*"
 
 [target.'cfg(unix)'.dependencies]
 nix    = "0.6.0"
