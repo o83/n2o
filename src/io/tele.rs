@@ -19,50 +19,50 @@ pub struct Tele {
     write_continuation: bool,
 }
 
-// impl Tele {
-// pub fn new(token: Token) -> Self {
-// Tele {
-// stdin: stdin::Stdin::new(),
-// token: token,
-// interest: Ready::hup(),
-// send_queue: Vec::new(),
-// read_continuation: None,
-// write_continuation: false,
-//
-//
+impl Tele {
+    pub fn new(token: Token) -> Self {
+        Tele {
+            stdin: stdio::Stdin::new(),
+            token: token,
+            interest: Ready::hup(),
+            send_queue: Vec::new(),
+            read_continuation: None,
+            write_continuation: false,
+        }
+    }
 
-// pub fn register(&mut self, poll: &mut Poll) -> io::Result<()> {
-// println!("connection register; token={:?}", self.token);
+    pub fn register(&mut self, poll: &mut Poll) -> io::Result<()> {
+        println!("connection register; token={:?}", self.token);
 
-// self.interest.insert(Ready::readable());
+        self.interest.insert(Ready::readable());
 
-// poll.register(
-// self.stdin,
-// self.token,
-// self.interest,
-// PollOpt::edge() | PollOpt::oneshot()
-// .and_then(|(),| {
-// Ok(())
-// ).or_else(|e| {
-// println!("Failed to reregister {:?}, {:?}", self.token, e);
-// Err(e)
-// )
-//
+        poll.register(
+            &self.stdin,
+            self.token,
+            self.interest,
+            PollOpt::edge() | PollOpt::oneshot()
+            ).and_then(|(),| {
+            Ok(())
+        }).or_else(|e| {
+                println!("Failed to reregister {:?}, {:?}", self.token, e);
+                Err(e)
+            })
+    }
 
-// Re-register interest in read events with poll.
-// pub fn reregister(&mut self, poll: &mut Poll) -> io::Result<()> {
-// println!("connection reregister; token={:?}", self.token);
+    /// Re-register interest in read events with poll.
+    pub fn reregister(&mut self, poll: &mut Poll) -> io::Result<()> {
+        println!("connection reregister; token={:?}", self.token);
 
-// poll.reregister(
-// self.stdin,
-// self.token,
-// self.interest,
-// PollOpt::edge() | PollOpt::oneshot()
-// .and_then(|(),| {
-// Ok(())
-// ).or_else(|e| {
-// println!("Failed to reregister {:?}, {:?}", self.token, e);
-// Err(e)
-// )
-//
-//
+        poll.reregister(
+            &self.stdin,
+            self.token,
+            self.interest,
+            PollOpt::edge() | PollOpt::oneshot()
+            ).and_then(|(),| {
+            Ok(())
+        }).or_else(|e| {
+                println!("Failed to reregister {:?}, {:?}", self.token, e);
+                Err(e)
+            })
+    }
+}

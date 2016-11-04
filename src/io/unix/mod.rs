@@ -14,6 +14,5 @@ mod kqueue;
 #[cfg(any(target_os = "macos"))]
 pub use ::io::unix::kqueue::{Events, Selector};
 
-pub mod lazy;
 pub mod fd;
 pub mod stdio;

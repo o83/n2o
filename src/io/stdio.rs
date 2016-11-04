@@ -10,14 +10,14 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use io::event::Evented;
 
 pub struct Stdin {
-    sys: io::Stdin,
+    sys: unix::stdio::Stdin,
     selector_id: SelectorId,
 }
 
 impl Stdin {
     pub fn new() -> Self {
         Stdin {
-            sys: io::stdin(),
+            sys: unix::stdio::Stdin::new(),
             selector_id: SelectorId::new(),
         }
     }
@@ -25,13 +25,7 @@ impl Stdin {
 
 impl Read for Stdin {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        (&self.sys).read(buf)
-    }
-}
-
-impl<'a> Read for &'a Stdin {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        (&self.sys).read(buf)
+        self.sys.read(buf)
     }
 }
 
