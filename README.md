@@ -10,20 +10,29 @@ Sample
 ```rust
 extern crate kernel;
 
-use std::net::SocketAddr;
 use kernel::io::poll::*;
 use kernel::io::tcp::*;
 use kernel::io::server::*;
-
-// Simple Network Server
+use kernel::io::console::*;
 
 fn main() {
-    println!("IO Server started");
-    let addr        = "127.0.0.1:8000".parse::<SocketAddr>().ok().expect("Parser Error");
-    let sock       = TcpListener::bind(&addr).ok().expect("Failed to bind address");
-    let mut poll   = Poll::new().expect("Failed to create Poll");
-    let mut server = Server::new(sock);
-    server.run(&mut poll).expect("Failed to run server");
+    let x = std::thread::spawn(|| net());
+    let y = std::thread::spawn(|| console());
+    x.join();
+}
+
+fn net() {
+    let addr = "127.0.0.1:8000".parse::<std::net::SocketAddr>().ok().expect("Parser Error");
+    let sock = TcpListener::bind(&addr).ok().expect("Failed to bind address");
+    let mut poll = Poll::new().expect("Failed to create Poll");
+    let mut net = Server::new(sock);
+    net.run(&mut poll).expect("Failed to run server");
+}
+
+fn console() {
+    let mut poll = Poll::new().expect("Failed to create Poll");
+    let mut con = Console::new();
+    con.run(&mut poll);
 }
 ```
 
@@ -41,29 +50,36 @@ Test Network Server
 -------------------
 
 ```
-  $ cargo build
-  $ cargo test
-  $ ./target/debug/server
+$ cargo build
+$ cargo test
+$ ./target/debug/server
 IO Server started
-registering with poller
-registering; token=Token(10000000); interests=Ready {Readable}
+Console is listening...
 Server run loop starting...
 ```
 
 In another process:
 
 ```
-  $ ./target/debug/client
+$ ./target/debug/client
+```
+
+Test Console Server
+-------------------
+
+```
+$ rlwrap ./target/debug/console
+Console is listening...
+ENSO
+Message: "ENSO"
 ```
 
 Test Session Types
 ------------------
 
 ```
-  $ ./target/debug/fix
+$ ./target/debug/fix
 ```
-
-
 
 Reading
 -------
