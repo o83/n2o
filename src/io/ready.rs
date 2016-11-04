@@ -1,3 +1,6 @@
+
+//  Bitmask
+
 use std::fmt;
 use std::ops;
 

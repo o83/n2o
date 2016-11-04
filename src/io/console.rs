@@ -1,4 +1,6 @@
 
+//  Console I/O Reactor by Anton
+
 use std::io::{self, ErrorKind, Read};
 use std::rc::Rc;
 use io::token::Token;
@@ -32,13 +34,13 @@ impl Console {
 
             let mut i = 0;
 
-            println!("processing events... cnt={}; len={}",
+            trace!("processing events... cnt={}; len={}",
                      cnt,
                      self.events.len());
 
             while i < cnt {
                 let event = self.events.get(i).expect("Failed to get event");
-                println!("event={:?}; idx={:?}", event, i);
+                trace!("event={:?}; idx={:?}", event, i);
                 self.ready(poll, event.token(), event.kind());
                 i += 1;
             }
@@ -55,24 +57,24 @@ impl Console {
     }
 
     fn ready(&mut self, poll: &mut Poll, token: Token, event: Ready) {
-        println!("{:?} event = {:?}", token, event);
+        trace!("{:?} event = {:?}", token, event);
 
         if event.is_error() {
-            println!("Error event for {:?}", token);
+            error!("Error event for {:?}", token);
             return;
         }
 
         if event.is_hup() {
-            println!("Hup event for {:?}", token);
+            trace!("Hup event for {:?}", token);
             return;
         }
 
         if event.is_readable() {
-            println!("Read event for {:?}", token);
+            trace!("Read event for {:?}", token);
 
             self.readable(token)
                 .unwrap_or_else(|e| {
-                    println!("Read event failed for {:?}: {:?}", token, e);
+                    error!("Read event failed for {:?}: {:?}", token, e);
                 });
         }
 
@@ -80,16 +82,16 @@ impl Console {
     }
 
     fn readable(&mut self, token: Token) -> io::Result<()> {
-        println!("console is readable; token={:?}", token);
+        trace!("console is readable; token={:?}", token);
         let mut msg = [0u8; 128];
         let size = self.tele.read(&mut msg);
         match size {
             Ok(s) => {
-                println!("Read size: {:?}", s);
+                trace!("Read size: {:?}", s);
                 let m = String::from_utf8_lossy(&msg[..s - 1]);
                 println!("Message: {:?}", m);
             }
-            Err(e) => println!("Read error: {:?}.", e),
+            Err(e) => error!("Read error: {:?}.", e),
         }
         Ok(())
     }

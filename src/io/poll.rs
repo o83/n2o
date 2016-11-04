@@ -1,4 +1,6 @@
 
+//  Kernel Main I/O Event Stream
+
 use io::options::PollOpt;
 use io::token::Token;
 use io::ready::Ready;
@@ -42,7 +44,7 @@ impl Poll {
         where E: Evented
     {
         try!(validate_args(token, interest));
-        println!("registering with poller");
+        trace!("registering with poller");
         try!(io.register(self, token, interest, opts));
         Ok(())
     }
@@ -56,7 +58,7 @@ impl Poll {
         where E: Evented
     {
         try!(validate_args(token, interest));
-        println!("registering with poller");
+        trace!("registering with poller");
         try!(io.reregister(self, token, interest, opts));
         Ok(())
     }
@@ -64,14 +66,14 @@ impl Poll {
     pub fn deregister<E: ?Sized>(&self, io: &E) -> io::Result<()>
         where E: Evented
     {
-        println!("deregistering IO with poller");
+        trace!("deregistering IO with poller");
         try!(io.deregister(self));
         Ok(())
     }
 
     pub fn poll(&self, events: &mut self::Events, timeout: Option<Duration>) -> io::Result<usize> {
         let timeout = if !self.readiness_queue.is_empty() {
-            println!("custom readiness queue has pending events");
+            trace!("custom readiness queue has pending events");
             Some(Duration::from_millis(0))
         } else if !self.readiness_queue.prepare_for_sleep() {
             Some(Duration::from_millis(0))

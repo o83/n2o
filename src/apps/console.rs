@@ -1,9 +1,8 @@
-// #
-//
-// console.rs
-// Copyright (C) 2016 Lynx ltd. <anton@algotradinghub.com>
-// Created by Anton Kundenko.
-//
+
+// Console Remote Shell I/O Reactor Sample by Anton
+
+// $ rlwrap console
+
 extern crate kernel;
 
 use kernel::io::poll::*;

@@ -1,4 +1,6 @@
 
+//  TCP stream
+
 use std;
 use std::io::{self, Read, Write};
 use std::net::{self, SocketAddr, SocketAddrV4, SocketAddrV6, Ipv4Addr, Ipv6Addr};

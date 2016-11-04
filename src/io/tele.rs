@@ -1,4 +1,6 @@
 
+//  Teletype Stream by Anton
+
 use std::io::{self, ErrorKind, Error, Read};
 use std::rc::Rc;
 use io::token::Token;
@@ -32,7 +34,7 @@ impl Tele {
     }
 
     pub fn register(&mut self, poll: &mut Poll) -> io::Result<()> {
-        println!("connection register; token={:?}", self.token);
+        trace!("connection register; token={:?}", self.token);
 
         self.interest.insert(Ready::readable());
 
@@ -44,14 +46,13 @@ impl Tele {
             ).and_then(|(),| {
             Ok(())
         }).or_else(|e| {
-                println!("Failed to reregister {:?}, {:?}", self.token, e);
+                trace!("Failed to reregister {:?}, {:?}", self.token, e);
                 Err(e)
             })
     }
 
-    /// Re-register interest in read events with poll.
     pub fn reregister(&mut self, poll: &mut Poll) -> io::Result<()> {
-        println!("connection reregister; token={:?}", self.token);
+        trace!("connection reregister; token={:?}", self.token);
 
         poll.reregister(
             &self.stdin,
@@ -61,7 +62,7 @@ impl Tele {
             ).and_then(|(),| {
             Ok(())
         }).or_else(|e| {
-                println!("Failed to reregister {:?}, {:?}", self.token, e);
+                trace!("Failed to reregister {:?}, {:?}", self.token, e);
                 Err(e)
             })
     }

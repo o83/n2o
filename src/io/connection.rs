@@ -1,4 +1,6 @@
 
+//  Socket Connection Stream by 5HT
+
 use std::io::{self, ErrorKind, Error};
 use std::rc::Rc;
 use io::token::Token;

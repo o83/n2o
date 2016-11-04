@@ -1,4 +1,5 @@
-//! Timer optimized for I/O related operations
+
+// Timer Stream by Nikolas
 
 use {convert, io, Evented, Ready, Poll, PollOpt, Registration, SetReadiness, Token};
 use lazycell::LazyCell;
@@ -10,39 +11,25 @@ use std::time::{Duration, Instant};
 use self::TimerErrorKind::TimerOverflow;
 
 pub struct Timer<T> {
-    // Size of each tick in milliseconds
     tick_ms: u64,
-    // Slab of timeout entries
     entries: Slab<Entry<T>>,
-    // Timeout wheel. Each tick, the timer will look at the next slot for
-    // timeouts that match the current tick.
     wheel: Vec<WheelEntry>,
-    // Tick 0's time instant
     start: Instant,
-    // The current tick
     tick: Tick,
-    // The next entry to possibly timeout
     next: Token,
-    // Masks the target tick to get the slot
     mask: u64,
-    // Set on registration with Poll
     inner: LazyCell<Inner>,
 }
 
 pub struct Builder {
-    // Approximate duration of each tick
     tick: Duration,
-    // Number of slots in the timer wheel
     num_slots: usize,
-    // Max number of timeouts that can be in flight at a given time.
     capacity: usize,
 }
 
 #[derive(Clone, Debug)]
 pub struct Timeout {
-    // Reference into the timer entry slab
     token: Token,
-    // Tick that it should matchup with
     tick: u64,
 }
 
@@ -59,8 +46,6 @@ struct WheelEntry {
     head: Token,
 }
 
-// Doubly linked list of timer entries. Allows for efficient insertion /
-// removal of timeouts.
 struct Entry<T> {
     state: T,
     links: EntryLinks,
@@ -70,20 +55,17 @@ struct Entry<T> {
 struct EntryLinks {
     tick: Tick,
     prev: Token,
-    next: Token
+    next: Token,
 }
 
 type Tick = u64;
 
 const TICK_MAX: Tick = u64::MAX;
 
-// Manages communication with wakeup thread
 type WakeupState = Arc<AtomicUsize>;
-
 type Slab<T> = ::slab::Slab<T, ::Token>;
 
 pub type Result<T> = ::std::result::Result<T, TimerError>;
-// TODO: remove
 pub type TimerResult<T> = Result<T>;
 
 
@@ -97,9 +79,6 @@ pub struct TimerError {
 pub enum TimerErrorKind {
     TimerOverflow,
 }
-
-// TODO: Remove
-pub type OldTimerResult<T> = Result<T>;
 
 const TERMINATE_THREAD: usize = 0;
 const EMPTY: Token = Token(usize::MAX);
@@ -121,7 +100,10 @@ impl Builder {
     }
 
     pub fn build<T>(self) -> Timer<T> {
-        Timer::new(convert::millis(self.tick), self.num_slots, self.capacity, Instant::now())
+        Timer::new(convert::millis(self.tick),
+                   self.num_slots,
+                   self.capacity,
+                   Instant::now())
     }
 }
 
@@ -140,8 +122,12 @@ impl<T> Timer<T> {
         let num_slots = num_slots.next_power_of_two();
         let capacity = capacity.next_power_of_two();
         let mask = (num_slots as u64) - 1;
-        let wheel = iter::repeat(WheelEntry { next_tick: TICK_MAX, head: EMPTY })
-            .take(num_slots).collect();
+        let wheel = iter::repeat(WheelEntry {
+                next_tick: TICK_MAX,
+                head: EMPTY,
+            })
+            .take(num_slots)
+            .collect();
 
         Timer {
             tick_ms: tick_ms,
@@ -162,9 +148,11 @@ impl<T> Timer<T> {
 
     fn set_timeout_at(&mut self, delay_from_start: Duration, state: T) -> Result<Timeout> {
         let mut tick = duration_to_tick(delay_from_start, self.tick_ms);
-        trace!("setting timeout; delay={:?}; tick={:?}; current-tick={:?}", delay_from_start, tick, self.tick);
+        trace!("setting timeout; delay={:?}; tick={:?}; current-tick={:?}",
+               delay_from_start,
+               tick,
+               self.tick);
 
-        // Always target at least 1 tick in the future
         if tick <= self.tick {
             tick = self.tick + 1;
         }
@@ -173,22 +161,17 @@ impl<T> Timer<T> {
     }
 
     fn insert(&mut self, tick: Tick, state: T) -> Result<Timeout> {
-        // Get the slot for the requested tick
         let slot = (tick & self.mask) as usize;
         let curr = self.wheel[slot];
 
-        // Insert the new entry
-        let token = try!(
-            self.entries.insert(Entry::new(state, tick, curr.head))
+        let token = try!(self.entries
+            .insert(Entry::new(state, tick, curr.head))
             .map_err(|_| TimerError::overflow()));
 
         if curr.head != EMPTY {
-            // If there was a previous entry, set its prev pointer to the new
-            // entry
             self.entries[curr.head].links.prev = token;
         }
 
-        // Update the head slot
         self.wheel[slot] = WheelEntry {
             next_tick: cmp::min(tick, curr.next_tick),
             head: token,
@@ -198,20 +181,18 @@ impl<T> Timer<T> {
 
         trace!("inserted timout; slot={}; token={:?}", slot, token);
 
-        // Return the new timeout
         Ok(Timeout {
             token: token,
-            tick: tick
+            tick: tick,
         })
     }
 
     pub fn cancel_timeout(&mut self, timeout: &Timeout) -> Option<T> {
         let links = match self.entries.get(timeout.token) {
             Some(e) => e.links,
-            None => return None
+            None => return None,
         };
 
-        // Sanity check
         if links.tick != timeout.tick {
             return None;
         }
@@ -226,7 +207,9 @@ impl<T> Timer<T> {
     }
 
     fn poll_to(&mut self, target_tick: Tick) -> Option<T> {
-        trace!("tick_to; target_tick={}; current_tick={}", target_tick, self.tick);
+        trace!("tick_to; target_tick={}; current_tick={}",
+               target_tick,
+               self.tick);
 
         while self.tick <= target_tick {
             let curr = self.next;
@@ -239,11 +222,6 @@ impl<T> Timer<T> {
                 let slot = self.slot_for(self.tick);
                 self.next = self.wheel[slot].head;
 
-                // Handle the case when a slot has a single timeout which gets
-                // canceled before the timeout expires. In this case, the
-                // slot's head is EMPTY but there is a value for next_tick. Not
-                // resetting next_tick here causes the timer to get stuck in a
-                // loop.
                 if self.next == EMPTY {
                     self.wheel[slot].next_tick = TICK_MAX;
                 }
@@ -258,12 +236,9 @@ impl<T> Timer<T> {
 
                 if links.tick <= self.tick {
                     trace!("triggering; token={:?}", curr);
-
-                    // Unlink will also advance self.next
                     self.unlink(&links, curr);
-
-                    // Remove and return the token
-                    return self.entries.remove(curr)
+                    return self.entries
+                        .remove(curr)
                         .map(|e| e.state);
                 } else {
                     let next_tick = self.wheel[slot].next_tick;
@@ -273,7 +248,6 @@ impl<T> Timer<T> {
             }
         }
 
-        // No more timeouts to poll
         if let Some(inner) = self.inner.borrow() {
             trace!("unsetting readiness");
             let _ = inner.set_readiness.set_readiness(Ready::none());
@@ -287,8 +261,9 @@ impl<T> Timer<T> {
     }
 
     fn unlink(&mut self, links: &EntryLinks, token: Token) {
-       trace!("unlinking timeout; slot={}; token={:?}",
-               self.slot_for(links.tick), token);
+        trace!("unlinking timeout; slot={}; token={:?}",
+               self.slot_for(links.tick),
+               token);
 
         if links.prev == EMPTY {
             let slot = self.slot_for(links.tick);
@@ -310,22 +285,18 @@ impl<T> Timer<T> {
 
     fn schedule_readiness(&self, tick: Tick) {
         if let Some(inner) = self.inner.borrow() {
-            // Coordinate setting readiness w/ the wakeup thread
             let mut curr = inner.wakeup_state.load(Ordering::Acquire);
 
             loop {
                 if curr as Tick <= tick {
-                    // Nothing to do, wakeup is already scheduled
                     return;
                 }
 
-                // Attempt to move the wakeup time forward
                 trace!("advancing the wakeup time; target={}; curr={}", tick, curr);
-                let actual = inner.wakeup_state.compare_and_swap(curr, tick as usize, Ordering::Release);
+                let actual = inner.wakeup_state
+                    .compare_and_swap(curr, tick as usize, Ordering::Release);
 
                 if actual == curr {
-                    // Signal to the wakeup thread that the wakeup time has
-                    // been changed.
                     inner.wakeup_thread.thread().unpark();
                     return;
                 }
@@ -335,13 +306,11 @@ impl<T> Timer<T> {
         }
     }
 
-    // Next tick containing a timeout
     fn next_tick(&self) -> Option<Tick> {
         if self.next != EMPTY {
             let slot = self.slot_for(self.entries[self.next].links.tick);
 
             if self.wheel[slot].next_tick == self.tick {
-                // There is data ready right now
                 return Some(self.tick);
             }
         }
@@ -361,24 +330,32 @@ impl<T> Default for Timer<T> {
 }
 
 impl<T> Evented for Timer<T> {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+    fn register(&self,
+                poll: &Poll,
+                token: Token,
+                interest: Ready,
+                opts: PollOpt)
+                -> io::Result<()> {
         if self.inner.borrow().is_some() {
             return Err(io::Error::new(io::ErrorKind::Other, "timer already registered"));
         }
 
         let (registration, set_readiness) = Registration::new(poll, token, interest, opts);
         let wakeup_state = Arc::new(AtomicUsize::new(usize::MAX));
-        let thread_handle = spawn_wakeup_thread(
-            wakeup_state.clone(),
-            set_readiness.clone(),
-            self.start, self.tick_ms);
+        let thread_handle = spawn_wakeup_thread(wakeup_state.clone(),
+                                                set_readiness.clone(),
+                                                self.start,
+                                                self.tick_ms);
 
-        self.inner.fill(Inner {
-            registration: registration,
-            set_readiness: set_readiness,
-            wakeup_state: wakeup_state,
-            wakeup_thread: thread_handle,
-        }).ok().expect("timer already registered");
+        self.inner
+            .fill(Inner {
+                registration: registration,
+                set_readiness: set_readiness,
+                wakeup_state: wakeup_state,
+                wakeup_thread: thread_handle,
+            })
+            .ok()
+            .expect("timer already registered");
 
         if let Some(next_tick) = self.next_tick() {
             self.schedule_readiness(next_tick);
@@ -387,7 +364,12 @@ impl<T> Evented for Timer<T> {
         Ok(())
     }
 
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+    fn reregister(&self,
+                  poll: &Poll,
+                  token: Token,
+                  interest: Ready,
+                  opts: PollOpt)
+                  -> io::Result<()> {
         match self.inner.borrow() {
             Some(inner) => inner.registration.update(poll, token, interest, opts),
             None => Err(io::Error::new(io::ErrorKind::Other, "receiver not registered")),
@@ -411,7 +393,11 @@ impl fmt::Debug for Inner {
     }
 }
 
-fn spawn_wakeup_thread(state: WakeupState, set_readiness: SetReadiness, start: Instant, tick_ms: u64) -> thread::JoinHandle<()> {
+fn spawn_wakeup_thread(state: WakeupState,
+                       set_readiness: SetReadiness,
+                       start: Instant,
+                       tick_ms: u64)
+                       -> thread::JoinHandle<()> {
     thread::spawn(move || {
         let mut sleep_until_tick = state.load(Ordering::Acquire) as Tick;
 
@@ -422,15 +408,25 @@ fn spawn_wakeup_thread(state: WakeupState, set_readiness: SetReadiness, start: I
 
             let now_tick = current_tick(start, tick_ms);
 
-            trace!("wakeup thread: sleep_until_tick={:?}; now_tick={:?}", sleep_until_tick, now_tick);
+            trace!("wakeup thread: sleep_until_tick={:?}; now_tick={:?}",
+                   sleep_until_tick,
+                   now_tick);
 
             if now_tick < sleep_until_tick {
-                let sleep_duration = tick_ms.checked_mul(sleep_until_tick - now_tick).unwrap_or(u64::MAX);
-                trace!("sleeping; tick_ms={}; now_tick={}; sleep_until_tick={}; duration={:?}", tick_ms, now_tick, sleep_until_tick, sleep_duration);
+                let sleep_duration = tick_ms.checked_mul(sleep_until_tick - now_tick)
+                    .unwrap_or(u64::MAX);
+                trace!("sleeping; tick_ms={}; now_tick={}; sleep_until_tick={}; duration={:?}",
+                       tick_ms,
+                       now_tick,
+                       sleep_until_tick,
+                       sleep_duration);
                 thread::park_timeout(Duration::from_millis(sleep_duration));
                 sleep_until_tick = state.load(Ordering::Acquire) as Tick;
             } else {
-                let actual = state.compare_and_swap(sleep_until_tick as usize, usize::MAX, Ordering::AcqRel) as Tick;
+                let actual =
+                    state.compare_and_swap(sleep_until_tick as usize,
+                                           usize::MAX,
+                                           Ordering::AcqRel) as Tick;
 
                 if actual == sleep_until_tick {
                     trace!("setting readiness from wakeup thread");
@@ -477,7 +473,7 @@ impl TimerError {
     fn overflow() -> TimerError {
         TimerError {
             kind: TimerOverflow,
-            desc: "too many timer entries"
+            desc: "too many timer entries",
         }
     }
 }

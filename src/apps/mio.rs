@@ -1,3 +1,6 @@
+
+// MIO Compatibility Sample
+
 extern crate kernel;
 
 use kernel::io::*;
@@ -10,7 +13,6 @@ use kernel::io::tcp::*;
 const SERVER: Token = Token(0);
 const CLIENT: Token = Token(1);
 
-// MIO Compatibility Sample
 
 fn main() {
 

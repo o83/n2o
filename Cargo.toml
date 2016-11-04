@@ -12,7 +12,7 @@ Abstract Reactive Streams
 
 [[bin]]
 name = "fix"
-path = "src/apps/fix.rs"
+path = "src/apps/protocols/fix.rs"
 
 [[bin]]
 name = "mio"

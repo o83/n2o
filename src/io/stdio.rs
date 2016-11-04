@@ -1,4 +1,6 @@
 
+// Pipe Stream
+
 use std;
 use std::io::{self, Read, Write};
 use io::token::Token;

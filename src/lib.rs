@@ -4,7 +4,9 @@
 extern crate libc;
 extern crate net2;
 extern crate nix;
+#[macro_use]
 extern crate log;
+#[macro_use]
 extern crate core;
 extern crate alloc;
 extern crate mio;

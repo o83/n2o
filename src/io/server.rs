@@ -1,4 +1,6 @@
 
+//  Network I/O Reactor by 5HT
+
 use std::io::{self, ErrorKind};
 use std::rc::Rc;
 use slab;
