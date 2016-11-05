@@ -41,10 +41,10 @@ path = "src/apps/console.rs"
 [dependencies]
 net2      = "0.2.19"
 log       = "0.3"
-rand      = "*"
+rand      = "0.3.14"
 bitflags  = "0.4"
 num       = "0.1.36"
-byteorder = "*"
+byteorder = "0.5.3"
 hwloc     = "0.3.0"
 
 [target.'cfg(unix)'.dependencies]
