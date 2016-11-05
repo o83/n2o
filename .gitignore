@@ -2,3 +2,4 @@
 *.swo
 Cargo.lock
 target/
+.vscode/
