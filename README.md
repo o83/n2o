@@ -3,7 +3,8 @@ Enso Operating System
 
 [![Build Status](https://travis-ci.org/AlgoTradingHub/kernel.svg?branch=master)](https://travis-ci.org/AlgoTradingHub/kernel)
 [![Gitter Chat](https://img.shields.io/gitter/room/badges/shields.svg)](https://gitter.im/voxoz/kernel)
-[![Crates IO](https://img.shields.io/crates/d/kernel.svg)](https://img.shields.io/crates/d/kernel.svg)
+[![Crates IO](https://img.shields.io/crates/d/kernel.svg)](https://crates.io/crates/kernel)
+[![Crates IO](https://img.shields.io/crates/v/rustc-serialize.svg)](https://crates.io/crates/kernel)
 
 Sample
 ------
