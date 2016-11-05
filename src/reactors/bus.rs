@@ -1,3 +1,6 @@
+
+// InterCore protocol
+
 use std::cell::RefCell;
 use std::io::{Error, ErrorKind, Result};
 use std::collections::VecDeque;
