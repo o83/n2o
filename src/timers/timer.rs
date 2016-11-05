@@ -1,12 +1,111 @@
 
 // Timer Stream by Nikolas
 
-use {convert, io, Evented, Ready, Poll, PollOpt, Registration, SetReadiness, Token};
-use lazycell::LazyCell;
-use std::{cmp, error, fmt, u64, usize, iter, thread};
+use io::event::*;
+use io::ready::*;
+use io::token::*;
+use io::options::*;
+use io::readiness::*;
+use io::registration::*;
+use io::poll::*;
+
+use slab;
+use std::{self, cmp, error, fmt, u64, usize, iter, thread, io};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
+use std::cell::UnsafeCell;
+
+const NANOS_PER_MILLI: u32 = 1_000_000;
+const MILLIS_PER_SEC: u64 = 1_000;
+
+    pub fn millis(duration: Duration) -> u64 {
+        let millis = (duration.subsec_nanos() + NANOS_PER_MILLI - 1) / NANOS_PER_MILLI;
+        duration.as_secs().saturating_mul(MILLIS_PER_SEC).saturating_add(millis as u64)
+    }
+
+pub struct LazyCell<T> {
+    inner: UnsafeCell<Option<T>>,
+}
+
+impl<T> LazyCell<T> {
+    pub fn new() -> LazyCell<T> {
+        LazyCell { inner: UnsafeCell::new(None) }
+    }
+
+    pub fn fill(&self, t: T) -> std::result::Result<(), T> {
+        let mut slot = unsafe { &mut *self.inner.get() };
+        if slot.is_some() {
+            return Err(t);
+        }
+        *slot = Some(t);
+
+        Ok(())
+    }
+
+    pub fn filled(&self) -> bool {
+        self.borrow().is_some()
+    }
+
+    pub fn borrow(&self) -> Option<&T> {
+        unsafe { &*self.inner.get() }.as_ref()
+    }
+
+    pub fn into_inner(self) -> Option<T> {
+        unsafe { self.inner.into_inner() }
+    }
+}
+
+const NONE: usize = 0;
+const LOCK: usize = 1;
+const SOME: usize = 2;
+
+pub struct AtomicLazyCell<T> {
+    inner: UnsafeCell<Option<T>>,
+    state: AtomicUsize,
+}
+
+impl<T> AtomicLazyCell<T> {
+
+    pub fn new() -> AtomicLazyCell<T> {
+        AtomicLazyCell {
+            inner: UnsafeCell::new(None),
+            state: AtomicUsize::new(NONE),
+        }
+    }
+
+    pub fn fill(&self, t: T) -> std::result::Result<(), T> {
+        if NONE != self.state.compare_and_swap(NONE, LOCK, Ordering::Acquire) {
+            return Err(t);
+        }
+
+        unsafe { *self.inner.get() = Some(t) };
+
+        if LOCK != self.state.compare_and_swap(LOCK, SOME, Ordering::Release) {
+            panic!("unable to release lock");
+        }
+
+        Ok(())
+    }
+
+    pub fn filled(&self) -> bool {
+        self.state.load(Ordering::Acquire) == SOME
+    }
+
+    pub fn borrow(&self) -> Option<&T> {
+        match self.state.load(Ordering::Acquire) {
+            SOME => unsafe { &*self.inner.get() }.as_ref(),
+            _ => None,
+        }
+    }
+
+    pub fn into_inner(self) -> Option<T> {
+        unsafe { self.inner.into_inner() }
+    }
+}
+
+unsafe impl<T: Sync> Sync for AtomicLazyCell<T> { }
+unsafe impl<T: Send> Send for AtomicLazyCell<T> { }
 
 use self::TimerErrorKind::TimerOverflow;
 
@@ -63,9 +162,9 @@ type Tick = u64;
 const TICK_MAX: Tick = u64::MAX;
 
 type WakeupState = Arc<AtomicUsize>;
-type Slab<T> = ::slab::Slab<T, ::Token>;
+type Slab<T> = slab::Slab<T, Token>;
 
-pub type Result<T> = ::std::result::Result<T, TimerError>;
+pub type Result<T> = std::result::Result<T, TimerError>;
 pub type TimerResult<T> = Result<T>;
 
 
@@ -100,7 +199,7 @@ impl Builder {
     }
 
     pub fn build<T>(self) -> Timer<T> {
-        Timer::new(convert::millis(self.tick),
+        Timer::new(millis(self.tick),
                    self.num_slots,
                    self.capacity,
                    Instant::now())
@@ -441,8 +540,7 @@ fn spawn_wakeup_thread(state: WakeupState,
 }
 
 fn duration_to_tick(elapsed: Duration, tick_ms: u64) -> Tick {
-    // Calculate tick rounding up to the closest one
-    let elapsed_ms = convert::millis(elapsed);
+    let elapsed_ms = millis(elapsed);
     elapsed_ms.saturating_add(tick_ms / 2) / tick_ms
 }
 
