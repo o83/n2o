@@ -5,8 +5,8 @@ extern crate kernel;
 
 use kernel::io::poll::*;
 use kernel::io::tcp::*;
-use kernel::io::server::*;
-use kernel::io::console::*;
+use kernel::reactors::server::*;
+use kernel::reactors::console::*;
 
 fn main() {
     println!("IO Server started");

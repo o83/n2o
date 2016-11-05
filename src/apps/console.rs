@@ -6,7 +6,7 @@
 extern crate kernel;
 
 use kernel::io::poll::*;
-use kernel::io::console::Console;
+use kernel::reactors::console::Console;
 
 fn main() {
     let mut poll = Poll::new().expect("Failed to create Poll");

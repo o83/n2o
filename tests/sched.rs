@@ -6,8 +6,8 @@
 //
 extern crate kernel;
 
-use kernel::reactors::sched::reactor::Reactor;
-use kernel::reactors::sched::task::Task;
+use kernel::reactors::reactor::Reactor;
+use kernel::reactors::task::Task;
 
 #[test]
 fn task_test() {

@@ -1,13 +1,9 @@
-// #
-//
-// reactor.rs
-// Copyright (C) 2016 Lynx ltd. <anton@algotradinghub.com>
-// Created by Anton Kundenko.
-//
+
+// Task Reactor with Priorities by Anton
 
 use std::cmp::Ordering;
-use super::future::Future;
-use super::task::Task;
+use abstractions::future::Future;
+use reactors::task::Task;
 
 pub struct Reactor<F> {
     tasks: Vec<F>,
