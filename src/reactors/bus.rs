@@ -1,17 +1,23 @@
 use std::cell::RefCell;
 use std::io::{Error, ErrorKind, Result};
 use std::collections::VecDeque;
-use mio::{Registration, SetReadiness, Evented, Poll, Token, Ready, PollOpt};
+use slab;
+use io::event::*;
+use io::token::*;
+use io::ready::*;
+use io::poll::*;
+use io::options::*;
+use io::registration::*;
 
-pub struct EventLoopBus<T> {
+pub struct Bus<T> {
     queue: VecDeque<T>,
     registration: RefCell<Option<Registration>>,
     readiness: RefCell<Option<SetReadiness>>,
 }
 
-impl<T> EventLoopBus<T> {
-    pub fn new() -> EventLoopBus<T> {
-        EventLoopBus {
+impl<T> Bus<T> {
+    pub fn new() -> Bus<T> {
+        Bus {
             queue: VecDeque::new(),
             registration: RefCell::new(None),
             readiness: RefCell::new(None),
@@ -41,7 +47,7 @@ impl<T> EventLoopBus<T> {
     }
 }
 
-impl<T> Evented for EventLoopBus<T> {
+impl<T> Evented for Bus<T> {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> Result<()> {
         if self.registration.borrow().is_some() {
             return Err(Error::new(ErrorKind::Other, "bus already registered"));

@@ -8,13 +8,12 @@
 extern crate net2;
 extern crate nix;
 extern crate alloc;
-extern crate mio;
-extern crate slab;
 
 pub mod abstractions;
 pub mod reactors;
 pub mod timers;
 pub mod io;
+pub mod slab;
 
 #[macro_use]
 extern crate libc;

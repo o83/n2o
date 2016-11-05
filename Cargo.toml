@@ -1,6 +1,6 @@
 [package]
 name = "kernel"
-version = "0.1.1"
+version = "0.11.0"
 authors = ["Maxim Sokhatskyi <maxim@synrc.com>"]
 license = "MIT"
 repository = "https://github.com/AlgoTradingHub/kernel"
@@ -13,6 +13,14 @@ Abstract Reactive Streams
 [[bin]]
 name = "fix"
 path = "src/apps/protocols/fix.rs"
+
+[[bin]]
+name = "sup"
+path = "src/apps/sup.rs"
+
+[[bin]]
+name = "top"
+path = "src/apps/top.rs"
 
 [[bin]]
 name = "mio"
@@ -31,15 +39,14 @@ name = "console"
 path = "src/apps/console.rs"
 
 [dependencies]
-net2     = "0.2.19"
-log = "0.3"
-mio = "0.6"
-rand = "*"
-slab = "0.3"
-bitflags = "0.4"
-num = "0.1.36"
+net2      = "0.2.19"
+log       = "0.3"
+rand      = "*"
+bitflags  = "0.4"
+num       = "0.1.36"
 byteorder = "*"
+hwloc     = "0.3.0"
 
 [target.'cfg(unix)'.dependencies]
-nix    = "0.6.0"
-libc   = "0.2.14"
+nix       = "0.6.0"
+libc      = "0.2.14"
