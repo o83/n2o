@@ -11,7 +11,7 @@
 ;; m-function       ::= m-symbol | m-lambda-list .
 ;; m-call           ::= m-function '[' m-args ']' .
 ;; m-args           ::= | m-arg-item .
-;; m-arg-items      ::= m-expr | m-expr '   ;' m-args .
+;; m-arg-items      ::= m-expr | m-expr ';' m-args .
 ;; m-cond           ::= '[' m-clauses ']' .
 ;; m-clauses        ::= | m-clause-items .
 ;; m-clause-items   ::= m-clause | m-clause ';' m-clauses .
@@ -21,7 +21,7 @@
 ;; s-list-items     ::= s-expr | s-expr ',' s-list-items .
 ;; s-atom           ::= s-symbol | s-integer | s-float | s-string .
 
-;; m-lambda         ::= 'lambda' .
+;; m-lambda         ::= 'fn' .
 ;; m-nil            ::= 'nil' .
 ;; m-true           ::= 't' .
 ;; m-false          ::= 'f' .

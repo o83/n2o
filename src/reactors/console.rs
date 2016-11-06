@@ -1,16 +1,19 @@
 
 //  Console I/O Reactor by Anton
 
-use std::io::{self, ErrorKind, Read};
+use std::io::{self, ErrorKind};
+use std::io::prelude::*;
 use std::rc::Rc;
 use io::token::Token;
 use io::ready::Ready;
 use io::poll::*;
 use io::options::*;
 use io::tele::*;
+use commands::*;
 
 pub struct Console {
     tele: Tele,
+    running: bool,
     token: Token,
     events: Events,
 }
@@ -21,29 +24,27 @@ impl Console {
         Console {
             tele: Tele::new(Token(tok)),
             token: Token(tok),
+            running: true,
             events: Events::with_capacity(1024),
         }
     }
 
+    pub fn prompt() { print!("> "); let _ = io::stdout().flush(); }
+
     pub fn run(&mut self, poll: &mut Poll) -> io::Result<()> {
         try!(self.register(poll));
         println!("Console is listening...");
-
         loop {
+//            if (!self.running) { break; };
             let cnt = try!(poll.poll(&mut self.events, None));
-
             let mut i = 0;
-
-            trace!("processing events... cnt={}; len={}",
-                     cnt,
-                     self.events.len());
-
+            trace!("processing events... cnt={}; len={}", cnt, self.events.len());
             while i < cnt {
                 let event = self.events.get(i).expect("Failed to get event");
                 trace!("event={:?}; idx={:?}", event, i);
                 self.ready(poll, event.token(), event.kind());
                 i += 1;
-            }
+            };
         }
     }
 
@@ -84,12 +85,16 @@ impl Console {
     fn readable(&mut self, token: Token) -> io::Result<()> {
         trace!("console is readable; token={:?}", token);
         let mut msg = [0u8; 128];
+        Console::prompt();
         let size = self.tele.read(&mut msg);
         match size {
             Ok(s) => {
                 trace!("Read size: {:?}", s);
-                let m = String::from_utf8_lossy(&msg[..s - 1]);
-                println!("Message: {:?}", m);
+                let mut m = String::from_utf8_lossy(&msg[..s - 1]);
+                match m.trim() {
+                      "exit" => self.running = false,
+                      line => { println!("{:?}", command::parse_Num(&line.to_string())); }
+                }
             }
             Err(e) => error!("Read error: {:?}.", e),
         }

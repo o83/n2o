@@ -14,6 +14,7 @@ pub mod reactors;
 pub mod timers;
 pub mod io;
 pub mod slab;
+pub mod commands;
 
 #[macro_use]
 extern crate libc;
