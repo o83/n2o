@@ -1,21 +1,16 @@
 
 // M-expressions grammar
 
-use core::ops::Deref;
 use commands::ast::AST;
-use std::str::FromStr;
+use core::str::FromStr;
 grammar;
 
 pub Mex:       AST = { Operator, <o:Operator> Whitespace <m:Mex> => AST::Cons(Box::new(o),Box::new(m)), };
 pub Operator:  AST = { Term, Call, Lambda };
 pub Call:      AST = { <s:Symbol> "[" <c:CommaList> "]" => AST::Call(Box::new(s),Box::new(c)), };
 pub Lambda:    AST = { "{" "[" <c:CommaList> "]" <body:Mex> "}" => AST::Lambda(Box::new(c),Box::new(body)), };
-pub Whitespace:AST = { "\n" => AST::Nil, "\t" => AST::Nil, "\0" => AST::Nil, "\r" => AST::Nil, "" => AST::Nil };
+pub Whitespace:AST = { "\n" => AST::Nil, "\t" => AST::Nil, "\r" => AST::Nil, "\s" => AST::Nil };
 pub Terminal:  AST = { Symbol, Integer, Float };
-pub Expr:      AST = { <l:Expr> "+" <r:Factor> => AST::Plus(Box::new(l),Box::new(r)),
-                       <l:Expr> "-" <r:Factor> => AST::Minus(Box::new(l),Box::new(r)), Factor, };
-pub Factor:    AST = { <l:Factor> "*" <r:Term> => AST::Mul(Box::new(l),Box::new(r)),
-                       <l:Factor> "%" <r:Term> => AST::Div(Box::new(l),Box::new(r)), Term, };
 pub Term:      AST = { <Terminal>, "(" <Expr> ")", };
 pub Reduce:    AST = { "/" <s:Symbol> => AST::Reduce(Box::new(s)), };
 pub Integer:   AST = { <n:r"\d+"> => AST::Integer(u64::from_str(n).unwrap()), };
@@ -23,3 +18,7 @@ pub Symbol:    AST = { <s:r"[a-zA-Z][-a-zA-Z0-9]*"> => AST::Symbol(String::from(
 pub Float:     AST = { <f:r"\d+\.\d+"> => AST::Float(f64::from_str(f).unwrap()), };
 pub CommaList: AST = { <c:Mex> => AST::Cons(Box::new(c),Box::new(AST::Nil)),
                        <c:Mex> "," <e:CommaList> => AST::Cons(Box::new(c),Box::new(e)), };
+pub Expr:      AST = { <l:Expr> "+" <r:Factor> => AST::Plus(Box::new(l),Box::new(r)),
+                       <l:Expr> "-" <r:Factor> => AST::Minus(Box::new(l),Box::new(r)), Factor, };
+pub Factor:    AST = { <l:Factor> "*" <r:Term> => AST::Mul(Box::new(l),Box::new(r)),
+                       <l:Factor> "%" <r:Term> => AST::Div(Box::new(l),Box::new(r)), Term, };

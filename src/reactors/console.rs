@@ -101,10 +101,8 @@ impl Console {
                 trace!("Read size: {:?}", s);
                 let mut m = String::from_utf8_lossy(&msg[..s - 1]);
                 match m.trim() {
-                    "exit" => self.running = false,
-                    line => {
-                        println!("{:?}", command::parse_Mex(&line.to_string()));
-                    }
+                    "exit" => self.running = false, 
+                    line => println!("{:?}", command::parse_Mex(&line.to_string())),
                 }
             }
             Err(e) => error!("Read error: {:?}.", e),
