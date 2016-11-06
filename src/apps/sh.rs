@@ -19,7 +19,7 @@ fn main() {
         match input_line.trim() {
             "exit" => break,
             line => {
-                println!("{:?}", command::parse_Num(&line.to_string()));
+                println!("{:?}", command::parse_Mex(&line.to_string()));
             }
         }
         input_line.clear();

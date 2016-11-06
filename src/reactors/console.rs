@@ -103,7 +103,7 @@ impl Console {
                 match m.trim() {
                     "exit" => self.running = false,
                     line => {
-                        println!("{:?}", command::parse_Num(&line.to_string()));
+                        println!("{:?}", command::parse_Mex(&line.to_string()));
                     }
                 }
             }

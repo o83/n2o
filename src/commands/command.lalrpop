@@ -1,8 +1,17 @@
-use std::str::FromStr;
 
+// M-expressions grammar
+
+use core::ops::Deref;
+use commands::ast::AST;
+use std::str::FromStr;
 grammar;
 
-pub Num: i32 = {
-    <n:r"[-]?[0-9]+"> => i32::from_str(n).unwrap(),
+pub Mex: AST = {
+    Terminal,
 };
 
+Terminal: AST = {
+    <n:r"\d+"> => AST::Integer(u64::from_str(n).unwrap()),
+    <s:r"[a-zA-Z][a-zA-Z0-9]*"> => AST::Symbol(String::from(s)),
+    <f:r"\d+\.\d+"> => AST::Float(f64::from_str(f).unwrap()),
+};
