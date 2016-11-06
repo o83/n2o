@@ -35,7 +35,7 @@ impl Console {
         try!(self.register(poll));
         println!("Console is listening...");
         loop {
-//            if (!self.running) { break; };
+            match self.running { false => break, _ => () }
             let cnt = try!(poll.poll(&mut self.events, None));
             let mut i = 0;
             trace!("processing events... cnt={}; len={}", cnt, self.events.len());
@@ -44,8 +44,9 @@ impl Console {
                 trace!("event={:?}; idx={:?}", event, i);
                 self.ready(poll, event.token(), event.kind());
                 i += 1;
-            };
+            }
         }
+        Ok(())
     }
 
     pub fn register(&mut self, poll: &mut Poll) -> io::Result<()> {
