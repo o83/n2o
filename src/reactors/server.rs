@@ -34,7 +34,7 @@ impl Server {
 
         try!(self.register(poll));
 
-        println!("Server run loop starting...");
+        debug!("Server run loop starting...");
         loop {
             let cnt = try!(poll.poll(&mut self.events, None));
 
@@ -108,8 +108,6 @@ impl Server {
             return;
         }
 
-        // We never expect a write event for our `Server` token . A write event for any other token
-        // should be handed off to that connection.
         if event.is_writable() {
             println!("Write event for {:?}", token);
             assert!(self.token != token, "Received writable event for Server");
@@ -128,8 +126,6 @@ impl Server {
                 });
         }
 
-        // A read event for our `Server` token means we are establishing a new connection. A read
-        // event for any other token should be handed off to that connection.
         if event.is_readable() {
             println!("Read event for {:?}", token);
             if self.token == token {
@@ -154,16 +150,11 @@ impl Server {
         }
     }
 
-    /// Accept a _new_ client connection.
-    ///
-    /// The server will keep track of the new connection and forward any events from the poller
-    /// to this connection.
     fn accept(&mut self, poll: &mut Poll) {
         println!("server accepting new socket");
 
         loop {
-            // Log an error if there is no socket, but otherwise move on so we do not tear down the
-            // entire server.
+
             let sock = match self.sock.accept() {
                 Ok((sock, _)) => sock,
                 Err(e) => {
@@ -200,18 +191,13 @@ impl Server {
         }
     }
 
-    /// Forward a readable event to an established connection.
-    ///
-    /// Connections are identified by the token provided to us from the poller. Once a read has
-    /// finished, push the receive buffer into the all the existing connections so we can
-    /// broadcast.
     fn readable(&mut self, token: Token) -> io::Result<()> {
         println!("server conn readable; token={:?}", token);
 
         while let Some(message) = try!(self.find_connection_by_token(token).readable()) {
 
             let rc_message = Rc::new(message);
-            // Queue up a write for all connected clients.
+
             for c in self.conns.iter_mut() {
                 c.send_message(rc_message.clone())
                     .unwrap_or_else(|e| {
@@ -224,7 +210,6 @@ impl Server {
         Ok(())
     }
 
-    /// Find a connection in the slab using the given token.
     fn find_connection_by_token<'a>(&'a mut self, token: Token) -> &'a mut Connection {
         &mut self.conns[token]
     }

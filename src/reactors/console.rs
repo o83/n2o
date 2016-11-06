@@ -29,16 +29,25 @@ impl Console {
         }
     }
 
-    pub fn prompt() { print!("> "); let _ = io::stdout().flush(); }
+    pub fn prompt() {
+        print!("> ");
+        let _ = io::stdout().flush();
+    }
 
     pub fn run(&mut self, poll: &mut Poll) -> io::Result<()> {
         try!(self.register(poll));
         println!("Console is listening...");
         loop {
-            match self.running { false => break, _ => () }
+            match self.running {
+                false => break,
+                _ => (),
+            }
+            Console::prompt();
             let cnt = try!(poll.poll(&mut self.events, None));
             let mut i = 0;
-            trace!("processing events... cnt={}; len={}", cnt, self.events.len());
+            trace!("processing events... cnt={}; len={}",
+                   cnt,
+                   self.events.len());
             while i < cnt {
                 let event = self.events.get(i).expect("Failed to get event");
                 trace!("event={:?}; idx={:?}", event, i);
@@ -86,15 +95,16 @@ impl Console {
     fn readable(&mut self, token: Token) -> io::Result<()> {
         trace!("console is readable; token={:?}", token);
         let mut msg = [0u8; 128];
-        Console::prompt();
         let size = self.tele.read(&mut msg);
         match size {
             Ok(s) => {
                 trace!("Read size: {:?}", s);
                 let mut m = String::from_utf8_lossy(&msg[..s - 1]);
                 match m.trim() {
-                      "exit" => self.running = false,
-                      line => { println!("{:?}", command::parse_Num(&line.to_string())); }
+                    "exit" => self.running = false,
+                    line => {
+                        println!("{:?}", command::parse_Num(&line.to_string()));
+                    }
                 }
             }
             Err(e) => error!("Read error: {:?}.", e),

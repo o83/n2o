@@ -6,7 +6,10 @@ use std::io::prelude::*;
 use std::io;
 use kernel::commands::*;
 
-pub fn prompt() { print!("> "); let _ = io::stdout().flush(); }
+pub fn prompt() {
+    print!("> ");
+    let _ = io::stdout().flush();
+}
 
 fn main() {
     let mut input_line = String::new();
