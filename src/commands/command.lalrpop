@@ -6,8 +6,15 @@ use commands::ast::AST;
 use std::str::FromStr;
 grammar;
 
-pub Mex:       AST = { Integer, Symbol, Float,
-                       "fn" "[" <c:CommaList> "]" => AST::Lambda(Box::new(c)), };
+pub Mex:       AST = { Term,
+                       "{" "[" <c:CommaList> "]" <body:Mex> "}" => AST::Lambda(Box::new(c),Box::new(body)), };
+pub Terminal:  AST = { <l:Symbol> => l, <l:Integer> => l, <l:Float> => l };
+pub Expr:      AST = { <l:Expr> "+" <r:Factor> => AST::Plus(Box::new(l),Box::new(r)),
+                       <l:Expr> "-" <r:Factor> => AST::Minus(Box::new(l),Box::new(r)), Factor, };
+pub Factor:    AST = { <l:Factor> "*" <r:Term> => AST::Mul(Box::new(l),Box::new(r)),
+                       <l:Factor> "%" <r:Term> => AST::Div(Box::new(l),Box::new(r)), Term, };
+pub Term:      AST = { Terminal, "(" <Expr> ")", };
+pub Reduce:    AST = { "/" <s:Symbol> => AST::Reduce(Box::new(s)), };
 pub Integer:   AST = { <n:r"\d+"> => AST::Integer(u64::from_str(n).unwrap()), };
 pub Symbol:    AST = { <s:r"[a-zA-Z][a-zA-Z0-9]*"> => AST::Symbol(String::from(s)), };
 pub Float:     AST = { <f:r"\d+\.\d+"> => AST::Float(f64::from_str(f).unwrap()), };
