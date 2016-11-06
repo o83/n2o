@@ -18,9 +18,7 @@ fn main() {
         io::stdin().read_line(&mut input_line).ok().expect("The read line failed");
         match input_line.trim() {
             "exit" => break,
-            line => {
-                println!("{:?}", command::parse_Mex(&line.to_string()));
-            }
+            line => { println!("{:?}",command::parse_Mex(&line.to_string())) }
         }
         input_line.clear();
     }

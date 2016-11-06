@@ -7,11 +7,11 @@ pub enum AST {
     Float(f64),
     Append, Get, Set,
     Curry, Compose, Lambda(Box<AST>,Box<AST>),
-    Expr, Nil,
+    Expr, Nil, Call(Box<AST>,Box<AST>),
     CommaList(Box<AST>), ColonList(Box<AST>),
     Cons(Box<AST>,Box<AST>), Car, Setq, Cond,
     Map, Reduce(Box<AST>), Min, Max,
     Plus(Box<AST>,Box<AST>), Minus(Box<AST>,Box<AST>), Mul(Box<AST>,Box<AST>), Div(Box<AST>,Box<AST>),
-    Greater, Less, Equal,
+    Greater, Less, Equal, 
     Length, Reverse, Member,
 }
