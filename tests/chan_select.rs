@@ -6,7 +6,7 @@ use std::thread::spawn;
 #[cfg(feature = "chan_select")]
 use std::borrow::ToOwned;
 #[cfg(feature = "chan_select")]
-use kernel::abstractions::session_types::*;
+use kernel::session_types::*;
 
 // recv and assert a value, then close the channel
 #[cfg(feature = "chan_select")]

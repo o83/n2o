@@ -1,7 +1,7 @@
 
 #[macro_use]
 extern crate kernel;
-use kernel::abstractions::session_types::*;
+use kernel::session_types::*;
 
 use std::thread::spawn;
 

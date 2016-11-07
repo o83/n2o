@@ -8,14 +8,18 @@
 extern crate net2;
 extern crate nix;
 extern crate alloc;
+extern crate deque;
+extern crate num_cpus;
+extern crate rand;
 
-pub mod abstractions;
 pub mod reactors;
 pub mod timers;
 pub mod io;
 pub mod slab;
+#[macro_use]
+pub mod session_types;
 pub mod commands;
-//pub mod iterators;
+pub mod iterators;
 
 #[macro_use]
 extern crate libc;
