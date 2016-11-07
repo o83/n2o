@@ -52,7 +52,7 @@ num       = "0.1.36"
 byteorder = "0.5.3"
 hwloc     = "0.3.0"
 lalrpop-util = "0.12.0"
-argparse = "*"
+argparse     = "0.2.1"
 
 [target.'cfg(unix)'.dependencies]
 nix       = "0.6.0"
