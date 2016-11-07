@@ -8,6 +8,13 @@ TL;DR Autobalancing low-latency non-blocking zero-copy CAS-multicursor queues wi
 [![Crates IO](https://img.shields.io/crates/d/kernel.svg)](https://crates.io/crates/kernel)
 [![Crates IO](https://img.shields.io/crates/v/kernel.svg)](https://crates.io/crates/kernel)
 
+Prerequisites
+-------------
+
+```
+$ sudo apt-get install libhwloc-dev
+```
+
 Sample
 ------
 
