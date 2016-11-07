@@ -37,11 +37,7 @@ impl Console {
     pub fn run(&mut self, poll: &mut Poll) -> io::Result<()> {
         try!(self.register(poll));
         println!("Console is listening...");
-        loop {
-            match self.running {
-                false => break,
-                _ => (),
-            }
+        while self.running {
             Console::prompt();
             let cnt = try!(poll.poll(&mut self.events, None));
             let mut i = 0;
@@ -83,30 +79,47 @@ impl Console {
         if event.is_readable() {
             trace!("Read event for {:?}", token);
 
-            self.readable(token)
-                .unwrap_or_else(|e| {
-                    error!("Read event failed for {:?}: {:?}", token, e);
-                });
-        }
+            let res = self.readable(token);
+            println!("Readable res: {:?}", &res);
+            match res {
+                Ok(r) => {
+                    if !r {
+                        self.running = false;
+                        return;
+                    }
+                }
+                Err(e) => error!("Read event failed for {:?}: {:?}", token, e),
+            };
 
-        self.tele.reregister(poll);
+            self.tele.reregister(poll);
+        }
     }
 
-    fn readable(&mut self, token: Token) -> io::Result<()> {
+    fn readable(&mut self, token: Token) -> io::Result<bool> {
         trace!("console is readable; token={:?}", token);
         let mut msg = [0u8; 128];
         let size = self.tele.read(&mut msg);
         match size {
             Ok(s) => {
-                trace!("Read size: {:?}", s);
-                let mut m = String::from_utf8_lossy(&msg[..s - 1]);
-                match m.trim() {
-                    "exit" => self.running = false, 
-                    line => println!("{:?}", command::parse_Mex(&line.to_string())),
+                trace!("Read size: {:?}", &s);
+                match s {
+                    0 => Ok(false),
+                    _ => {
+                        let mut m = String::from_utf8_lossy(&msg[..s]);
+                        match m.trim() {
+                            "exit" => Ok(false),
+                            line => {
+                                println!("{:?}", command::parse_Mex(&line));
+                                Ok(true)
+                            }
+                        }
+                    }
                 }
             }
-            Err(e) => error!("Read error: {:?}.", e),
+            Err(e) => {
+                error!("Read error: {:?}.", &e);
+                Err(e)
+            }
         }
-        Ok(())
     }
 }
