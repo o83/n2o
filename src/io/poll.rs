@@ -40,36 +40,36 @@ impl Poll {
                                token: Token,
                                interest: Ready,
                                opts: PollOpt)
-                               -> io::Result<()>
+        -> io::Result<()>
         where E: Evented
-    {
-        try!(validate_args(token, interest));
-        trace!("registering with poller");
-        try!(io.register(self, token, interest, opts));
-        Ok(())
-    }
+        {
+            try!(validate_args(token, interest));
+            trace!("registering with poller");
+            try!(io.register(self, token, interest, opts));
+            Ok(())
+        }
 
     pub fn reregister<E: ?Sized>(&self,
                                  io: &E,
                                  token: Token,
                                  interest: Ready,
                                  opts: PollOpt)
-                                 -> io::Result<()>
+        -> io::Result<()>
         where E: Evented
-    {
-        try!(validate_args(token, interest));
-        trace!("registering with poller");
-        try!(io.reregister(self, token, interest, opts));
-        Ok(())
-    }
+        {
+            try!(validate_args(token, interest));
+            trace!("registering with poller");
+            try!(io.reregister(self, token, interest, opts));
+            Ok(())
+        }
 
     pub fn deregister<E: ?Sized>(&self, io: &E) -> io::Result<()>
         where E: Evented
-    {
-        trace!("deregistering IO with poller");
-        try!(io.deregister(self));
-        Ok(())
-    }
+        {
+            trace!("deregistering IO with poller");
+            try!(io.deregister(self));
+            Ok(())
+        }
 
     pub fn poll(&self, events: &mut self::Events, timeout: Option<Duration>) -> io::Result<usize> {
         let timeout = if !self.readiness_queue.is_empty() {

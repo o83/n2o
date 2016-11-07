@@ -20,7 +20,7 @@ pub struct Console {
 
 impl Console {
     pub fn new() -> Self {
-        let tok = 102;
+        let tok = 10_000_000;
         Console {
             tele: Tele::new(Token(tok)),
             token: Token(tok),
@@ -51,6 +51,7 @@ impl Console {
                 i += 1;
             }
         }
+        println!("Bye!");
         Ok(())
     }
 
@@ -80,7 +81,6 @@ impl Console {
             trace!("Read event for {:?}", token);
 
             let res = self.readable(token);
-            println!("Readable res: {:?}", &res);
             match res {
                 Ok(r) => {
                     if !r {
@@ -121,5 +121,12 @@ impl Console {
                 Err(e)
             }
         }
+    }
+
+    pub fn from_buf<R: BufRead>(&mut self, config: R) -> io::Result<()> {
+        for line in config.lines() {
+            println!("{:?}", command::parse_Mex(&line.unwrap()));
+        }
+        Ok(())
     }
 }
