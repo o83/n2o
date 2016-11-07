@@ -6,12 +6,12 @@ use core::str::FromStr;
 grammar;
 
 pub Mex:       AST = { Operator, <o:Operator> Whitespace <m:Mex> => AST::Cons(Box::new(o),Box::new(m)), };
-pub Operator:  AST = { Term, Call, Lambda };
+pub Operator:  AST = { Expr, Call, Lambda };
 pub Call:      AST = { <s:Symbol> "[" <c:CommaList> "]" => AST::Call(Box::new(s),Box::new(c)), };
 pub Lambda:    AST = { "{" "[" <c:CommaList> "]" <body:Mex> "}" => AST::Lambda(Box::new(c),Box::new(body)), };
 pub Whitespace:AST = { "\n" => AST::Nil, "\t" => AST::Nil, "\r" => AST::Nil, "\s" => AST::Nil };
 pub Terminal:  AST = { Symbol, Integer, Float };
-pub Term:      AST = { <Terminal>, "(" <Expr> ")", };
+pub Term:      AST = { Terminal, "(" <Expr> ")" };
 pub Reduce:    AST = { "/" <s:Symbol> => AST::Reduce(Box::new(s)), };
 pub Integer:   AST = { <n:r"\d+"> => AST::Integer(u64::from_str(n).unwrap()), };
 pub Symbol:    AST = { <s:r"[a-zA-Z][-a-zA-Z0-9]*"> => AST::Symbol(String::from(s)), };

@@ -19,7 +19,7 @@ pub fn from_nix_error(err: ::io::unix::errno::Error) -> std::io::Error {
 
 pub mod ffi {
     use libc::{c_int, c_void};
-    use ::io::unix::epoll::EpollEvent;
+    use ::io::unix::linux::EpollEvent;
     extern "C" {
         pub fn epoll_create(size: c_int) -> c_int;
         pub fn epoll_ctl(epfd: c_int, op: c_int, fd: c_int, event: *const EpollEvent) -> c_int;
