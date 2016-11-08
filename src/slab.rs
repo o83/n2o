@@ -3,41 +3,29 @@ use std::iter::IntoIterator;
 use std::ops;
 use std::marker::PhantomData;
 
-/// A preallocated chunk of memory for storing objects of the same type.
 pub struct Slab<T, I = usize> {
-    // Chunk of memory
     entries: Vec<Slot<T>>,
-
-    // Number of Filled elements currently in the slab
     len: usize,
-
-    // Offset of the next available slot in the slab. Set to the slab's
-    // capacity when the slab is full.
     next: usize,
-
     _marker: PhantomData<I>,
 }
 
-/// A handle to an occupied slot in the `Slab`
 pub struct Entry<'a, T: 'a, I: 'a> {
     slab: &'a mut Slab<T, I>,
     idx: usize,
 }
 
-/// A handle to a vacant slot in the `Slab`
 pub struct VacantEntry<'a, T: 'a, I: 'a> {
     slab: &'a mut Slab<T, I>,
     idx: usize,
 }
 
-/// An iterator over the values stored in the `Slab`
 pub struct Iter<'a, T: 'a, I: 'a> {
     slab: &'a Slab<T, I>,
     cur_idx: usize,
     yielded: usize,
 }
 
-/// A mutable iterator over the values stored in the `Slab`
 pub struct IterMut<'a, T: 'a, I: 'a> {
     slab: *mut Slab<T, I>,
     cur_idx: usize,
@@ -61,7 +49,6 @@ macro_rules! some {
 }
 
 impl<T, I> Slab<T, I> {
-    /// Returns an empty `Slab` with the requested capacity
     pub fn with_capacity(capacity: usize) -> Slab<T, I> {
         let entries = (1..capacity + 1)
             .map(Slot::Empty)
@@ -75,39 +62,32 @@ impl<T, I> Slab<T, I> {
         }
     }
 
-    /// Returns the number of values stored by the `Slab`
     pub fn len(&self) -> usize {
         self.len
     }
 
-    /// Returns the total capacity of the `Slab`
     pub fn capacity(&self) -> usize {
         self.entries.len()
     }
 
-    /// Returns true if the `Slab` is storing no values
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
 
-    /// Returns the number of available slots remaining in the `Slab`
     pub fn available(&self) -> usize {
         self.entries.len() - self.len
     }
 
-    /// Returns true if the `Slab` has available slots
     pub fn has_available(&self) -> bool {
         self.available() > 0
     }
 }
 
 impl<T, I: Into<usize> + From<usize>> Slab<T, I> {
-    /// Returns true if the `Slab` contains a value for the given token
     pub fn contains(&self, idx: I) -> bool {
         self.get(idx).is_some()
     }
 
-    /// Get a reference to the value associated with the given token
     pub fn get(&self, idx: I) -> Option<&T> {
         let idx = some!(self.local_index(idx));
 
@@ -118,7 +98,6 @@ impl<T, I: Into<usize> + From<usize>> Slab<T, I> {
         }
     }
 
-    /// Get a mutable reference to the value associated with the given token
     pub fn get_mut(&mut self, idx: I) -> Option<&mut T> {
         let idx = some!(self.local_index(idx));
 
@@ -128,7 +107,6 @@ impl<T, I: Into<usize> + From<usize>> Slab<T, I> {
         }
     }
 
-    /// Insert a value into the slab, returning the associated token
     pub fn insert(&mut self, val: T) -> Result<I, T> {
         match self.vacant_entry() {
             Some(entry) => Ok(entry.insert(val).index()),
@@ -136,10 +114,6 @@ impl<T, I: Into<usize> + From<usize>> Slab<T, I> {
         }
     }
 
-    /// Returns a handle to an entry.
-    ///
-    /// This allows more advanced manipulation of the value stored at the given
-    /// index.
     pub fn entry(&mut self, idx: I) -> Option<Entry<T, I>> {
         let idx = some!(self.local_index(idx));
 
@@ -155,10 +129,6 @@ impl<T, I: Into<usize> + From<usize>> Slab<T, I> {
         }
     }
 
-    /// Returns a handle to a vacant entry.
-    ///
-    /// This allows optionally inserting a value that is constructed with the
-    /// index.
     pub fn vacant_entry(&mut self) -> Option<VacantEntry<T, I>> {
         let idx = self.next;
 
@@ -172,16 +142,10 @@ impl<T, I: Into<usize> + From<usize>> Slab<T, I> {
         })
     }
 
-    /// Releases the given slot
     pub fn remove(&mut self, idx: I) -> Option<T> {
         self.entry(idx).map(Entry::remove)
     }
 
-    /// Retain only the elements specified by the predicate.
-    ///
-    /// In other words, remove all elements `e` such that `f(&e)` returns false.
-    /// This method operates in place and preserves the order of the retained
-    /// elements.
     pub fn retain<F>(&mut self, mut f: F)
         where F: FnMut(&T) -> bool
     {
@@ -194,7 +158,6 @@ impl<T, I: Into<usize> + From<usize>> Slab<T, I> {
         }
     }
 
-    /// An iterator for visiting all elements stored in the `Slab`
     pub fn iter(&self) -> Iter<T, I> {
         Iter {
             slab: self,
@@ -203,7 +166,6 @@ impl<T, I: Into<usize> + From<usize>> Slab<T, I> {
         }
     }
 
-    /// A mutable iterator for visiting all elements stored in the `Slab`
     pub fn iter_mut(&mut self) -> IterMut<T, I> {
         IterMut {
             slab: self as *mut Slab<T, I>,
@@ -213,7 +175,6 @@ impl<T, I: Into<usize> + From<usize>> Slab<T, I> {
         }
     }
 
-    /// Empty the slab, by freeing all entries
     pub fn clear(&mut self) {
         for (i, e) in self.entries.iter_mut().enumerate() {
             *e = Slot::Empty(i + 1)
@@ -222,9 +183,6 @@ impl<T, I: Into<usize> + From<usize>> Slab<T, I> {
         self.len = 0;
     }
 
-    /// Reserves the minimum capacity for exactly `additional` more elements to
-    /// be inserted in the given `Slab`. Does nothing if the capacity is
-    /// already sufficient.
     pub fn reserve_exact(&mut self, additional: usize) {
         let prev_len = self.entries.len();
 
@@ -314,15 +272,8 @@ impl<'a, T, I: From<usize> + Into<usize>> IntoIterator for &'a mut Slab<T, I> {
     }
 }
 
-/*
- *
- * ===== Entry =====
- *
- */
-
 impl<'a, T, I: From<usize> + Into<usize>> Entry<'a, T, I> {
 
-    /// Replace the value stored in the entry
     pub fn replace(&mut self, val: T) -> T {
         match mem::replace(&mut self.slab.entries[self.idx], Slot::Filled(val)) {
             Slot::Filled(v) => v,
@@ -330,8 +281,6 @@ impl<'a, T, I: From<usize> + Into<usize>> Entry<'a, T, I> {
         }
     }
 
-    /// Apply the function to the current value, replacing it with the result
-    /// of the function.
     pub fn replace_with<F>(&mut self, f: F)
         where F: FnOnce(T) -> T
     {
@@ -346,7 +295,6 @@ impl<'a, T, I: From<usize> + Into<usize>> Entry<'a, T, I> {
         self.slab.entries[idx] = Slot::Filled(val);
     }
 
-    /// Remove and return the value stored in the entry
     pub fn remove(self) -> T {
         let next = self.slab.next;
 
@@ -358,7 +306,6 @@ impl<'a, T, I: From<usize> + Into<usize>> Entry<'a, T, I> {
         }
     }
 
-    /// Get a reference to the value stored in the entry
     pub fn get(&self) -> &T {
         let idx = self.index();
         self.slab
@@ -366,7 +313,6 @@ impl<'a, T, I: From<usize> + Into<usize>> Entry<'a, T, I> {
             .expect("Filled slot in Entry")
     }
 
-    /// Get a mutable reference to the value stored in the entry
     pub fn get_mut(&mut self) -> &mut T {
         let idx = self.index();
         self.slab
@@ -374,7 +320,6 @@ impl<'a, T, I: From<usize> + Into<usize>> Entry<'a, T, I> {
             .expect("Filled slot in Entry")
     }
 
-    /// Convert the entry handle to a mutable reference
     pub fn into_mut(self) -> &'a mut T {
         let idx = self.index();
         self.slab
@@ -382,20 +327,12 @@ impl<'a, T, I: From<usize> + Into<usize>> Entry<'a, T, I> {
             .expect("Filled slot in Entry")
     }
 
-    /// Return the entry index
     pub fn index(&self) -> I {
         I::from(self.idx)
     }
 }
 
-/*
- *
- * ===== VacantEntry =====
- *
- */
-
 impl<'a, T, I: From<usize> + Into<usize>> VacantEntry<'a, T, I> {
-    /// Insert a value into the entry
     pub fn insert(self, val: T) -> Entry<'a, T, I> {
         self.slab.insert_at(self.idx, val);
 
@@ -405,17 +342,10 @@ impl<'a, T, I: From<usize> + Into<usize>> VacantEntry<'a, T, I> {
         }
     }
 
-    /// Returns the entry index
     pub fn index(&self) -> I {
         I::from(self.idx)
     }
 }
-
-/*
- *
- * ===== Iter =====
- *
- */
 
 impl<'a, T, I> Iterator for Iter<'a, T, I> {
     type Item = &'a T;
@@ -440,12 +370,6 @@ impl<'a, T, I> Iterator for Iter<'a, T, I> {
         None
     }
 }
-
-/*
- *
- * ===== IterMut =====
- *
- */
 
 impl<'a, T, I> Iterator for IterMut<'a, T, I> {
     type Item = &'a mut T;

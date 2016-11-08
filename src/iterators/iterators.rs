@@ -9,22 +9,22 @@ use iterators::filter::Filter;
 use iterators::filter_map::FilterMap;
 use iterators::flat_map::FlatMap;
 use iterators::map::{Map, MapFn, MapCloned, MapInspect};
-use iterators::reduce::{reduce, ReduceOp, SumOp, MulOp, MinOp, MaxOp,
-                   ReduceWithIdentityOp, SUM, MUL, MIN, MAX};
+use iterators::reduce::{reduce, ReduceOp, SumOp, MulOp, MinOp, MaxOp, ReduceWithIdentityOp, SUM,
+                        MUL, MIN, MAX};
 use iterators::internal::*;
 use iterators::weight::Weight;
 use iterators::zip::ZipIter;
 use iterators::*;
 
 pub trait IntoParallelIterator {
-    type Iter: ParallelIterator<Item=Self::Item>;
+    type Iter: ParallelIterator<Item = Self::Item>;
     type Item: Send;
 
     fn into_par_iter(self) -> Self::Iter;
 }
 
 pub trait IntoParallelRefIterator<'data> {
-    type Iter: ParallelIterator<Item=Self::Item>;
+    type Iter: ParallelIterator<Item = Self::Item>;
     type Item: Send + 'data;
 
     fn par_iter(&'data self) -> Self::Iter;
@@ -42,7 +42,7 @@ impl<'data, I: 'data + ?Sized> IntoParallelRefIterator<'data> for I
 }
 
 pub trait IntoParallelRefMutIterator<'data> {
-    type Iter: ParallelIterator<Item=Self::Item>;
+    type Iter: ParallelIterator<Item = Self::Item>;
     type Item: Send + 'data;
 
     fn par_iter_mut(&'data mut self) -> Self::Iter;
@@ -60,13 +60,13 @@ impl<'data, I: 'data + ?Sized> IntoParallelRefMutIterator<'data> for I
 }
 
 pub trait ToParallelChunks<'data> {
-    type Iter: ParallelIterator<Item=&'data [Self::Item]>;
+    type Iter: ParallelIterator<Item = &'data [Self::Item]>;
     type Item: Sync + 'data;
     fn par_chunks(&'data self, size: usize) -> Self::Iter;
 }
 
 pub trait ToParallelChunksMut<'data> {
-    type Iter: ParallelIterator<Item=&'data mut [Self::Item]>;
+    type Iter: ParallelIterator<Item = &'data mut [Self::Item]>;
     type Item: Send + 'data;
     fn par_chunks_mut(&'data mut self, size: usize) -> Self::Iter;
 }
@@ -92,14 +92,15 @@ pub trait ParallelIterator: Sized {
         self.map(|_| 1).sum()
     }
 
-    fn map<MAP_OP,R>(self, map_op: MAP_OP) -> Map<Self, MapFn<MAP_OP>>
+    fn map<MAP_OP, R>(self, map_op: MAP_OP) -> Map<Self, MapFn<MAP_OP>>
         where MAP_OP: Fn(Self::Item) -> R + Sync
     {
         Map::new(self, MapFn(map_op))
     }
 
     fn cloned<'a, T>(self) -> Map<Self, MapCloned>
-        where T: 'a + Clone, Self: ParallelIterator<Item=&'a T>
+        where T: 'a + Clone,
+              Self: ParallelIterator<Item = &'a T>
     {
         Map::new(self, MapCloned)
     }
@@ -116,44 +117,44 @@ pub trait ParallelIterator: Sized {
         Filter::new(self, filter_op)
     }
 
-    fn filter_map<FILTER_OP,R>(self, filter_op: FILTER_OP) -> FilterMap<Self, FILTER_OP>
+    fn filter_map<FILTER_OP, R>(self, filter_op: FILTER_OP) -> FilterMap<Self, FILTER_OP>
         where FILTER_OP: Fn(Self::Item) -> Option<R> + Sync
     {
         FilterMap::new(self, filter_op)
     }
 
-    fn flat_map<MAP_OP,PI>(self, map_op: MAP_OP) -> FlatMap<Self, MAP_OP>
-        where MAP_OP: Fn(Self::Item) -> PI + Sync, PI: IntoParallelIterator
+    fn flat_map<MAP_OP, PI>(self, map_op: MAP_OP) -> FlatMap<Self, MAP_OP>
+        where MAP_OP: Fn(Self::Item) -> PI + Sync,
+              PI: IntoParallelIterator
     {
         FlatMap::new(self, map_op)
     }
 
-    fn reduce<OP,IDENTITY>(self, identity: IDENTITY, op: OP) -> Self::Item
+    fn reduce<OP, IDENTITY>(self, identity: IDENTITY, op: OP) -> Self::Item
         where OP: Fn(Self::Item, Self::Item) -> Self::Item + Sync,
-              IDENTITY: Fn() -> Self::Item + Sync,
+              IDENTITY: Fn() -> Self::Item + Sync
     {
         reduce(self, &ReduceWithIdentityOp::new(&identity, &op))
     }
 
     fn reduce_with<OP>(self, op: OP) -> Option<Self::Item>
-        where OP: Fn(Self::Item, Self::Item) -> Self::Item + Sync,
+        where OP: Fn(Self::Item, Self::Item) -> Self::Item + Sync
     {
         self.map(Some)
-            .reduce(|| None,
-                    |opt_a, opt_b| match (opt_a, opt_b) {
-                        (Some(a), Some(b)) => Some(op(a, b)),
-                        (Some(v), None) | (None, Some(v)) => Some(v),
-                        (None, None) => None,
-                    })
+            .reduce(|| None, |opt_a, opt_b| match (opt_a, opt_b) {
+                (Some(a), Some(b)) => Some(op(a, b)),
+                (Some(v), None) | (None, Some(v)) => Some(v),
+                (None, None) => None,
+            })
     }
 
-    fn fold<IDENTITY_ITEM,IDENTITY,FOLD_OP>(self,
-                                            identity: IDENTITY,
-                                            fold_op: FOLD_OP)
-                                            -> fold::Fold<Self, IDENTITY, FOLD_OP>
+    fn fold<IDENTITY_ITEM, IDENTITY, FOLD_OP>(self,
+                                              identity: IDENTITY,
+                                              fold_op: FOLD_OP)
+                                              -> fold::Fold<Self, IDENTITY, FOLD_OP>
         where FOLD_OP: Fn(IDENTITY_ITEM, Self::Item) -> IDENTITY_ITEM + Sync,
               IDENTITY: Fn() -> IDENTITY_ITEM + Sync,
-              IDENTITY_ITEM: Send,
+              IDENTITY_ITEM: Send
     {
         fold::fold(self, identity, fold_op)
     }
@@ -183,7 +184,7 @@ pub trait ParallelIterator: Sized {
     }
 
     fn chain<CHAIN>(self, chain: CHAIN) -> ChainIter<Self, CHAIN::Iter>
-        where CHAIN: IntoParallelIterator<Item=Self::Item>
+        where CHAIN: IntoParallelIterator<Item = Self::Item>
     {
         ChainIter::new(self, chain.into_par_iter())
     }
@@ -215,8 +216,7 @@ pub trait ParallelIterator: Sized {
     }
 
     #[doc(hidden)]
-    fn drive_unindexed<C>(self, consumer: C) -> C::Result
-        where C: UnindexedConsumer<Self::Item>;
+    fn drive_unindexed<C>(self, consumer: C) -> C::Result where C: UnindexedConsumer<Self::Item>;
 }
 
 impl<T: ParallelIterator> IntoParallelIterator for T {
@@ -232,9 +232,7 @@ pub trait BoundedParallelIterator: ParallelIterator {
     fn upper_bound(&mut self) -> usize;
 
     #[doc(hidden)]
-    fn drive<'c, C: Consumer<Self::Item>>(self,
-                                          consumer: C)
-                                          -> C::Result;
+    fn drive<'c, C: Consumer<Self::Item>>(self, consumer: C) -> C::Result;
 }
 
 pub trait ExactParallelIterator: BoundedParallelIterator {
@@ -249,7 +247,8 @@ pub trait IndexedParallelIterator: ExactParallelIterator {
     fn with_producer<CB: ProducerCallback<Self::Item>>(self, callback: CB) -> CB::Output;
 
     fn zip<ZIP_OP>(self, zip_op: ZIP_OP) -> ZipIter<Self, ZIP_OP::Iter>
-        where ZIP_OP: IntoParallelIterator, ZIP_OP::Iter: IndexedParallelIterator
+        where ZIP_OP: IntoParallelIterator,
+              ZIP_OP::Iter: IndexedParallelIterator
     {
         ZipIter::new(self, zip_op.into_par_iter())
     }
@@ -261,7 +260,8 @@ pub trait IndexedParallelIterator: ExactParallelIterator {
     fn position_any<POSITION_OP>(self, predicate: POSITION_OP) -> Option<usize>
         where POSITION_OP: Fn(Self::Item) -> bool + Sync
     {
-        self.map(predicate).enumerate()
+        self.map(predicate)
+            .enumerate()
             .find_any(|&(_, p)| p)
             .map(|(i, _)| i)
     }
@@ -274,4 +274,3 @@ pub trait IndexedParallelIterator: ExactParallelIterator {
         self.position_any(predicate)
     }
 }
-

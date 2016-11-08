@@ -2,7 +2,7 @@
 
 function ls {
 a=0
-for f in *.rs **/*.rs
+for f in *.rs **/*.rs **/**/*.rs
 do
 let "a+=`cat $f | grep $1 | wc -l`"
 done
