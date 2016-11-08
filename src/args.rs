@@ -34,7 +34,6 @@ impl<'a> Parser<'a> {
                     error!("Option {:?} is unknown.", &self.args[i]);
                 }
             }
-            break;
         }
     }
 }
