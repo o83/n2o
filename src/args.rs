@@ -9,7 +9,8 @@ pub struct Parser<'a, F> {
     funcs: HashMap<&'a str, F>,
 }
 
-impl<'a, F> Parser<'a, F> where F: Box<FnMut(&str)>
+impl<'a, F> Parser<'a, F>
+    where F: FnMut(&str)
 {
     pub fn new() -> Self {
         Parser {

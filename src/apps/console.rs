@@ -22,7 +22,7 @@ fn main() {
 
     Parser::new()
         .arg("init",
-             Box::new(|x| {
+             |x| {
             match File::open(x) {
                 Ok(f) => {
                     let f = BufReader::new(f);
@@ -30,11 +30,11 @@ fn main() {
                 }
                 Err(e) => error!("Error loading init file: {:?}", e),
             }
-        }))
-        .arg("help",
-             Box::new(|x| {
-                 println!("help: use 'server init <filename>' to boot.");
-             }))
+        })
+        // .arg("help",
+        //      Box::new(|x| {
+        //          println!("help: use 'server init <filename>' to boot.");
+        //      }))
         .parse();
 
     c.run(&mut poll);
