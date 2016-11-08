@@ -8,12 +8,12 @@
 use std::env;
 use std::collections::HashMap;
 
-pub struct ArgParser<F> {
+pub struct ArgParser<'a, F> {
     args: Vec<String>,
-    funcs: HashMap<String, F>,
+    funcs: HashMap<&'a str, F>,
 }
 
-impl<F> ArgParser<F>
+impl<'a, F> ArgParser<'a, F>
     where F: FnMut(&str)
 {
     pub fn new() -> Self {
@@ -23,17 +23,17 @@ impl<F> ArgParser<F>
         }
     }
 
-    pub fn arg(&mut self, prm: String, func: F) -> &mut Self {
+    pub fn arg(&'a mut self, prm: &'a str, func: F) -> &'a mut Self {
         self.funcs.insert(prm, func);
         self
     }
 
-    pub fn parse(&mut self) {
+    pub fn parse(&'a mut self) {
         let cnt = &self.args.len() - 1;
         assert_eq!(0, &cnt % 2);
 
         for i in (1..cnt).step_by(2) {
-            let func = self.funcs.get_mut(&self.args[i]);
+            let func = self.funcs.get_mut(&self.args[i][..]);
             match func {
                 Some(mut f) => (&mut f)(&self.args[i + 1]),
                 None => {

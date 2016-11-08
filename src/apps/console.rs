@@ -20,7 +20,7 @@ fn main() {
     let mut c = Console::new();
 
     ArgParser::new()
-        .arg("init".to_string(), |x| {
+        .arg("init", |x| {
             match File::open(x) {
                 Ok(f) => {
                     let f = BufReader::new(f);
