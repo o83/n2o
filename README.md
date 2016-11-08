@@ -8,6 +8,16 @@ TL;DR Autobalancing low-latency non-blocking zero-copy CAS-multicursor queues wi
 [![Crates IO](https://img.shields.io/crates/d/kernel.svg)](https://crates.io/crates/kernel)
 [![Crates IO](https://img.shields.io/crates/v/kernel.svg)](https://crates.io/crates/kernel)
 
+Features
+--------
+
+* MIO Compatible Network Server with Connections
+* Vectorizable SMP-aware stream combinators
+* MPSC, SPMC, SPSC queues with CAS-semantic on Ring Buffers
+* Session Types and π-calculus semantics
+* 10-40ns latency
+* Minimal Dependencies
+
 Prerequisites
 -------------
 
@@ -47,15 +57,6 @@ fn console() {
 }
 ```
 
-Features
---------
-
-* MIO Compatible Network Server with Connections
-* Future and Stream rich combinators
-* Session Types and π-calculus semantics
-* MPSC, SPMC, SPSC queues
-* 10-40ns latency
-* Free from Dependencies
 
 Test Network Server
 -------------------
