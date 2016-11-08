@@ -10,6 +10,7 @@ use io::poll::*;
 use io::options::*;
 use io::tele::*;
 use commands::*;
+use commands::ast::AST;
 
 pub struct Console {
     tele: Tele,
@@ -108,6 +109,10 @@ impl Console {
                         let mut m = String::from_utf8_lossy(&msg[..s]);
                         match m.trim() {
                             "exit" => Ok(false),
+                            "" => {
+                                println!("{:?}", AST::Nil);
+                                Ok(true)
+                            }
                             line => {
                                 println!("{:?}", command::parse_Mex(&line));
                                 Ok(true)

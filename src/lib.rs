@@ -1,7 +1,7 @@
 
 // TODO: remove unstable features
 
-#![feature(fnbox, static_in_const, heap_api, unboxed_closures, oom, alloc, box_syntax, optin_builtin_traits, question_mark, const_fn)]
+#![feature(fnbox, static_in_const, heap_api, unboxed_closures, oom, alloc, box_syntax, optin_builtin_traits, question_mark, const_fn, step_by)]
 
 // TODO: remove these deps
 
@@ -15,6 +15,7 @@ pub mod timers;
 pub mod io;
 pub mod slab;
 pub mod commands;
+pub mod util;
 //pub mod iterators;
 
 #[macro_use]
