@@ -10,16 +10,17 @@ extern crate core;
 extern crate log;
 
 use kernel::io::poll::*;
-use kernel::reactors::console::Console;
+use kernel::reactors::console::*;
+use std::boxed::*;
 use std::io::{self, BufReader};
 use std::fs::File;
-use kernel::util::argparse::ArgParser;
+use kernel::args::Parser;
 
 fn main() {
     let mut poll = Poll::new().expect("Failed to create Poll");
     let mut c = Console::new();
 
-    ArgParser::new()
+    Parser::new()
         .arg("init",
              Box::new(|x| {
             match File::open(x) {
@@ -32,7 +33,7 @@ fn main() {
         }))
         .arg("help",
              Box::new(|x| {
-                 println!("help: this is fucking OS, man!");
+                 println!("help: use 'server init <filename>' to boot.");
              }))
         .parse();
 

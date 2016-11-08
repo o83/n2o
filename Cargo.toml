@@ -52,7 +52,6 @@ num          = "0.1.36"
 byteorder    = "0.5.3"
 hwloc        = "0.3.0"
 lalrpop-util = "0.12.0"
-argparse     = "0.2.1"
 num_cpus     = "1.0"
 deque        = "0.3.1"
 

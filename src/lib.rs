@@ -19,7 +19,7 @@ pub mod slab;
 #[macro_use]
 pub mod session_types;
 pub mod commands;
-pub mod util;
+pub mod args;
 pub mod iterators;
 
 #[macro_use]
