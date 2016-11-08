@@ -2,7 +2,7 @@
 // Task Reactor with Priorities by Anton
 
 use std::cmp::Ordering;
-use abstractions::future::Future;
+use reactors::future::Future;
 use reactors::task::Task;
 
 pub struct Reactor<F> {

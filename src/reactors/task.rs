@@ -5,7 +5,7 @@
 // Created by Anton Kundenko.
 //
 
-use abstractions::future::{Poll, Future, Async};
+use reactors::future::{Poll, Future, Async};
 use std::result::Result;
 
 pub struct Task<F> {

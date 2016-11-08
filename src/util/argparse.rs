@@ -14,7 +14,7 @@ pub struct ArgParser<'a, F> {
 }
 
 impl<'a, F> ArgParser<'a, F>
-    where F: FnMut(&str)
+    where F: Box<FnMut(&str)>
 {
     pub fn new() -> Self {
         ArgParser {

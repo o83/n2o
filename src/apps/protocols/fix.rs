@@ -3,7 +3,7 @@ extern crate kernel;
 extern crate core;
 extern crate rand;
 
-use kernel::abstractions::session_types::*;
+use kernel::session_types::*;
 use std::{thread, time, string};
 use core::mem::transmute;
 use rand::random;

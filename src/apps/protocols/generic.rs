@@ -1,5 +1,5 @@
 extern crate kernel;
-use kernel::abstractions::session_types::*;
+use kernel::session_types::*;
 use std::thread::spawn;
 
 fn srv<A: std::marker::Send + 'static>(x: A, c: Chan<(), Send<A, Eps>>) {

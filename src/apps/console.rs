@@ -20,7 +20,8 @@ fn main() {
     let mut c = Console::new();
 
     ArgParser::new()
-        .arg("init", |x| {
+        .arg("init",
+             Box::new(|x| {
             match File::open(x) {
                 Ok(f) => {
                     let f = BufReader::new(f);
@@ -28,7 +29,11 @@ fn main() {
                 }
                 Err(e) => error!("Error loading init file: {:?}", e),
             }
-        })
+        }))
+        .arg("help",
+             Box::new(|x| {
+                 println!("help: this is fucking OS, man!");
+             }))
         .parse();
 
     c.run(&mut poll);
