@@ -1,6 +1,15 @@
 
 // K primitives: http://kparc.com/lisp.txt
 
+pub enum Error {
+    ParseError, // TODO: implementation
+}
+
+pub enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+
 pub enum KType {
     Nil = 0,
     Number = 1,
@@ -126,6 +135,42 @@ pub enum KAdverbs {
 }
 
 #[derive(Debug)]
+pub enum Verb {
+    Gets,
+    Plus,
+    Minus,
+    Times,
+    Divide,
+    Mod,
+    Min,
+    Max,
+    Less,
+    More,
+    Equal,
+    Match,
+    Concat,
+    Except,
+    Take,
+    Drop,
+    Cast,
+    Find,
+    At,
+    Dot,
+}
+
+impl Verb {
+    pub fn from_str(s: &str) -> Result<Self, Error> {
+        match s {
+            ":" => Result::Ok(Verb::Gets),
+            "+" => Result::Ok(Verb::Plus),
+            "*" => Result::Ok(Verb::Times),
+            "%" => Result::Ok(Verb::Divide),
+            _ => Result::Err(Error::ParseError),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum AST {
     // Tokens
     Number(u64),
@@ -134,7 +179,7 @@ pub enum AST {
     Name(String),
     Symbol(String),
     String(String),
-    Verb(String),
+    Verb(Verb),
     Assign,
     Ioverb(String),
     Adverb(String),

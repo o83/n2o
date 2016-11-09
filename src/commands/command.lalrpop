@@ -1,7 +1,7 @@
 
 // M-expressions grammar
 
-use commands::ast::AST;
+use commands::ast::*;
 use core::str::FromStr;
 grammar;
 
@@ -19,7 +19,7 @@ pub Hexlit:    AST = { <h:r"0x[a-zA-Z\d]+"> => AST::Number( u64::from_str_radix(
 pub Bool:      AST = { <b:r"[01]+b"> => AST::Bool(bool::from_str(b).unwrap()), };
 pub Name:      AST = { <n:r"[a-zA-Z][-a-zA-Z\d]*"> => AST::Name(String::from(n)), };
 pub Symbol:    AST = { <s:r"`([a-z.][a-z0-9.]*)?"> => AST::Symbol(String::from(s)), };
-pub Verb:      AST = { <v:r"[+\x2D*%!&|<>=~,^#_$?@.]"> => AST::Verb(String::from(v)), };   
+pub Verb:      AST = { <v:r"[+\x2D*%!&|<>=~,^#_$?@.]"> => AST::Verb(Verb::from_str(v).unwrap()), };   
 pub Assign:    AST = { <a:r"[+\x2D*%!&|<>=~,^#_$?@.]:"> => AST::Assign, }; 
 pub Ioverb:    AST = { <i:r"\d:"> => AST::Ioverb(String::from(i)), };         
 pub Adverb:    AST = { <a:r"['\x5C\x2F]:?"> => AST::Adverb(String::from(a)), };
