@@ -1,13 +1,11 @@
 
 // K primitives: http://kparc.com/lisp.txt
 
+use std::result::Result;
+
+#[derive(Debug)]
 pub enum Error {
     ParseError, // TODO: implementation
-}
-
-pub enum Result<T, E> {
-    Ok(T),
-    Err(E),
 }
 
 pub enum KType {
@@ -161,18 +159,32 @@ pub enum Verb {
 impl Verb {
     pub fn from_str(s: &str) -> Result<Self, Error> {
         match s {
-            ":" => Result::Ok(Verb::Gets),
-            "+" => Result::Ok(Verb::Plus),
-            "*" => Result::Ok(Verb::Times),
-            "%" => Result::Ok(Verb::Divide),
-            _ => Result::Err(Error::ParseError),
+            ":" => Ok(Verb::Gets),
+            "+" => Ok(Verb::Plus),
+            "*" => Ok(Verb::Times),
+            "%" => Ok(Verb::Divide),
+            "!" => Ok(Verb::Mod),
+            "&" => Ok(Verb::Min),
+            "|" => Ok(Verb::Max),
+            "<" => Ok(Verb::Less),
+            ">" => Ok(Verb::More),
+            "=" => Ok(Verb::Equal),
+            "~" => Ok(Verb::Match),
+            "," => Ok(Verb::Concat),
+            "^" => Ok(Verb::Except),
+            "#" => Ok(Verb::Take),
+            "_" => Ok(Verb::Drop),
+            "$" => Ok(Verb::Cast),
+            "?" => Ok(Verb::Find),
+            "@" => Ok(Verb::At),
+            "." => Ok(Verb::Dot),
+            _ => Err(Error::ParseError),
         }
     }
 }
 
 #[derive(Debug)]
-pub enum AST {
-    // Tokens
+pub enum Token {
     Number(u64),
     Hexlit(u64),
     Bool(bool),
@@ -195,7 +207,11 @@ pub enum AST {
     CloseB,
     CloseP,
     CloseC,
-    // Remains
+}
+
+
+#[derive(Debug)]
+pub enum AST {
     Append,
     Get,
     Set,
