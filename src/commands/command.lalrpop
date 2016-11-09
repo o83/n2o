@@ -19,8 +19,8 @@ pub Float:     AST = { <f:r"\d+\.\d+"> => AST::Float(f64::from_str(f).unwrap()),
 pub CommaList: AST = { <c:Mex> => AST::Cons(Box::new(c),Box::new(AST::Nil)),
                        <c:Mex> "," <e:CommaList> => AST::Cons(Box::new(c),Box::new(e)), };
 pub Expr:      AST = { <l:Expr> "+" <r:Term> => AST::Plus(Box::new(l),Box::new(r)),
-                       <l:Expr> "*" <r:Term> => AST::Mul(Box::new(l),Box::new(r)),
-                       <l:Expr> "%" <r:Term> => AST::Div(Box::new(l),Box::new(r)),
+                       <l:Expr> "*" <r:Term> => AST::Times(Box::new(l),Box::new(r)),
+                       <l:Expr> "%" <r:Term> => AST::Divide(Box::new(l),Box::new(r)),
                        <l:Expr> "-" <r:Term> => AST::Minus(Box::new(l),Box::new(r)), Term };
 //pub Factor:    AST = { <l:Factor> "*" <r:Term> => AST::Mul(Box::new(l),Box::new(r)),
 //                       <l:Factor> "%" <r:Term> => AST::Div(Box::new(l),Box::new(r)), Factor, };
