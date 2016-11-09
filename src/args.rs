@@ -4,14 +4,12 @@
 use std::{self, env};
 use std::collections::HashMap;
 
-pub struct Parser<'a, F> {
+pub struct Parser<'a> {
     args: Vec<String>,
-    funcs: HashMap<&'a str, F>,
+    funcs: HashMap<&'a str, Box<FnMut(&str)>>,
 }
 
-impl<'a, F> Parser<'a, F>
-    where F: FnMut(&str)
-{
+impl<'a> Parser<'a> {
     pub fn new() -> Self {
         Parser {
             args: env::args().collect(),
@@ -19,7 +17,7 @@ impl<'a, F> Parser<'a, F>
         }
     }
 
-    pub fn arg(&'a mut self, prm: &'a str, func: F) -> &'a mut Self {
+    pub fn arg(&'a mut self, prm: &'a str, func: Box<FnMut(&str)>) -> &'a mut Self {
         self.funcs.insert(prm, func);
         self
     }

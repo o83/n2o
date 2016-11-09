@@ -11,7 +11,6 @@ use io::token::Token;
 use io::event::Evented;
 use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
 use libc;
-use super::fd::FileDesc;
 use std::os::raw;
 
 pub struct EventedFd<'a>(pub &'a RawFd);

@@ -13,7 +13,7 @@ Features
 
 * MIO Compatible Network Server with Connections
 * Vectorizable SMP-aware stream combinators
-* MPSC, SPMC, SPSC queues with CAS-semantic on Ring Buffers
+* MPSC, SPMC, SPSC queues with CAS-semantics on Ring Buffers
 * Session Types and π-calculus semantics
 * 10-40ns latency
 * Minimal Dependencies
