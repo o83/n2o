@@ -30,15 +30,14 @@ pub Verb:      Verb = { <v:r"[+\x2D*%!&|<>=~,^#_$?@.]"> => Verb::from_str(v).unw
 
 // Calls
 pub Mex:       AST = { Expr, <o:Expr> "\n" <m:Mex> => AST::Cons(Box::new(o),Box::new(m)), };
-pub Expr:      AST = { Noun, Assign,
-                       <v:Verb> <a:Adverb> <n:Noun> =>
-                       AST::Sentance(a,v,Box::new(n)) };
+pub Expr:      AST = { Noun, Statement };
+pub Statement: AST = { <v:Verb> <a:Adverb> <n:Noun> => AST::Sentence(a,v,Box::new(n)) };
 pub Assign:    AST = { <n:Name> ":" <o:Expr> => AST::Assign(Box::new(n),Box::new(o)) };
-pub Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, Lambda, Call, List };
-pub List:      AST = { "(" ")" => AST::Nil,
-                       "(" <l:RawList> ")" => l, };
+pub Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, Lambda, List, Call };
+pub List:      AST = { "(" ")" => AST::Nil, "(" <l:RawList> ")" => l, };
+pub Args:      AST = { "[" "]" => AST::Nil, "[" <l:RawList> "]" => l, };
+pub CommaList: AST = { "," <m:RawList> => m };
+pub Call:      AST = { <c:Noun> <a:Args> => AST::Call(Box::new(c),Box::new(a)), };
+pub Lambda:    AST = { "{" <c:Args> <m:Mex> "}" => AST::Lambda(Box::new(c),Box::new(m)), };
 pub RawList:   AST = { <o:Expr> => AST::Cons(Box::new(o),Box::new(AST::Nil)),
                        <o:Expr> <m:CommaList> => AST::Cons(Box::new(o),Box::new(m)), };
-pub CommaList: AST = { "," <m:RawList> => m };
-pub Call:      AST = { <c:Name> "[" <body:RawList> "]" => AST::Lambda(Box::new(c),Box::new(body)) };
-pub Lambda:    AST = { "{" "[" <c:RawList> "]" <body:Mex> "}" => AST::Lambda(Box::new(c),Box::new(body)), };
