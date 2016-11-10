@@ -34,11 +34,13 @@ pub Expr:      AST = { Noun, Statement };
 pub Statement: AST = { <v:Verb> <a:Adverb> <n:Noun> => AST::Sentence(a,v,Box::new(n)) };
 pub Assign:    AST = { <n:Name> ":" <o:Expr> => AST::Assign(Box::new(n),Box::new(o)) };
 pub Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, Lambda, List, Call, Dict };
-pub List:      AST = { "(" ")" => AST::Nil, "(" <l:RawList> ")" => l, };
-pub Dict:      AST = { "[" "]" => AST::Nil, "[" <l:RawDict> "]" => l, };
+pub List:      AST = { "(" ")" => AST::Nil, "(" <l:RawList> ")" => AST::List(Box::new(l)), };
+pub Dict:      AST = { "[" "]" => AST::Nil, "[" <l:RawDict> "]" => AST::Dict(Box::new(l)), };
 pub Args:      AST = { "[" "]" => AST::Nil, "[" <l:RawList> "]" => l, };
 pub Call:      AST = { <c:Noun> <a:Args> => AST::Call(Box::new(c),Box::new(a)), };
-pub Lambda:    AST = { "{" <c:Args> <m:Mex> "}" => AST::Lambda(Box::new(c),Box::new(m)), };
+pub Lambda:    AST = { Lambda1, Lambda2 };
+pub Lambda1:   AST = { "{" "[" <c:RawList> "]" <m:Mex> "}" => AST::Lambda(Box::new(c),Box::new(m)), };
+pub Lambda2:   AST = { "{" <m:Mex> "}" => AST::Lambda(Box::new(AST::Nil),Box::new(m)), };
 
 pub CommaList: AST = { "," <m:RawList> => m };
 pub RawList:   AST = { <o:Expr> => AST::Cons(Box::new(o),Box::new(AST::Nil)),
