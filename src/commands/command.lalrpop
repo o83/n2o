@@ -17,10 +17,9 @@ pub Ioverb:         AST = { <i:r"\d+:"> => AST::Ioverb(String::from(i)), };
 pub List:           AST = { "(" ")" => AST::Nil, "(" <l:RawList> ")" => AST::List(Box::new(l)), };
 pub Dict:           AST = { "[" "]" => AST::Nil, "[" <l:RawDict> "]" => AST::Dict(Box::new(l)), };
 pub Args:           AST = { "[" "]" => AST::Nil, "[" <l:RawList> "]" => l, };
-pub Lambda:         AST = { Lambda1, Lambda2 };
 pub Call:           AST = { <c:Noun> <a:Args> => AST::Call(Box::new(c),Box::new(a)), };
-pub Lambda1:        AST = { "{" "[" <c:RawList> "]" <m:Mex> "}" => AST::Lambda(Box::new(c),Box::new(m)), };
-pub Lambda2:        AST = { "{" <m:Mex> "}" => AST::Lambda(Box::new(AST::Nil),Box::new(m)), };
+pub Lambda:         AST = { "{" "[" <c:RawList> "]" <m:Mex> "}" => AST::Lambda(Box::new(c),Box::new(m)),
+                            "{" <m:Mex> "}" => AST::Lambda(Box::new(AST::Nil),Box::new(m)), };
 
 // Language
 
