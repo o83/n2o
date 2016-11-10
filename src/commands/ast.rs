@@ -34,6 +34,8 @@ pub struct Cell {
     v: Vec<Cell>,
 }
 
+// OK LANG
+
 //        a          l           a-a         l-a         a-l         l-l         triad    tetrad
 // "+" : [ident,     flip,       ad(plus),   ad(plus),   ad(plus),   ad(plus),   null,    null  ],
 // "-" : [am(negate),am(negate), ad(minus),  ad(minus),  ad(minus),  ad(minus),  null,    null  ],

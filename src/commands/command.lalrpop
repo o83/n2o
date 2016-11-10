@@ -38,7 +38,7 @@ pub Expr:           AST = { Noun, Statement, <v:Verb> => AST::Verb(v) };
 
 // Lists
 
-pub SemiList:      AST = { ";" <m:RawList> => m };
+pub SemiList:       AST = { ";" <m:RawList> => m };
 pub RawList:        AST = { <o:Expr> => AST::Cons(Box::new(o),Box::new(AST::Nil)),
                             <o:Expr> <m:SemiList> => AST::Cons(Box::new(o),Box::new(m)), };
 
