@@ -28,7 +28,7 @@ pub Lambda:         AST = { Lambda1, Lambda2 };
 pub Lambda1:        AST = { "{" "[" <c:RawList> "]" <m:Mex> "}" => AST::Lambda(Box::new(c),Box::new(m)), };
 pub Lambda2:        AST = { "{" <m:Mex> "}" => AST::Lambda(Box::new(AST::Nil),Box::new(m)), };
 
-pub Statement:      AST = { <l:Noun> <v:Verb> <r:Noun> => AST::Sentence(Box::new(l),v,Box::new(r)),
+pub Statement:      AST = { <l:Expr> <v:Verb> <r:Noun> => AST::Sentence(Box::new(l),v,Box::new(r)),
                             <v:Verb> <a:Adverb> <n:Noun> => AST::Sentence(Box::new(AST::Adverb(a)),v,Box::new(n)) };
 
 pub CommaList:      AST = { "," <m:RawList> => m };
