@@ -1,5 +1,5 @@
 
-// O-interpreter by 5HT et all.
+// O: The Kernel DSL by 5HT et all.
 
 use commands::ast;
 use commands::ast::*;

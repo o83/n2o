@@ -1,16 +1,16 @@
 
-// O AST
+// O-DSL AST
 
 use std::result::Result;
 use std::rc::Rc;
-
 
 #[derive(Debug)]
 pub enum Error {
     ParseError,
 }
 
-pub enum KType {
+#[derive(Debug)]
+pub enum Type {
     Nil = 0,
     Number = 1,
     Char = 2,
@@ -28,29 +28,11 @@ pub enum KType {
     Quote = 14,
 }
 
-static ASCII: [[i32; 16]; 16] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]];
-
-pub struct KCell {
-    t: KType,
-    v: Vec<KCell>,
+#[derive(Debug)]
+pub struct Cell {
+    t: Type,
+    v: Vec<Cell>,
 }
-
-static NUMBERS: [[i32; 8]; 2] = [[1, 2, 3, 4, 5, 6, 7, 8], [1, 2, 3, 4, 5, 6, 7, 8]];
 
 //        a          l           a-a         l-a         a-l         l-l         triad    tetrad
 // "+" : [ident,     flip,       ad(plus),   ad(plus),   ad(plus),   ad(plus),   null,    null  ],
@@ -77,39 +59,52 @@ static NUMBERS: [[i32; 8]; 2] = [[1, 2, 3, 4, 5, 6, 7, 8], [1, 2, 3, 4, 5, 6, 7,
 // "\\": [null,      null,       null,       unpack,     split,      null,       null,    null  ],
 
 #[derive(Debug)]
-pub enum Adverb {
-    Each,
-    EachPrio,
-    EachLeft,
-    EachRight,
-    Over,
-    Scan,
-    Iterate,
-    Fixed,
+pub enum Verb {
+    Plus = 0,
+    Minus = 1,
+    Times = 2,
+    Divide = 3,
+    Mod = 4,
+    Min = 5,
+    Max = 6,
+    Less = 7,
+    More = 8,
+    Equal = 9,
+    Match = 10,
+    Concat = 11,
+    Except = 12,
+    Take = 13,
+    Drop = 14,
+    Cast = 15,
+    Find = 16,
+    At = 17,
+    Dot = 18,
+    Gets = 19,
+    Pack = 20,
+    Unpack = 21,
 }
 
 #[derive(Debug)]
-pub enum Verb {
-    Gets,
-    Plus,
-    Minus,
-    Times,
-    Divide,
-    Mod,
-    Min,
-    Max,
-    Less,
-    More,
-    Equal,
-    Match,
-    Concat,
-    Except,
-    Take,
-    Drop,
-    Cast,
-    Find,
-    At,
-    Dot,
+pub enum Monadic {
+    Flip = 0,
+    Negate = 1,
+    First = 2,
+    Sqrt = 3,
+    Iota = 4,
+    Where = 5,
+    Rev = 6,
+    Asc = 7,
+    Desc = 8,
+    Group = 9,
+    Not = 10,
+    List = 11,
+    Nil = 12,
+    Count = 13,
+    Floor = 14,
+    Fmt = 15,
+    Unique = 16,
+    Type = 17,
+    Eval = 18,
 }
 
 impl Verb {
@@ -137,6 +132,18 @@ impl Verb {
             _ => Err(Error::ParseError),
         }
     }
+}
+
+#[derive(Debug)]
+pub enum Adverb {
+    Each,
+    EachPrio,
+    EachLeft,
+    EachRight,
+    Over,
+    Scan,
+    Iterate,
+    Fixed,
 }
 
 impl Adverb {
