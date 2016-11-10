@@ -180,9 +180,9 @@ pub enum AST {
     String(String),
     Verb(Verb),
     Ioverb(String),
-    Adverb(String),
+    Adverb(Adverb),
     Assign(Box<AST>, Box<AST>),
-    Sentence(Adverb, Verb, Box<AST>),
+    Sentence(Box<AST>, Verb, Box<AST>),
 
     List(Box<AST>),
     Dict(Box<AST>),
