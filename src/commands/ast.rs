@@ -1,11 +1,13 @@
 
-// K primitives: http://kparc.com/lisp.txt
+// O AST
 
 use std::result::Result;
+use std::rc::Rc;
+
 
 #[derive(Debug)]
 pub enum Error {
-    ParseError, // TODO: implementation
+    ParseError,
 }
 
 pub enum KType {
@@ -140,11 +142,11 @@ impl Verb {
 impl Adverb {
     pub fn from_str(s: &str) -> Result<Self, Error> {
         match s {
-            "/"  => Ok(Adverb::Over),
+            "/" => Ok(Adverb::Over),
             "\\" => Ok(Adverb::Scan),
-            "'"  => Ok(Adverb::Each),
+            "'" => Ok(Adverb::Each),
             "':" => Ok(Adverb::EachPrio),
-            "\\:"=> Ok(Adverb::EachLeft),
+            "\\:" => Ok(Adverb::EachLeft),
             "/:" => Ok(Adverb::EachRight),
             _ => Err(Error::ParseError),
         }
@@ -171,7 +173,6 @@ pub enum Token {
 
 #[derive(Debug)]
 pub enum AST {
-
     Number(u64),
     Hexlit(u64),
     Bool(bool),
@@ -182,8 +183,7 @@ pub enum AST {
     Ioverb(String),
     Adverb(Adverb),
     Assign(Box<AST>, Box<AST>),
-    Sentence(Box<AST>, Box<AST>, Box<AST>),
-
+    Stmt(Rc<AST>, Box<AST>, Box<AST>),
     List(Box<AST>),
     Dict(Box<AST>),
     Call(Box<AST>, Box<AST>),
@@ -193,4 +193,8 @@ pub enum AST {
     ColonList(Box<AST>),
     DictCons(Box<AST>, Box<AST>),
     Cons(Box<AST>, Box<AST>),
+}
+
+pub fn stmt(v: AST, l: AST, r: AST) -> AST {
+    return AST::Stmt(Rc::new(v), Box::new(l), Box::new(r));
 }

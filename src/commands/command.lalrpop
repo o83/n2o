@@ -1,6 +1,7 @@
 
 // O-interpreter by 5HT et all.
 
+use commands::ast;
 use commands::ast::*;
 use core::str::FromStr;
 grammar;
@@ -26,15 +27,14 @@ pub Lambda2:        AST = { "{" <m:Mex> "}" => AST::Lambda(Box::new(AST::Nil),Bo
 pub Adverb:      Adverb = { <a:r"['\x5C\x2F]:?"> => Adverb::from_str(a).unwrap(), };
 pub Verb:          Verb = { <v:r"[+\x2D*%!&|<>=~,^#_$?@.]"> => Verb::from_str(v).unwrap(), };
 pub Noun:           AST = { Name, Number, Hexlit, Bool, Symbol, Lambda, List, Call, Dict };
-pub Statement:      AST = { <l:Expr> <v:Verb>   <r:Noun> => AST::Sentence(Box::new(l),Box::new(AST::Verb(v)),Box::new(r)),
-                            <l:Expr> <v:Adverb> <r:Noun> => AST::Sentence(Box::new(AST::Adverb(v)),Box::new(l),Box::new(r)),
-                            <l:Verb> <v:Adverb> <r:Noun> => AST::Sentence(Box::new(AST::Adverb(v)),Box::new(AST::Verb(l)),Box::new(r)) };
+pub Statement:      AST = { <l:Expr> <v:Verb> <r:Noun> => ast::stmt(AST::Verb(v),l,r),
+                            <l:Expr> <v:Adverb> <r:Noun> => ast::stmt(AST::Adverb(v),l,r) };
 
 // Expressions
 
 pub Mex:            AST = { Noun, Assign, Statement, <o:Expr> "\n" <m:Mex> => AST::Cons(Box::new(o),Box::new(m)), };
 pub Assign:         AST = { <n:Name> ":" <o:Expr> => AST::Assign(Box::new(n),Box::new(o)) };
-pub Expr:           AST = { Noun, Statement };
+pub Expr:           AST = { Noun, Statement, <v:Verb> => AST::Verb(v) };
 
 // Lists
 
@@ -47,3 +47,4 @@ pub RawList:        AST = { <o:Expr> => AST::Cons(Box::new(o),Box::new(AST::Nil)
 pub SemiDict:       AST = { ";" <m:RawDict> => m };
 pub RawDict:        AST = { <o:Assign> => AST::Cons(Box::new(o),Box::new(AST::Nil)),
                             <o:Assign> <m:SemiDict> => AST::Cons(Box::new(o),Box::new(m)), };
+
