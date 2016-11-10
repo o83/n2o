@@ -182,7 +182,7 @@ pub enum AST {
     Ioverb(String),
     Adverb(Adverb),
     Assign(Box<AST>, Box<AST>),
-    Sentence(Box<AST>, Verb, Box<AST>),
+    Sentence(Box<AST>, Box<AST>, Box<AST>),
 
     List(Box<AST>),
     Dict(Box<AST>),
