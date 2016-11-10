@@ -31,9 +31,9 @@ pub Lambda2:        AST = { "{" <m:Mex> "}" => AST::Lambda(Box::new(AST::Nil),Bo
 pub Statement:      AST = { <l:Expr> <v:Verb> <r:Noun> => AST::Sentence(Box::new(l),v,Box::new(r)),
                             <v:Verb> <a:Adverb> <n:Noun> => AST::Sentence(Box::new(AST::Adverb(a)),v,Box::new(n)) };
 
-pub CommaList:      AST = { "," <m:RawList> => m };
+pub SemiList:      AST = { ";" <m:RawList> => m };
 pub RawList:        AST = { <o:Expr> => AST::Cons(Box::new(o),Box::new(AST::Nil)),
-                            <o:Expr> <m:CommaList> => AST::Cons(Box::new(o),Box::new(m)), };
+                            <o:Expr> <m:SemiList> => AST::Cons(Box::new(o),Box::new(m)), };
 
 pub SemiDict:       AST = { ";" <m:RawDict> => m };
 pub RawDict:        AST = { <o:Assign> => AST::Cons(Box::new(o),Box::new(AST::Nil)),
