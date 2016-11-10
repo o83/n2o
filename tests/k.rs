@@ -19,6 +19,12 @@ pub fn k_list() {
 }
 
 #[test]
+pub fn k_assign() {
+    assert_eq!(format!("{:?}", command::parse_Mex("a:b:c:1")),
+               "Ok(Assign(Name(\"a\"), Assign(Name(\"b\"), Assign(Name(\"c\"), Number(1)))))");
+}
+
+#[test]
 pub fn k_func() {
     assert_eq!(format!("{:?}", command::parse_Mex("{x*2}[(1;2;3)]")),
                "Ok(Call(Lambda(Nil, Stmt(Verb(Times), Name(\"x\"), Number(2))), \
