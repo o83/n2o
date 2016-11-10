@@ -1,25 +1,17 @@
 
-// M-expressions grammar
+// K-like interpreter
 
 use commands::ast::*;
 use core::str::FromStr;
 grammar;
 
-// Tokenizer
-pub Number:    Token = { <n:r"\d+"> => Token::Number( u64::from_str(n).unwrap()), };
-pub Hexlit:    Token = { <h:r"0x[a-zA-Z\d]+"> => Token::Number( u64::from_str_radix(&h[2..], 16).unwrap()), };
-pub Bool:      Token = { <b:r"[01]+b"> => Token::Bool(bool::from_str(b).unwrap()), };
-pub Name:      Token = { <n:r"[a-zA-Z][-a-zA-Z\d]*"> => Token::Name(String::from(n)), };
-pub Symbol:    Token = { <s:r"`([a-z.][a-z0-9.]*)?"> => Token::Symbol(String::from(s)), };
-pub Verb:      Token = { <v:r"[+\x2D*%!&|<>=~,^#_$?@.]"> => Token::Verb(Verb::from_str(v).unwrap()), };   
-pub Assign:    Token = { <a:r"[+\x2D*%!&|<>=~,^#_$?@.]:"> => Token::Assign, }; 
-pub Ioverb:    Token = { <i:r"\d:"> => Token::Ioverb(String::from(i)), };         
-pub Adverb:    Token = { <a:r"['\x5C\x2F]:?"> => Token::Adverb(String::from(a)), };
+// Pure Tokens
+pub Space:     Token = { " " => Token::Space, };
 pub Semi:      Token = { ";" => Token::Semi, };
 pub Colon:     Token = { ":" => Token::Colon, };
 pub View:      Token = { "::" => Token::View, };
 pub Cond:      Token = { <c:r"\$\["> => Token::Cond, };
-pub Dict:      Token = { <d:r"\[[a-z]+:"> => Token::Dict(String::from(d)), };
+pub Assign:    Token = { <a:r"[+\x2D*%!&|<>=~,^#_$?@.]:"> => Token::Assign, }; 
 pub Apply:     Token = { "\." => Token::Apply, };
 pub OpenB:     Token = { "[" => Token::OpenB, };
 pub OpenP:     Token = { "(" => Token::OpenP, };
@@ -28,21 +20,23 @@ pub CloseB:    Token = { "]" => Token::CloseB, };
 pub CloseP:    Token = { ")" => Token::CloseP, };
 pub CloseC:    Token = { "}" => Token::CloseC, };
 
+// Containers
+pub Number:    AST = { <n:r"\d+"> => AST::Number( u64::from_str(n).unwrap()), };
+pub Hexlit:    AST = { <h:r"0x[a-zA-Z\d]+"> => AST::Number( u64::from_str_radix(&h[2..], 16).unwrap()), };
+pub Bool:      AST = { <b:r"[01]+b"> => AST::Bool(bool::from_str(b).unwrap()), };
+pub Name:      AST = { <n:r"[a-zA-Z][-a-zA-Z\d]*"> => AST::Name(String::from(n)), };
+pub Symbol:    AST = { <s:r"`([a-z.][a-z0-9.]*)?"> => AST::Symbol(String::from(s)), };
+pub Verb:      AST = { <v:r"[+\x2D*%!&|<>=~,^#_$?@.]"> => AST::Verb(Verb::from_str(v).unwrap()), };
+pub Ioverb:    AST = { <i:r"\d:"> => AST::Ioverb(String::from(i)), };
+pub Adverb:    AST = { <a:r"['\x5C\x2F]:?"> => AST::Adverb(String::from(a)), };
+
 // Calls
-pub Mex:       AST = { Operator, <o:Operator> Whitespace <m:Mex> => AST::Cons(Box::new(o),Box::new(m)), };
-pub Operator:  AST = { Expr, Call, Lambda };
-pub Call:      AST = { <n:Name> "[" <c:CommaList> "]" => AST::Call(Box::new(n),Box::new(c)), };
-pub Lambda:    AST = { "{" "[" <c:CommaList> "]" <body:Mex> "}" => AST::Lambda(Box::new(c),Box::new(body)), };
-pub Whitespace:AST = { "\n" => AST::Nil, "\t" => AST::Nil, "\r" => AST::Nil, "\s" => AST::Nil };
-pub Terminal:  AST = { Name, Number };
-pub Term:      AST = { Terminal, "(" <Expr> ")" };
-pub Reduce:    AST = { "/" <s:Symbol> => AST::Reduce(Box::new(s)), };
-//
-pub CommaList: AST = { <c:Mex> => AST::Cons(Box::new(c),Box::new(AST::Nil)),
-                       <c:Mex> "," <e:CommaList> => AST::Cons(Box::new(c),Box::new(e)), };
-pub Expr:      AST = { <l:Expr> "+" <r:Term> => AST::Plus(Box::new(l),Box::new(r)),
-                       <l:Expr> "*" <r:Term> => AST::Times(Box::new(l),Box::new(r)),
-                       <l:Expr> "%" <r:Term> => AST::Divide(Box::new(l),Box::new(r)),
-                       <l:Expr> "-" <r:Term> => AST::Minus(Box::new(l),Box::new(r)), Term };
-//pub Factor:    AST = { <l:Factor> "*" <r:Term> => AST::Mul(Box::new(l),Box::new(r)),
-//                       <l:Factor> "%" <r:Term> => AST::Div(Box::new(l),Box::new(r)), Factor, };
+pub Mex:       AST = { Expr, <o:Expr> "\n" <m:Mex> => AST::Cons(Box::new(o),Box::new(m)), };
+pub Expr:      AST = { Noun, "(" <o:List> ")" => o };
+pub Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, Lambda };
+pub List:      AST = { <o:Expr> => AST::Cons(Box::new(o),Box::new(AST::Nil)),
+                       <o:Expr> <m:SpaceList> => AST::Cons(Box::new(o),Box::new(m)),
+                       <o:Expr> <m:CommaList> => AST::Cons(Box::new(o),Box::new(m)), };
+pub SpaceList: AST = { " " <m:List> => m };
+pub CommaList: AST = { "," <m:List> => m };
+pub Lambda:    AST = { "{" "[" <c:List> "]" <body:Mex> "}" => AST::Lambda(Box::new(c),Box::new(body)), };
