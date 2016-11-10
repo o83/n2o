@@ -14,27 +14,27 @@ use kernel::reactors::console::*;
 use std::boxed::*;
 use std::io::{self, BufReader};
 use std::fs::File;
-use kernel::args::Parser;
+use kernel::args::*;
+
 
 fn main() {
     let mut poll = Poll::new().expect("Failed to create Poll");
     let mut c = Console::new();
 
-    Parser::new()
-        .arg("init",
-             Box::new(move |x| {
-            match File::open(x) {
-                Ok(f) => {
-                    let f = BufReader::new(f);
-                    c.from_buf(f);
-                    c.run(&mut poll);
-                }
-                Err(e) => error!("Error loading init file: {:?}", e),
+    let mut p = Parser::new();
+    if let Ok(init) = p.get("init", true) {
+        match File::open(init.unwrap()) {
+            Ok(f) => {
+                let f = BufReader::new(f);
+                c.from_buf(f);
             }
-        }))
-        .arg("help",
-             Box::new(move |x| {
-                 println!("help: use 'server init <filename>' to boot.");
-             }))
-        .parse();
+            Err(e) => error!("Error loading init file: {:?}", e),
+        }
+    }
+    if let Ok(help) = p.get("help", false) {
+        println!("help: use 'server init <filename>' to boot.");
+        return;
+    }
+
+    c.run(&mut poll);
 }

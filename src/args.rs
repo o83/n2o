@@ -3,36 +3,35 @@
 
 use std::{self, env};
 use std::collections::HashMap;
+use std::result::Result;
 
-pub struct Parser<'a> {
-    args: Vec<String>,
-    funcs: HashMap<&'a str, Box<FnMut(&str)>>,
+pub enum Error {
+    ArgumentNotFound,
 }
 
-impl<'a> Parser<'a> {
+pub struct Parser {
+    args: Vec<String>,
+}
+
+impl<'a> Parser {
     pub fn new() -> Self {
-        Parser {
-            args: env::args().collect(),
-            funcs: HashMap::new(),
-        }
+        Parser { args: env::args().collect() }
     }
 
-    pub fn arg(&'a mut self, prm: &'a str, func: Box<FnMut(&str)>) -> &'a mut Self {
-        self.funcs.insert(prm, func);
-        self
-    }
-
-    pub fn parse(&'a mut self) {
-        let cnt = &self.args.len() - 1;
-        assert_eq!(0, &cnt % 2);
-
-        for i in (1..cnt).step_by(2) {
-            let func = self.funcs.get_mut(&self.args[i][..]);
-            match func {
-                Some(mut f) => (&mut f)(&self.args[i + 1]),
-                None => {
-                    error!("Option {:?} is unknown.", &self.args[i]);
+    pub fn get(&mut self, arg: &str, hasval: bool) -> Result<Option<&String>, Error> {
+        let mut it = self.args.iter();
+        // omit an 0th argument (program name)
+        let v = it.next();
+        loop {
+            if let Some(v) = it.next() {
+                if v == arg {
+                    return match hasval {
+                        true => Ok(it.next()),
+                        _ => Ok(None),
+                    };
                 }
+            } else {
+                return Err(Error::ArgumentNotFound);
             }
         }
     }
