@@ -17,29 +17,30 @@ pub Ioverb:         AST = { <i:r"\d+:"> => AST::Ioverb(String::from(i)), };
 pub List:           AST = { "(" ")" => AST::Nil, "(" <l:RawList> ")" => AST::List(Box::new(l)), };
 pub Dict:           AST = { "[" "]" => AST::Nil, "[" <l:RawDict> "]" => AST::Dict(Box::new(l)), };
 pub Args:           AST = { "[" "]" => AST::Nil, "[" <l:RawList> "]" => l, };
-pub Call:           AST = { <c:Noun> <a:Args> => AST::Call(Box::new(c),Box::new(a)), };
-pub Lambda:         AST = { "{" "[" <c:RawList> "]" <m:Mex> "}" => AST::Lambda(Box::new(c),Box::new(m)),
-                            "{" <m:Mex> "}" => AST::Lambda(Box::new(AST::Nil),Box::new(m)), };
+pub Call:           AST = { <c:Noun> <a:Args> => AST::Call(Box::new(c),Box::new(a)) };
+pub Lambda:         AST = { "{" "[" <c:RawList> "]" <m:PreExpr> "}" => AST::Lambda(Box::new(c),Box::new(m)),
+                            "{" <m:PreExpr> "}" => AST::Lambda(Box::new(AST::Nil),Box::new(m)), };
 
 // Language
 
 pub Adverb:      Adverb = { <a:r"['\x5C\x2F]:?"> => Adverb::from_str(a).unwrap(), };
 pub Verb:          Verb = { <v:r"[+\x2D*%!&|<>=~,^#_$?@.]"> => Verb::from_str(v).unwrap(), };
 pub Noun:           AST = { Name, Number, Hexlit, Bool, Symbol, Lambda, List, Call, Dict };
-pub Statement:      AST = { <l:Expr> <v:Verb> <r:Noun> => ast::stmt(AST::Verb(v),l,r),
-                            <l:Expr> <v:Adverb> <r:Noun> => ast::stmt(AST::Adverb(v),l,r), };
+pub Statement:      AST = { <l:PreExpr> <v:Verb> <r:Noun>   => ast::stmt(AST::Verb(v),l,r),
+                            <l:PreExpr> <v:Adverb> <r:Noun> => ast::stmt(AST::Adverb(v),l,r) };
 
 // Expressions
 
 pub Mex:            AST = { Expr, <o:Expr> "\n" <m:Mex> => AST::Cons(Box::new(o),Box::new(m)), };
 pub Assign:         AST = { <n:Name> ":" <o:Expr> => AST::Assign(Box::new(n),Box::new(o)), };
-pub Expr:           AST = { Noun, Statement, <v:Verb> => AST::Verb(v), Ioverb, };
+pub PreExpr:        AST = { Noun, Statement, <v:Verb> => AST::Verb(v), Ioverb };
+pub Expr:           AST = { PreExpr, Assign };
 
 // Lists
 
 pub SemiList:       AST = { ";" <m:RawList> => m };
-pub RawList:        AST = { <o:Expr> => AST::Cons(Box::new(o),Box::new(AST::Nil)),
-                            <o:Expr> <m:SemiList> => AST::Cons(Box::new(o),Box::new(m)), };
+pub RawList:        AST = { <o:PreExpr> => AST::Cons(Box::new(o),Box::new(AST::Nil)),
+                            <o:PreExpr> <m:SemiList> => AST::Cons(Box::new(o),Box::new(m)), };
 
 
 // Dictionaries
