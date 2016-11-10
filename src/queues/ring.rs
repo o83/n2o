@@ -10,7 +10,7 @@ pub struct RingBuffer<T> {
 }
 
 impl<T> RingBuffer<T> {
-    
+
     pub fn with_capacity(cap: usize) -> Self {
         let adjusted = cap.next_power_of_two();
         RingBuffer { 
@@ -18,7 +18,7 @@ impl<T> RingBuffer<T> {
             mask: adjusted - 1,
         }
     }
-    
+
     pub fn from_raw_parts(ptr: *mut T, cap: usize) -> Self {
         RingBuffer { 
             buffer: unsafe { RawVec::from_raw_parts(ptr, cap) },
@@ -30,7 +30,7 @@ impl<T> RingBuffer<T> {
     pub fn cap(&self) -> usize {
         self.buffer.cap()
     }
-    
+
     #[inline]
     pub unsafe fn get(&self, pos: usize) -> &T {
         transmute(self.buffer.ptr().offset((pos & self.mask) as isize))
@@ -81,9 +81,9 @@ mod tests {
             let arr = ring.get_slice(0, 4);
             assert!(arr[0] == 0);
             assert!(arr[3] == 3);
-            
+
             let mut s = ring.get_slice_mut(0, 4);
-            s[2] = 42;      
+            s[2] = 42;
             assert!(arr[2] == 42);
         }
     }
