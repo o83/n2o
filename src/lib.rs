@@ -30,4 +30,3 @@ extern crate log;
 extern crate core;
 #[macro_use]
 extern crate bitflags;
-

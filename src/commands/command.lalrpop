@@ -28,21 +28,23 @@ pub CloseB:    Token = { "]" => Token::CloseB, };
 pub CloseP:    Token = { ")" => Token::CloseP, };
 pub CloseC:    Token = { "}" => Token::CloseC, };
 
+pub Mex: AST = { <n:Number> Whitespace <m:Number> => AST::Cons(Box::new(n),Box::new(m)), };
+
 // Calls
-pub Mex:       AST = { Operator, <o:Operator> Whitespace <m:Mex> => AST::Cons(Box::new(o),Box::new(m)), };
-pub Operator:  AST = { Expr, Call, Lambda };
-pub Call:      AST = { <n:Name> "[" <c:CommaList> "]" => AST::Call(Box::new(n),Box::new(c)), };
-pub Lambda:    AST = { "{" "[" <c:CommaList> "]" <body:Mex> "}" => AST::Lambda(Box::new(c),Box::new(body)), };
+//pub Mex:       AST = { Operator, <o:Operator> Whitespace <m:Mex> => AST::Cons(Box::new(o),Box::new(m)), };
+//pub Operator:  AST = { Expr, Call, Lambda };
+//pub Call:      AST = { <n:Name> "[" <c:CommaList> "]" => AST::Call(Box::new(n),Box::new(c)), };
+//pub Lambda:    AST = { "{" "[" <c:CommaList> "]" <body:Mex> "}" => AST::Lambda(Box::new(c),Box::new(body)), };
 pub Whitespace:AST = { "\n" => AST::Nil, "\t" => AST::Nil, "\r" => AST::Nil, "\s" => AST::Nil };
-pub Terminal:  AST = { Name, Number };
-pub Term:      AST = { Terminal, "(" <Expr> ")" };
-pub Reduce:    AST = { "/" <s:Symbol> => AST::Reduce(Box::new(s)), };
+//pub Terminal:  AST = { Name, Number };
+//pub Term:      AST = { Terminal, "(" <Expr> ")" };
+//pub Reduce:    AST = { "/" <s:Symbol> => AST::Reduce(Box::new(s)), };
 //
-pub CommaList: AST = { <c:Mex> => AST::Cons(Box::new(c),Box::new(AST::Nil)),
-                       <c:Mex> "," <e:CommaList> => AST::Cons(Box::new(c),Box::new(e)), };
-pub Expr:      AST = { <l:Expr> "+" <r:Term> => AST::Plus(Box::new(l),Box::new(r)),
-                       <l:Expr> "*" <r:Term> => AST::Times(Box::new(l),Box::new(r)),
-                       <l:Expr> "%" <r:Term> => AST::Divide(Box::new(l),Box::new(r)),
-                       <l:Expr> "-" <r:Term> => AST::Minus(Box::new(l),Box::new(r)), Term };
+//pub CommaList: AST = { <c:Mex> => AST::Cons(Box::new(c),Box::new(AST::Nil)),
+//                       <c:Mex> "," <e:CommaList> => AST::Cons(Box::new(c),Box::new(e)), };
+//pub Expr:      AST = { <l:Expr> "+" <r:Term> => AST::Plus(Box::new(l),Box::new(r)),
+//                       <l:Expr> "*" <r:Term> => AST::Times(Box::new(l),Box::new(r)),
+//                       <l:Expr> "%" <r:Term> => AST::Divide(Box::new(l),Box::new(r)),
+//                       <l:Expr> "-" <r:Term> => AST::Minus(Box::new(l),Box::new(r)), Term };
 //pub Factor:    AST = { <l:Factor> "*" <r:Term> => AST::Mul(Box::new(l),Box::new(r)),
 //                       <l:Factor> "%" <r:Term> => AST::Div(Box::new(l),Box::new(r)), Factor, };

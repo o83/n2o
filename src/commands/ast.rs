@@ -223,7 +223,8 @@ pub enum AST {
     Call(Box<AST>, Box<AST>),
     CommaList(Box<AST>),
     ColonList(Box<AST>),
-    Cons(Box<AST>, Box<AST>),
+    // Temporary hack (Need to be Cons(Box<AST>, Box<AST>) and function call instead of Enum instance.)
+    Cons(Box<Token>, Box<Token>),
     Car,
     Setq,
     Map,
