@@ -42,10 +42,10 @@ pub Lambda:    AST = { Lambda1, Lambda2 };
 pub Lambda1:   AST = { "{" "[" <c:RawList> "]" <m:Mex> "}" => AST::Lambda(Box::new(c),Box::new(m)), };
 pub Lambda2:   AST = { "{" <m:Mex> "}" => AST::Lambda(Box::new(AST::Nil),Box::new(m)), };
 
-pub CommaList: AST = { "," <m:RawList> => m };
-pub RawList:   AST = { <o:Expr> => AST::Cons(Box::new(o),Box::new(AST::Nil)),
-                       <o:Expr> <m:CommaList> => AST::Cons(Box::new(o),Box::new(m)), };
+pub CommaList:      AST = { "," <m:RawList> => m };
+pub RawList:        AST = { <o:Expr> => AST::Cons(Box::new(o),Box::new(AST::Nil)),
+                            <o:Expr> <m:CommaList> => AST::Cons(Box::new(o),Box::new(m)), };
 
-pub SemiDict:  AST = { ";" <m:RawDict> => m };
-pub RawDict:   AST = { <o:Assign> => AST::Cons(Box::new(o),Box::new(AST::Nil)),
-                       <o:Assign> <m:SemiDict> => AST::Cons(Box::new(o),Box::new(m)), };
+pub SemiDict:       AST = { ";" <m:RawDict> => m };
+pub RawDict:        AST = { <o:Assign> => AST::Cons(Box::new(o),Box::new(AST::Nil)),
+                            <o:Assign> <m:SemiDict> => AST::Cons(Box::new(o),Box::new(m)), };
