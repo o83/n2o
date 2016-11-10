@@ -12,12 +12,12 @@ extern crate deque;
 extern crate num_cpus;
 extern crate rand;
 
+#[macro_use]
+pub mod session_types;
 pub mod reactors;
 pub mod timers;
 pub mod io;
 pub mod slab;
-#[macro_use]
-pub mod session_types;
 pub mod commands;
 pub mod args;
 pub mod iterators;

@@ -74,10 +74,15 @@ static NUMBERS: [[i32; 8]; 2] = [[1, 2, 3, 4, 5, 6, 7, 8], [1, 2, 3, 4, 5, 6, 7,
 // "/" : [null,      null,       null,       null,       pack,       pack,       null,    null  ],
 // "\\": [null,      null,       null,       unpack,     split,      null,       null,    null  ],
 
-pub enum KAdverbs {
+#[derive(Debug)]
+pub enum Adverb {
     Each,
+    EachPrio,
+    EachLeft,
+    EachRight,
     Over,
     Scan,
+    Iterate,
     Fixed,
 }
 
@@ -132,6 +137,20 @@ impl Verb {
     }
 }
 
+impl Adverb {
+    pub fn from_str(s: &str) -> Result<Self, Error> {
+        match s {
+            "/"  => Ok(Adverb::Over),
+            "\\" => Ok(Adverb::Scan),
+            "'"  => Ok(Adverb::Each),
+            "':" => Ok(Adverb::EachPrio),
+            "\\:"=> Ok(Adverb::EachLeft),
+            "/:" => Ok(Adverb::EachRight),
+            _ => Err(Error::ParseError),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum Token {
     Space,
@@ -163,6 +182,8 @@ pub enum AST {
     Ioverb(String),
     Adverb(String),
     Dict(String),
+    Assign(Box<AST>, Box<AST>),
+    Sentance(Adverb, Verb, Box<AST>),
 
     Call(Box<AST>, Box<AST>),
     Lambda(Box<AST>, Box<AST>),
