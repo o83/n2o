@@ -18,30 +18,32 @@ pub List:           AST = { "(" ")" => AST::Nil, "(" <l:RawList> ")" => AST::Lis
 pub Dict:           AST = { "[" "]" => AST::Nil, "[" <l:RawDict> "]" => AST::Dict(Box::new(l)), };
 pub Args:           AST = { "[" "]" => AST::Nil, "[" <l:RawList> "]" => l, };
 pub Call:           AST = { <c:Noun> <a:Args> => AST::Call(Box::new(c),Box::new(a)) };
-pub Lambda:         AST = { "{" "[" <c:RawList> "]" <m:PreExpr> "}" => AST::Lambda(Box::new(c),Box::new(m)),
-                            "{" <m:PreExpr> "}" => AST::Lambda(Box::new(AST::Nil),Box::new(m)), };
+pub Lambda:         AST = { "{" "[" <c:RawList> "]" <m:ExprCons> "}" => AST::Lambda(Box::new(c),Box::new(m)),
+                            "{" <m:ExprCons> "}" => AST::Lambda(Box::new(AST::Nil),Box::new(m)), };
 
 // Language
 
-pub Adverb:      Adverb = { <a:r"['\x5C\x2F]:?"> => Adverb::from_str(a).unwrap(), };
+pub Adverb:      Adverb = { <a:r"[':\x5C\x2F]:?"> => Adverb::from_str(a).unwrap(), };
 pub Verb:          Verb = { <v:r"[+\x2D*%!&|<>=~,^#_$?@\.]"> => Verb::from_str(v).unwrap(), };
-pub Noun:           AST = { Name, Number, Hexlit, Bool, Symbol, Lambda, List, Call, Dict };
-pub Statement:      AST = { <l:PreExpr> <v:Verb> <r:Noun>   => ast::stmt(AST::Verb(v),l,r),
-                            <l:PreExpr> <v:Adverb> <r:Noun> => ast::stmt(AST::Adverb(v),l,r) };
+pub Noun:           AST = { Name, Number, Hexlit, Bool, Symbol, Lambda, List, Call, Dict, Ioverb };
+pub Statement:      AST = { <v:Verb> <r:Expr> => ast::stmt(AST::Verb(v),AST::Nil,r),
+                            <l:PreExpr> <v:Verb> <r:Expr>   => ast::stmt(AST::Verb(v),l,r),
+                            <l:Verb> <v:Adverb> <r:Expr> => ast::stmt(AST::Adverb(v),AST::Verb(l),r),
+                            <l:PreExpr> <v:Adverb> <r:Expr> => ast::stmt(AST::Adverb(v),l,r) };
 
 // Expressions
 
-pub Mex:            AST = { Expr, <o:Expr> "\n" <m:Mex> => AST::Cons(Box::new(o),Box::new(m)), };
+pub Mex:            AST = { ExprCons, <o:Expr> "\n" <m:Mex> => AST::Cons(Box::new(o),Box::new(m)), };
 pub Assign:         AST = { <n:PreExpr> ":" <o:Expr> => AST::Assign(Box::new(n),Box::new(o)), };
-pub PreExpr:        AST = { Noun, Statement, <v:Verb> => AST::Verb(v), Ioverb };
-pub Expr:           AST = { PreExpr, Assign };
+pub ExprCons:       AST = { Expr, <n:ExprCons> ";" <o:Expr> => AST::Cons(Box::new(n),Box::new(o)), };
+pub PreExpr:        AST = { Noun };
+pub Expr:           AST = { PreExpr, Statement, Assign, };
 
 // Lists
 
 pub SemiList:       AST = { ";" <m:RawList> => m };
 pub RawList:        AST = { <o:PreExpr> => AST::Cons(Box::new(o),Box::new(AST::Nil)),
                             <o:PreExpr> <m:SemiList> => AST::Cons(Box::new(o),Box::new(m)), };
-
 
 // Dictionaries
 

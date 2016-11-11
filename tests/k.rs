@@ -9,7 +9,7 @@ pub fn k_ariph() {
                "Ok(Stmt(Verb(Plus), Number(1), Number(2)))");
 
     assert_eq!(format!("{:?}", command::parse_Mex("1+2*4")),
-               "Ok(Stmt(Verb(Times), Stmt(Verb(Plus), Number(1), Number(2)), Number(4)))");
+               "Ok(Stmt(Verb(Plus), Number(1), Stmt(Verb(Times), Number(2), Number(4))))");
 }
 
 #[test]

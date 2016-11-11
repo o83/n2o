@@ -84,6 +84,7 @@ pub enum Verb {
     Gets = 19,
     Pack = 20,
     Unpack = 21,
+    New = 22,
 }
 
 #[derive(Debug)]
@@ -112,7 +113,6 @@ pub enum Monadic {
 impl Verb {
     pub fn from_str(s: &str) -> Result<Self, Error> {
         match s {
-            ":" => Ok(Verb::Gets),
             "+" => Ok(Verb::Plus),
             "*" => Ok(Verb::Times),
             "%" => Ok(Verb::Divide),
@@ -131,6 +131,7 @@ impl Verb {
             "?" => Ok(Verb::Find),
             "@" => Ok(Verb::At),
             "." => Ok(Verb::Dot),
+            ";" => Ok(Verb::New),
             _ => Err(Error::ParseError),
         }
     }
@@ -146,6 +147,9 @@ pub enum Adverb {
     Scan,
     Iterate,
     Fixed,
+    Assign,
+    View,
+    Separator,
 }
 
 impl Adverb {
@@ -154,7 +158,10 @@ impl Adverb {
             "/" => Ok(Adverb::Over),
             "\\" => Ok(Adverb::Scan),
             "'" => Ok(Adverb::Each),
+            ";" => Ok(Adverb::Separator),
             "':" => Ok(Adverb::EachPrio),
+            ":" => Ok(Adverb::Assign),
+            "::" => Ok(Adverb::View),
             "\\:" => Ok(Adverb::EachLeft),
             "/:" => Ok(Adverb::EachRight),
             _ => Err(Error::ParseError),
@@ -192,6 +199,7 @@ pub enum AST {
     Ioverb(String),
     Adverb(Adverb),
     Assign(Box<AST>, Box<AST>),
+    View(Box<AST>, Box<AST>),
     Stmt(Rc<AST>, Box<AST>, Box<AST>),
     List(Box<AST>),
     Dict(Box<AST>),
