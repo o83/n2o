@@ -37,3 +37,15 @@ pub fn k_adverb() {
                "Ok(Stmt(Adverb(Over), Lambda(Nil, Stmt(Verb(Plus), Name(\"x\"), \
                 Number(2))), List(Cons(Number(1), Cons(Number(2), Cons(Number(3), Nil))))))");
 }
+
+
+#[test]
+pub fn k_reduce() {
+    assert_eq!(format!("{:?}",
+                       command::parse_Mex("+/{x*y}[(1;3;4;5;6);(2;6;2;1;3)]")),
+               "Ok(Stmt(Adverb(Over), Verb(Plus), Call(Lambda(Nil, Stmt(Verb(Times), \
+                Name(\"x\"), Name(\"y\"))), Cons(List(Cons(Number(1), Cons(Number(3), \
+                Cons(Number(4), Cons(Number(5), Cons(Number(6), Nil)))))), \
+                Cons(List(Cons(Number(2), Cons(Number(6), Cons(Number(2), Cons(Number(1), \
+                Cons(Number(3), Nil)))))), Nil)))))");
+}

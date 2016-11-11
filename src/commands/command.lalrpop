@@ -32,7 +32,7 @@ pub Statement:      AST = { <l:PreExpr> <v:Verb> <r:Noun>   => ast::stmt(AST::Ve
 // Expressions
 
 pub Mex:            AST = { Expr, <o:Expr> "\n" <m:Mex> => AST::Cons(Box::new(o),Box::new(m)), };
-pub Assign:         AST = { <n:Name> ":" <o:Expr> => AST::Assign(Box::new(n),Box::new(o)), };
+pub Assign:         AST = { <n:PreExpr> ":" <o:Expr> => AST::Assign(Box::new(n),Box::new(o)), };
 pub PreExpr:        AST = { Noun, Statement, <v:Verb> => AST::Verb(v), Ioverb };
 pub Expr:           AST = { PreExpr, Assign };
 
