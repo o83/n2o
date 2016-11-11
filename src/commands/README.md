@@ -6,5 +6,7 @@ Features
 
 * K-like Space-free Language Core (between M-expr and K)
 * AST Transformations for Iterators
+* Pluggable Syntaxes
 * Built-in interpreter and bindings to InterCore
+* Bootscript and configuration language for Queues and Reactors
 
