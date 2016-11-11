@@ -24,7 +24,7 @@ pub Lambda:         AST = { "{" "[" <c:RawList> "]" <m:PreExpr> "}" => AST::Lamb
 // Language
 
 pub Adverb:      Adverb = { <a:r"['\x5C\x2F]:?"> => Adverb::from_str(a).unwrap(), };
-pub Verb:          Verb = { <v:r"[+\x2D*%!&|<>=~,^#_$?@.]"> => Verb::from_str(v).unwrap(), };
+pub Verb:          Verb = { <v:r"[+\x2D*%!&|<>=~,^#_$?@\.]"> => Verb::from_str(v).unwrap(), };
 pub Noun:           AST = { Name, Number, Hexlit, Bool, Symbol, Lambda, List, Call, Dict };
 pub Statement:      AST = { <l:PreExpr> <v:Verb> <r:Noun>   => ast::stmt(AST::Verb(v),l,r),
                             <l:PreExpr> <v:Adverb> <r:Noun> => ast::stmt(AST::Adverb(v),l,r) };
