@@ -10,7 +10,7 @@ grammar;
 
 pub Number:         AST = { <n:r"\d+"> => AST::Number( u64::from_str(n).unwrap()), };
 pub Hexlit:         AST = { <h:r"0x[a-zA-Z\d]+"> => AST::Number(u64::from_str_radix(&h[2..], 16).unwrap()), };
-pub Bool:           AST = { <b:r"[01]+b"> => AST::Number(u64::from_str_radix(&b[2..String::from(b).len()-1], 2).unwrap()), };
+pub Bool:           AST = { <b:r"[01]+b"> => AST::Number(u64::from_str_radix(&b[0..String::from(b).len()-1], 2).unwrap()), };
 pub Name:           AST = { <n:r"[a-zA-Z][-a-zA-Z\d]*"> => AST::Name(String::from(n)), };
 pub Symbol:         AST = { <s:r"`([a-z.][a-z0-9.]*)?"> => AST::Symbol(String::from(s)), };
 pub Ioverb:         AST = { <i:r"\d+:"> => AST::Ioverb(String::from(i)), };
