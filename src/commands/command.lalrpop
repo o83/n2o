@@ -24,6 +24,7 @@ pub DictCont:  AST = { ";" <m:DictList>                          => m };
 pub ExprCont:  AST = { ";" <m:ExprList>                          => m };
 pub List:      AST = { "(" ")" => AST::Nil, "(" <l:ExprList> ")" => list(l), };
 pub Dict:      AST = { "[" "]" => AST::Nil, "[" <l:DictList> "]" => dict(l), };
+pub Cond:      AST = { "$" "[" <l:ExprList> "]"                  => l, };
 pub Args:      AST = { "[" "]" => AST::Nil, "[" <l:ExprList> "]" => l, };
 pub NounList:  AST = { Noun, <o:Noun> <m:NounCont>               => cons(o,m), };
 pub ExprList:  AST = { Expr, <o:Expr> <m:ExprCont>               => cons(o,m), };
@@ -36,7 +37,7 @@ pub Lambda:    AST = { "{" "[" <c:NounList> "]" <m:ExprList> "}" => fun(c,m),
 // Expressions and Statements 5 LOC
 
 pub Expr:      AST = { Noun, Statement, Assign, Ioverb };
-pub Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, List, Dict, Call, Lambda };
+pub Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, List, Dict, Call, Lambda, Cond };
 pub Mex:       AST = { ExprList, <o:ExprList> "\n" <m:Mex>       => cons(o,m), };
 pub Assign:    AST = { <n:Noun> ":" <o:Expr>                     => assign(n,o), };
 pub Statement: AST = {          <v:Verb>   <r:Expr>              => verb(v,AST::Nil,r),  // Verb Monadic
