@@ -12,10 +12,6 @@ Abstract Reactive Streams
 build = "build.rs"
 
 [[bin]]
-name = "fix"
-path = "src/apps/protocols/fix.rs"
-
-[[bin]]
 name = "sh"
 path = "src/apps/sh.rs"
 

@@ -1,2 +1,2 @@
 state:[message:[];d:[price:1000;venues:10]]
-on[sym;price;venue]:[state.message.contains[sym];state.message.add[sym];1+state.d[price;venue]]
+on[sym;price;venue]:x[state.message.contains[sym];state.message.add[sym];1+state.d[price;venue]]

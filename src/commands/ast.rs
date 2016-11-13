@@ -84,6 +84,7 @@ pub enum Verb {
     Gets = 19,
     Pack = 20,
     Unpack = 21,
+    New = 22,
 }
 
 #[derive(Debug)]
@@ -112,7 +113,6 @@ pub enum Monadic {
 impl Verb {
     pub fn from_str(s: &str) -> Result<Self, Error> {
         match s {
-            ":" => Ok(Verb::Gets),
             "+" => Ok(Verb::Plus),
             "*" => Ok(Verb::Times),
             "%" => Ok(Verb::Divide),
@@ -131,6 +131,7 @@ impl Verb {
             "?" => Ok(Verb::Find),
             "@" => Ok(Verb::At),
             "." => Ok(Verb::Dot),
+            ";" => Ok(Verb::New),
             _ => Err(Error::ParseError),
         }
     }
@@ -146,6 +147,9 @@ pub enum Adverb {
     Scan,
     Iterate,
     Fixed,
+    Assign,
+    View,
+    Separator,
 }
 
 impl Adverb {
@@ -154,7 +158,10 @@ impl Adverb {
             "/" => Ok(Adverb::Over),
             "\\" => Ok(Adverb::Scan),
             "'" => Ok(Adverb::Each),
+            ";" => Ok(Adverb::Separator),
             "':" => Ok(Adverb::EachPrio),
+            ":" => Ok(Adverb::Assign),
+            "::" => Ok(Adverb::View),
             "\\:" => Ok(Adverb::EachLeft),
             "/:" => Ok(Adverb::EachRight),
             _ => Err(Error::ParseError),
@@ -188,11 +195,12 @@ pub enum AST {
     Name(String),
     Symbol(String),
     String(String),
-    Verb(Verb),
-    Ioverb(String),
-    Adverb(Adverb),
+    Verb(Verb, Box<AST>, Box<AST>),
+    Ioverb(String, Box<AST>),
+    Adverb(Adverb, Box<AST>, Box<AST>),
+    Adverb2(Adverb, Verb, Box<AST>),
     Assign(Box<AST>, Box<AST>),
-    Stmt(Rc<AST>, Box<AST>, Box<AST>),
+    View(Box<AST>, Box<AST>),
     List(Box<AST>),
     Dict(Box<AST>),
     Call(Box<AST>, Box<AST>),
@@ -204,6 +212,38 @@ pub enum AST {
     Cons(Box<AST>, Box<AST>),
 }
 
-pub fn stmt(v: AST, l: AST, r: AST) -> AST {
-    return AST::Stmt(Rc::new(v), Box::new(l), Box::new(r));
+pub fn call(l: AST, r: AST) -> AST {
+    return AST::Call(Box::new(l), Box::new(r));
+}
+
+pub fn cons(l: AST, r: AST) -> AST {
+    return AST::Cons(Box::new(l), Box::new(r));
+}
+
+pub fn assign(l: AST, r: AST) -> AST {
+    return AST::Assign(Box::new(l), Box::new(r));
+}
+
+pub fn fun(l: AST, r: AST) -> AST {
+    return AST::Lambda(Box::new(l), Box::new(r));
+}
+
+pub fn dict(l: AST) -> AST {
+    return AST::Dict(Box::new(l));
+}
+
+pub fn list(l: AST) -> AST {
+    return AST::List(Box::new(l));
+}
+
+pub fn verb(v: Verb, l: AST, r: AST) -> AST {
+    return AST::Verb(v,Box::new(l),Box::new(r));
+}
+
+pub fn adverb(v: Adverb, l: AST, r: AST) -> AST {
+    return AST::Adverb(v,Box::new(l),Box::new(r));
+}
+
+pub fn adverb2(a: Adverb, v: Verb, r: AST) -> AST {
+    return AST::Adverb2(a,v,Box::new(r));
 }

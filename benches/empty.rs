@@ -7,3 +7,8 @@ use test::Bencher;
 fn empty(b: &mut Bencher) {
     b.iter(|| 1)
 }
+
+#[bench]
+fn empty(b: &mut Bencher) {
+    b.iter(|| 1)
+}
