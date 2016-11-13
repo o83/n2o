@@ -29,7 +29,12 @@ impl Stream for TestStream {
 }
 
 fn main() {
-    let s = TestStream { id: 0 }.map(|v| println!("Stream produced: {:?}", v));
+    let s = TestStream { id: 0 }
+        .map(|v| {
+            println!("Stream produced: {:?}", &v);
+            v
+        })
+        .map(|v| println!("Map2 {:?}", v));
     let mut r = Reactor::new();
     r.spawn(s);
     r.run();
