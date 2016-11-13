@@ -43,6 +43,10 @@ path = "src/apps/server.rs"
 name = "console"
 path = "src/apps/console.rs"
 
+[[bin]]
+name = "sched"
+path = "src/apps/sched.rs"
+
 [dependencies]
 net2         = "0.2.19"
 log          = "0.3"

@@ -2,23 +2,26 @@
 // Task Reactor with Priorities by Anton
 
 use std::cmp::Ordering;
-use reactors::future::Future;
-use reactors::task::Task;
+use reactors::streams::stream::Stream;
 
-pub struct Reactor<F> {
-    tasks: Vec<F>,
+pub struct Reactor<S> {
+    tasks: Vec<S>,
+    run: bool,
 }
 
-impl<F: Future> Reactor<F> {
+impl<S: Stream> Reactor<S> {
     pub fn new() -> Self {
-        Reactor { tasks: Vec::new() }
+        Reactor {
+            tasks: Vec::new(),
+            run: true,
+        }
     }
 
     pub fn drop() {
         // drop task from list
     }
 
-    pub fn spawn<'a>(&mut self, t: F) {
+    pub fn spawn<'a>(&mut self, t: S) {
         self.tasks.push(t);
     }
 
@@ -47,11 +50,18 @@ impl<F: Future> Reactor<F> {
     }
 
     pub fn run(&mut self) {
-        // loop {
-        // process tasks by their priorities:
-        for t in &mut self.tasks {
-            let res = t.poll();
+        while self.run {
+            // process tasks by their priorities:
+            for t in &mut self.tasks {
+                let res = t.poll();
+                match res {
+                    Ok(None) => {
+                        self.run = false;
+                        break;
+                    }
+                    _ => continue,
+                }
+            }
         }
-        //
     }
 }
