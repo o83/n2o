@@ -22,11 +22,11 @@ impl<S: Stream> IntoStream for S {
 }
 
 // impl<T, E> IntoStream for Result<T, E> {
-//     type Stream = Done<T, E>;
-//     type Item = T;
-//     type Error = E;
+// type Stream = Done<T, E>;
+// type Item = T;
+// type Error = E;
 
-//     fn into_future(self) -> Done<T, E> {
-//         done(self)
-//     }
-// }
+// fn into_stream(self) -> Done<T, E> {
+// done(self)
+//
+//

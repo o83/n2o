@@ -1,6 +1,7 @@
 // The map steram combinator.
 
 use reactors::streams::stream::{Async, Stream, Poll};
+use reactors::streams::into_stream::IntoStream;
 
 pub struct Map<S, F> {
     stream: S,

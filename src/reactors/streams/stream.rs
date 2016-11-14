@@ -2,6 +2,8 @@
 // All copyrights are removed since Max prohibited it.
 
 use reactors::combinators::map::{self, Map};
+use reactors::combinators::then::{self, Then};
+use super::into_stream::IntoStream;
 
 pub enum Async<T> {
     Ready(T),
@@ -21,5 +23,13 @@ pub trait Stream {
               Self: Sized
     {
         map::new(self, f)
+    }
+
+    fn then<F, U>(self, f: F) -> Then<Self, F, U>
+        where F: FnMut(Result<Self::Item, Self::Error>) -> U,
+              U: IntoStream,
+              Self: Sized
+    {
+        then::new(self, f)
     }
 }

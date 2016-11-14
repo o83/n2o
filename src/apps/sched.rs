@@ -28,7 +28,8 @@ impl Stream for TestStream {
     }
 }
 
-fn main() {
+fn test_map() {
+    println!("===> Testing map combinator...");
     let s = TestStream { id: 0 }
         .map(|v| {
             println!("Stream produced: {:?}", &v);
@@ -38,4 +39,20 @@ fn main() {
     let mut r = Reactor::new();
     r.spawn(s);
     r.run();
+}
+
+fn test_then() {
+    println!("===> Testing then combinator...");
+    let s = TestStream { id: 0 }.then(|v| {
+        println!("Then combinator received: {:?}", &v);
+        TestStream { id: 11 }
+    });
+    let mut r = Reactor::new();
+    r.spawn(s);
+    r.run();
+}
+
+fn main() {
+    test_map();
+    test_then();
 }
