@@ -1,7 +1,15 @@
 
 // TODO: remove unstable features
 
-#![feature(fnbox, static_in_const, heap_api, unboxed_closures, oom, alloc, box_syntax, optin_builtin_traits, question_mark, const_fn, step_by)]
+#![feature(fnbox, static_in_const, heap_api, unboxed_closures, oom, alloc, box_syntax, optin_builtin_traits, const_fn, step_by)]
+#![allow(non_snake_case)]
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+#![allow(unused_features)]
+#![allow(unused_mut)]
+#![allow(non_camel_case_types)]
+#![allow(non_upper_case_globals)]
 
 // TODO: remove these deps
 

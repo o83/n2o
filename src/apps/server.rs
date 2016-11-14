@@ -1,3 +1,6 @@
+#![allow(unused_must_use)]
+#![allow(unused_variables)]
+#![allow(unused_imports)]
 
 // Simple Network and Console
 

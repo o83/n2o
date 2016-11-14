@@ -1,4 +1,8 @@
 
+#![allow(unused_must_use)]
+#![allow(unused_variables)]
+#![allow(unused_imports)]
+
 // TCP Client Sample
 
 extern crate core;

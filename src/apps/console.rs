@@ -3,6 +3,10 @@
 
 // $ rlwrap console
 
+#![allow(unused_must_use)]
+#![allow(unused_variables)]
+#![allow(unused_imports)]
+
 extern crate kernel;
 #[macro_use]
 extern crate core;

@@ -1,4 +1,9 @@
 
+#![allow(unused_must_use)]
+#![allow(unused_mut)]
+#![allow(unused_variables)]
+#![allow(unused_imports)]
+
 // MIO Compatibility Sample
 
 extern crate kernel;
@@ -27,9 +32,13 @@ fn main() {
         poll.poll(&mut events, None).unwrap();
         for event in events.iter() {
             match event.token() {
-                  SERVER => { let _ = server.accept(); }
-                  CLIENT => { return; }
-                       _ => unreachable!(),
+                SERVER => {
+                    let _ = server.accept();
+                }
+                CLIENT => {
+                    return;
+                }
+                _ => unreachable!(),
             }
         }
     }

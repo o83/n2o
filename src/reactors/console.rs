@@ -1,6 +1,8 @@
 
 //  Console I/O Reactor by Anton
 
+#![allow(unused_must_use)]
+
 use std::io::{self, ErrorKind};
 use std::io::prelude::*;
 use std::rc::Rc;

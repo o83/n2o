@@ -1,3 +1,7 @@
+#![allow(unused_must_use)]
+#![allow(unused_variables)]
+#![allow(unused_imports)]
+
 extern crate kernel;
 
 // The Kernel Shell
@@ -18,10 +22,12 @@ fn main() {
         let res = io::stdin().read_line(&mut input_line);
         match res {
             Ok(0) => break,
-            x => match input_line.trim() {
-                       "exit" => break,
-                       line => println!("{:?}", command::parse_Mex(&line.to_string())),
-              }
+            x => {
+                match input_line.trim() {
+                    "exit" => break,
+                    line => println!("{:?}", command::parse_Mex(&line.to_string())),
+                }
+            }
         }
         input_line.clear();
     }
