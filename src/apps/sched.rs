@@ -8,6 +8,8 @@ extern crate kernel;
 
 use kernel::reactors::reactor::Reactor;
 use kernel::reactors::streams::stream::{Async, Poll, Stream};
+use kernel::reactors::streams::into_stream::IntoStream;
+use kernel::reactors::streams::done::{self, Done};
 
 struct TestStream {
     id: u32,
@@ -43,10 +45,17 @@ fn test_map() {
 
 fn test_then() {
     println!("===> Testing then combinator...");
-    let s = TestStream { id: 0 }.then(|v| {
-        println!("Then combinator received: {:?}", &v);
-        TestStream { id: 11 }
-    });
+    let s = TestStream { id: 0 }
+        .then(|v| {
+            println!("Then combinator received: {:?}", &v);
+            let r: Result<u32, u32> = Ok(1);
+            r
+        })
+        .then(|v| {
+            println!("Another Then combinator received: {:?}", &v);
+            let r: Result<u32, u32> = Ok(0);
+            r
+        });
     let mut r = Reactor::new();
     r.spawn(s);
     r.run();

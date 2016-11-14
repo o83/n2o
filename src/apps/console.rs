@@ -20,7 +20,6 @@ use std::io::{self, BufReader};
 use std::fs::File;
 use kernel::args::*;
 
-
 fn main() {
     let mut poll = Poll::new().expect("Failed to create Poll");
     let mut c = Console::new();

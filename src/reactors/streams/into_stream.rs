@@ -2,6 +2,7 @@
 // wrap any type by Stream.
 
 use super::stream::Stream;
+use super::done::{self, Done};
 
 pub trait IntoStream {
     type Item;
@@ -21,12 +22,12 @@ impl<S: Stream> IntoStream for S {
     }
 }
 
-// impl<T, E> IntoStream for Result<T, E> {
-// type Stream = Done<T, E>;
-// type Item = T;
-// type Error = E;
+impl<T, E> IntoStream for Result<T, E> {
+    type Stream = Done<T, E>;
+    type Item = T;
+    type Error = E;
 
-// fn into_stream(self) -> Done<T, E> {
-// done(self)
-//
-//
+    fn into_stream(self) -> Done<T, E> {
+        done::new(self)
+    }
+}
