@@ -19,12 +19,11 @@ Ioverb:    AST = { <i:r"\d+:"> <e:Expr>                      => AST::Ioverb(Stri
 
 // Three Type of Brackets and Their Lists 11 LOC
 
-NounCont:  AST = { ";" <m:NounList>                          => m };
-DictCont:  AST = { ";" <m:DictList>                          => m };
-ExprCont:  AST = { ";" <m:ExprList>                          => m };
+NounCont:  AST = { ";" => AST::Nil, ";" <m:NounList>         => m };
+DictCont:  AST = { ";" => AST::Nil, ";" <m:DictList>         => m };
+ExprCont:  AST = { ";" => AST::Nil, ";" <m:ExprList>         => m };
 List:      AST = { "(" ")" => AST::Nil, "(" <l:ExprList> ")" => list(l), };
 Dict:      AST = { "[" "]" => AST::Nil, "[" <l:DictList> "]" => dict(l), };
-Cond:      AST = { "$" "[" <l:ExprList> "]"                  => l, };
 Args:      AST = { "[" <l:ExprList> "]"                      => l, };
 NounList:  AST = { Noun,    <o:Noun>   <m:NounCont>          => cons(o,m), };
 ExprList:  AST = { Expr,    <o:Expr>   <m:ExprCont>          => cons(o,m), };
@@ -35,7 +34,7 @@ Lambda:    AST = { "{" "[" <c:NounList> "]" <m:ExprList> "}" => fun(c,m),
 
 // Expressions and Statements 5 LOC
 
-Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, List, Dict, Call, Lambda, Cond };
+Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, List, Dict, Call, Lambda };
 Applicable:AST = { Name, Lambda, Bool, Hexlit, Number, Symbol, List, Args };
 Expr:      AST = { Noun, Statement, Assign, Ioverb, Adverb2, Verb2, };
 pub Mex:   AST = { ExprList, <o:ExprList> "\n" <m:Mex>       => cons(o,m), };
