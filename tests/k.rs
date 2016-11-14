@@ -20,7 +20,7 @@ pub fn k_list() {
 #[test]
 pub fn k_assign() {
     assert_eq!(format!("{:?}", command::parse_Mex("a:b:c:1")),
-               "Ok(Assign(Name(\"a\"), Assign(Name(\"b\"), Assign(Name(\"c\"), Number(1)))))");
+               "Ok(Adverb(Assign, Name(\"a\"), Adverb(Assign, Name(\"b\"), Adverb(Assign, Name(\"c\"), Number(1)))))");
 }
 
 #[test]
