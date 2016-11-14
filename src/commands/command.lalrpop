@@ -19,7 +19,7 @@ ExprList:  AST = { Expr,    <o:Expr>   <m:ExprCont>          => cons(o,m), };
 DictList:  AST = { KeyVal,  <o:KeyVal> <m:DictCont>          => cons(o,m), };
 Call:      AST = { <c:Noun> <a:Applicable>                   => call(c,a), };
 Lambda:    AST = { "{" "[" <c:NounList> "]" <m:ExprList> "}" => fun(c,m),
-                   "{" <m:ExprList> "}"                      => fun(AST::Nil,m), };
+               "{" <m:ExprList> "}"                      => fun(AST::Nil,m), };
 
 // Expressions and Statements 5 LOC
 
@@ -32,9 +32,9 @@ Adverb2:   AST = { <a:Adverb>                                => adverb(a,AST::Ni
 KeyVal:    AST = { <n:Name> ":" <o:Expr>                     => assign(n,o), };
 Assign:    AST = { KeyVal,  <n:Call> ":" <o:Expr>            => assign(n,o), };
 Statement: AST = {          <v:Verb>     <r:Expr>            => verb(v,AST::Nil,r),  // Verb Monadic
-                   <l:Noun> <v:Verb>     <r:Expr>            => verb(v,l,r),         // Verb Diadic
-                   <l:Verb> <v:Adverb>   <r:Expr>            => adverb2(v,l,r),      // Adverb Diadic Verb Driven
-                   <l:Noun> <v:Adverb>   <r:Expr>            => adverb(v,l,r) };     // Adverb Diadic Noun Driven
+               <l:Noun> <v:Verb>     <r:Expr>            => verb(v,l,r),         // Verb Diadic
+               <l:Verb> <v:Adverb>   <r:Expr>            => adverb2(v,l,r),      // Adverb Diadic Verb Driven
+               <l:Noun> <v:Adverb>   <r:Expr>            => adverb(v,l,r) };     // Adverb Diadic Noun Driven
 
 // Nouns 8 LOC
 
@@ -46,4 +46,4 @@ Symbol:    AST = { <s:r"`([a-z.][a-z0-9.]*)?">               => AST::Symbol(Stri
 Adverb: Adverb = { <a:r"[':\x5C\x2F]:?">                     => Adverb::from_str(a).unwrap(), };
 Verb:     Verb = { <v:r"[+\x2D*%!&|<>=~,^#_$?@\.]">          => Verb::from_str(v).unwrap(), };
 Ioverb:    AST = { <i:r"\d+:"> <e:Expr>                      => AST::Ioverb(String::from(i),Box::new(e)), };
-Sequence:  AST = { <s:r"\x22[^\x22]*\x22">                   => AST::Sequence(String::from(&s[1..String::from(s).len()-1])), };
+Sequence:  AST = { <s:r"\x22[^\x22]*\x22">                   => AST::Sequence(String::from(&s[1..s.len()-1])), };
