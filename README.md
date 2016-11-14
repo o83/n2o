@@ -29,13 +29,15 @@ Test The K Shell
 ----------------
 
 ```
-$ rlwrap ./target/debug/console init etc/fe.q
+$ rlwrap ./target/debug/console init etc/ath/jrnl.q
 
-Ok(Adverb(Over, Nil, Adverb(Assign, Call(Call(Call(Call(Call(Call(Call(Name("FE"), 
-Name("common")), Name("code")), Name("system")), Sequence("l net.q")), Name("system")), 
-Sequence("l jrnl.q")), Name("data")), Verb(Dot, Nil, Verb(Dot, Name("net"), 
-Adverb(Assign, Name("getData"), Adverb(Assign, Call(Lambda(Nil, Verb(Less,
-Call(Call(Name("data"), Name("where")), ...
+Ok(Adverb(Over, Call(Name("system"), Sequence("d .jrnl")), Verb(Minus, Name("jfnpt"),
+Adverb(Assign, Call(Call(Call(Call(Name("Journal"), Name("File")), Name("Path")), 
+Name("Template")), Name("jfpt")), Adverb(Over, Sequence(""), Verb(Minus, Name("jfn"), 
+Adverb(Over, Call(Call(Name("Journal"), ...
+
+Console is listening...
+> 
 ```
 
 Sample
