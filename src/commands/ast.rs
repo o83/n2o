@@ -114,6 +114,7 @@ impl Verb {
     pub fn from_str(s: &str) -> Result<Self, Error> {
         match s {
             "+" => Ok(Verb::Plus),
+            "-" => Ok(Verb::Minus),
             "*" => Ok(Verb::Times),
             "%" => Ok(Verb::Divide),
             "!" => Ok(Verb::Mod),

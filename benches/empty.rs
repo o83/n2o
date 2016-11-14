@@ -18,5 +18,5 @@ fn parse(b: &mut Bencher) {
 
 #[bench]
 fn parse2(b: &mut Bencher) {
-    b.iter(|| { command::parse_Mex("1+2"); })
+    b.iter(|| { command::parse_Mex("1+2+3+4+5+6+7"); })
 }
