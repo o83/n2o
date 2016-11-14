@@ -16,6 +16,6 @@ eod:{0N!(`eod;x); .net.eod x}
 /RDB initialization
 init:{createShema[];.core.timerinit[];.net.netinit[];}
 
-@[init;0b;{exit 1}]
+@a[init;0b;{exit 1}]
 
 

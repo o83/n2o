@@ -13,7 +13,7 @@ parseParams:{
 
 
 if [2<>count .z.x; usage[]]
-@[parseParams;.z.x;{0N!x;usage[]}]
+@a[parseParams;.z.x;{0N!x;usage[]}]
 
 
 system "l fix.q"
@@ -31,7 +31,7 @@ updData:{
     fix:fixdata[0];
     lcid:fixdata[1];
     fd:0N_(!)."I=\001"0:fix;
-    unDup:{g:group key x; key[g]!{v:(value y)[x];$[1<count x;"," sv v;first v]}[;x] each value g};
+    unDup:{g:group key x; key[g]!{v:(value y)[x];$a[1<count x;"," sv v;first v]}[;x] each value g};
     fd:unDup fd;
     unparsed:count key[fd] except .fix.tags;
     fd:.fix.names!(.fix.types)$fd .fix.tags;

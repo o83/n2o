@@ -17,7 +17,7 @@ reConnTO:200
 tryreconn:{
     ra:where rdbh=-1;
     rf:{
-        @[{rdbh[x]:hopen (rdba[x];reConnTO); rdbh[x] (`.net.sub;0Wj)};
+        @a[{rdbh[x]:hopen (rdba[x];reConnTO); rdbh[x] (`.net.sub;0Wj)};
         x;
         {if [rdbh[x]<>-1;hclose rdbh[x]; rdbh[x]:-1]} x]};
     rf peach ra;
@@ -39,7 +39,7 @@ collect:{
         'mismatch
         ];
     getTbls[];
-    {@[{x (exit;0)};x;{}]} peach rdbh;
+    {@a[{x (exit;0)};x;{}]} peach rdbh;
     rdbh::();
     exit 0;
     }
@@ -67,7 +67,7 @@ parseParams:{
     }
 
 if [3<>count .z.x; usage[]]
-@[parseParams;.z.x;{0N!x;usage[]}]
+@a[parseParams;.z.x;{0N!x;usage[]}]
 
 /Load data
 system "l ",1_string dbpath

@@ -12,6 +12,6 @@ parseParams:{
     }
 
 if [2<>count .z.x; usage[]]
-@[parseParams;.z.x;{0N!x;usage[]}]
+@a[parseParams;.z.x;{0N!x;usage[]}]
 
 
