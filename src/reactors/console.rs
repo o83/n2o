@@ -132,7 +132,7 @@ impl Console {
 
     pub fn from_buf<R: BufRead>(&mut self, config: R) -> io::Result<()> {
         for line in config.lines() {
-            match line.unwrap().trim() {
+            match line.unwrap().trim_matches(|c| c == ' ' || c == '\r' || c == '\n') {
                 "" => {
                     println!("{:?}", AST::Nil);
                 }
