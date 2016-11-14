@@ -1,8 +1,8 @@
 ring[reader,mem[0,16]]
 ring[writer,mem[0,16]]
 cursor[1,writer,1]
-split[1,2,50]
-split[2,3,50]
+split[1,2,50];
+      split[2,3,50]
 split[1,4,50]
 cursor[5,reader,1]
 split[5,6,50]

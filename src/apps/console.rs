@@ -28,8 +28,7 @@ fn main() {
     if let Ok(init) = p.get("init", true) {
         match File::open(init.unwrap()) {
             Ok(f) => {
-                let f = BufReader::new(f);
-                c.from_buf(f);
+                c.read_all(f);
             }
             Err(e) => error!("Error loading init file: {:?}", e),
         }
