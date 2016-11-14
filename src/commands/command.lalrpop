@@ -13,15 +13,13 @@ DictCont:  AST = { ";" => AST::Nil, ";" <m:DictList>         => m };
 ExprCont:  AST = { ";" => AST::Nil, ";" <m:ExprList>         => m };
 List:      AST = { "(" ")" => AST::Nil, "(" <l:ExprList> ")" => list(l), };
 Dict:      AST = { "[" "]" => AST::Nil, "[" <l:DictList> "]" => dict(l), };
-Args:      AST = { "[" "]" => AST::Nil, "[" <l:ExprList> "]"                      => l, };
+Args:      AST = { "[" "]" => AST::Nil, "[" <l:ExprList> "]" => l, };
 NounList:  AST = { Noun,    <o:Noun>   <m:NounCont>          => cons(o,m), };
-ExprList:  AST = { ExprCont, Expr,    <o:Expr>   <m:ExprCont>          => cons(o,m), };
+ExprList:  AST = { ExprCont, Expr, <o:Expr> <m:ExprCont>     => cons(o,m), };
 DictList:  AST = { KeyVal,  <o:KeyVal> <m:DictCont>          => cons(o,m), };
-Call:      AST = { <c:Noun> <a:Applicable>                   => call(c,a),
-                   "$" <a:Applicable>                        => call(verb(Verb::At,AST::Nil,AST::Nil),a),
-                   "@" <a:Applicable>                        => call(verb(Verb::At,AST::Nil,AST::Nil),a),  };
-Lambda:    AST = { "{" "[" <c:NounList> "]" <m:ExprList> "}" => fun(c,m),
-                   "{" <m:ExprList> "}"                      => fun(AST::Nil,m),
+Call:      AST = { <c:Noun> <a:Applicable>                   => call(c,a), };
+Lambda:    AST = { "{" <m:ExprList> "}"                      => fun(AST::Nil,m),
+                   "{" "[" <c:NounList> "]" <m:ExprList> "}" => fun(c,m),
                    "{" "}"                                   => fun(AST::Nil,AST::Nil)};
 
 // Expressions and Statements 5 LOC
@@ -29,16 +27,17 @@ Lambda:    AST = { "{" "[" <c:NounList> "]" <m:ExprList> "}" => fun(c,m),
 Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, List, Dict, Sequence, Call, Lambda };
 Applicable:AST = { Name, Lambda, Bool, Hexlit, Number, Symbol, Sequence, List, Args };
 Expr:      AST = { Noun, Stmt, Assign, Ioverb };
+AssignKey: AST = { Call };
 pub Mex:   AST = { ExprList };
 Stmt:      AST = {          <v:Verb>                         => verb(v,AST::Nil,AST::Nil),
                             <v:Verb>     <r:Expr>            => verb(v,AST::Nil,r),
                    <l:Noun> <v:Verb>     <r:Expr>            => verb(v,l,r),
                             <a:Adverb>   <e:Expr>            => adverb(a,AST::Nil,e),
-                // <v:Verb> <a:Adverb>   <r:Expr>            => adverb2(a,v,r),  // Verb dic
+                   //<v:Verb> <a:Adverb>   <r:Expr>            => adverb2(a,v,r),  // Verb dic
                    <l:Noun> <v:Adverb>   <r:Expr>            => adverb(v,l,r),
                             <a:Adverb>                       => adverb(a,AST::Nil,AST::Nil), };
 KeyVal:    AST = { <n:Name> ":" <o:Expr>                     => assign(n,o), };
-Assign:    AST = { KeyVal,  <n:Call> ":" <o:Expr>            => assign(n,o), };
+Assign:    AST = { KeyVal,  <n:AssignKey> ":" <o:Expr>       => assign(n,o), };
 
 // Nouns 8 LOC
 
