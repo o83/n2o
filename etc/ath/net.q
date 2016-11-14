@@ -31,11 +31,11 @@ swmode:{mode::x; if [not[x]&feh<>-1; hclose feh; feh::-1]}
 
 sub:{suh::suh union .z.w; getData x}
 
-pub:{{.[{neg[y] (updFunc;x)};(x;y);{}]}[x] peach suh}
+pub:{{.a[{neg[y] (updFunc;x)};(x;y);{}]}[x] peach suh}
 
 .z.pc:{suh::suh except x; if [feh=x; feh::-1]; x}
 
-eod:{{.[{y ""; y (eodFunc;x)};(x;y);{}]}[x] peach suh}
+eod:{{.a[{y ""; y (eodFunc;x)};(x;y);{}]}[x] peach suh}
 
 netinit:{system "p ",string listen}
 
@@ -43,7 +43,7 @@ system "d ."
 
 tryreconn:{
     if [.net.mode & .net.feh=-1;
-        @[{.net.feh::hopen (.net.fea;.net.reConnTO); upd each .net.feh (`.net.sub;.core.seq)};
+        @a[{.net.feh::hopen (.net.fea;.net.reConnTO); upd each .net.feh (`.net.sub;.core.seq)};
             0b;
             {if [.net.feh<>-1; hclose .net.feh; .net.feh::-1]}]
         ];

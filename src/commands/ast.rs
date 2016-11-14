@@ -160,6 +160,7 @@ impl Adverb {
             "\\" => Ok(Adverb::Scan),
             "'" => Ok(Adverb::Each),
             ";" => Ok(Adverb::Separator),
+            ";:" => Ok(Adverb::Separator),
             "':" => Ok(Adverb::EachPrio),
             ":" => Ok(Adverb::Assign),
             "::" => Ok(Adverb::View),
