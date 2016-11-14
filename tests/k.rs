@@ -1,7 +1,6 @@
 extern crate kernel;
 
 use kernel::commands::*;
-use kernel::commands::ast::*;
 
 #[test]
 pub fn k_ariph() {
