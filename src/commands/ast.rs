@@ -194,7 +194,7 @@ pub enum AST {
     Bool(bool),
     Name(String),
     Symbol(String),
-    String(String),
+    Sequence(String),
     Verb(Verb, Box<AST>, Box<AST>),
     Ioverb(String, Box<AST>),
     Adverb(Adverb, Box<AST>, Box<AST>),
