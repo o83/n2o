@@ -14,11 +14,7 @@ eod:{0N!(`eod;x); .net.eod x}
 .z.ts:tryreconn
 
 /RDB initialization
-init:{
-    createShema[];
-    .core.timerinit[];
-    .net.netinit[];
-    }
+init:{createShema[];.core.timerinit[];.net.netinit[];}
 
 @[init;0b;{exit 1}]
 
