@@ -13,10 +13,10 @@ fn empty(b: &mut Bencher) {
 
 #[bench]
 fn parse(b: &mut Bencher) {
-    b.iter(|| { command::parse_Expr("+/{x*y}[(a;b;c;d;e);(2;6;2;1;3)]"); })
+    b.iter(|| { command::parse_Mex("+/{x*y}[(a;b;c;d;e);(2;6;2;1;3)]"); })
 }
 
 #[bench]
 fn parse2(b: &mut Bencher) {
-    b.iter(|| { command::parse_Expr("1+2"); })
+    b.iter(|| { command::parse_Mex("1+2"); })
 }

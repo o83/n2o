@@ -30,20 +30,21 @@ NounList:  AST = { Noun, <o:Noun> <m:NounCont>               => cons(o,m), };
 ExprList:  AST = { Expr, <o:Expr> <m:ExprCont>               => cons(o,m), };
 DictList:  AST = { KeyVal, <o:KeyVal> <m:DictCont>           => cons(o,m), };
 Call:      AST = { <c:Noun> <a:Applicable>                   => cons(c,a),
-                       <c:Noun> <a:Args>                         => call(c,a) };
+                   <c:Noun> <a:Args>                         => call(c,a) };
 Lambda:    AST = { "{" "[" <c:NounList> "]" <m:ExprList> "}" => fun(c,m),
                        "{" <m:ExprList> "}"                      => fun(AST::Nil,m), };
 
 // Expressions and Statements 5 LOC
 
-Expr:      AST = { Noun, Statement, Assign, Ioverb, <v:Verb> => verb(v,AST::Nil,AST::Nil),
-                       <a:Adverb> => adverb(a,AST::Nil,AST::Nil)};
 Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, List, Dict, Call, Lambda, Cond };
 Applicable:AST = { Name, Lambda, Bool, Hexlit, Number, Symbol, List };
-pub Mex:       AST = { ExprList, <o:ExprList> "\n" <m:Mex>       => cons(o,m), };
+pub Mex:   AST = { ExprList, <o:ExprList> "\n" <m:Mex>       => cons(o,m), };
+Expr:      AST = { Noun, Statement, Assign, Ioverb,
+                   <v:Verb>                                  => verb(v,AST::Nil,AST::Nil),
+                   <a:Adverb>                                => adverb(a,AST::Nil,AST::Nil)};
 KeyVal:    AST = { <n:Name> ":" <o:Expr>                     => assign(n,o), };
 Assign:    AST = { KeyVal, <n:Call> ":" <o:Expr>             => assign(n,o), };
 Statement: AST = {          <v:Verb>   <r:Expr>              => verb(v,AST::Nil,r),  // Verb Monadic
-                       <l:Noun> <v:Verb>   <r:Expr>              => verb(v,l,r),         // Verb Diadic
-                       <l:Verb> <v:Adverb> <r:Expr>              => adverb2(v,l,r),      // Adverb Diadic Verb Driven
-                       <l:Noun> <v:Adverb> <r:Expr>              => adverb(v,l,r) };     // Adverb Diadic Noun Driven
+                   <l:Noun> <v:Verb>   <r:Expr>              => verb(v,l,r),         // Verb Diadic
+                   <l:Verb> <v:Adverb> <r:Expr>              => adverb2(v,l,r),      // Adverb Diadic Verb Driven
+                   <l:Noun> <v:Adverb> <r:Expr>              => adverb(v,l,r) };     // Adverb Diadic Noun Driven
