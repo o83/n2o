@@ -23,9 +23,7 @@ tryreconn:{
     rf peach ra;
     }
 
-saveTbl:{[t;n]
-    (` sv dbpath,(`$string first distinct days),n,`;20;2;6) set .Q.en[dbpath] t
-    }
+saveTbl:{[t;n](` sv dbpath,(`$string first distinct days),n,`;20;2;6) set .Q.en[dbpath] t}
 
 getTbls:{
     tbls:first[rdbh] "tables `.";

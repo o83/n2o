@@ -130,17 +130,25 @@ impl Console {
         }
     }
 
-    pub fn from_buf<R: BufRead>(&mut self, config: R) -> io::Result<()> {
+    pub fn read_lines<R: BufRead>(&mut self, config: R) -> io::Result<()> {
         for line in config.lines() {
             match line.unwrap().trim() {
                 "" => {
                     println!("{:?}", AST::Nil);
                 }
                 line => {
+                    println!("PARSE TRIM: {:?}", &line);
                     println!("{:?}", command::parse_Mex(&line));
                 }
             }
         }
+        Ok(())
+    }
+
+    pub fn read_all<R: Read>(&mut self, mut config: R) -> io::Result<()> {
+        let mut text = String::new();
+        try!(config.read_to_string(&mut text));
+        println!("{:?}", command::parse_Mex(&text));
         Ok(())
     }
 }
