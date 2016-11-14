@@ -31,7 +31,11 @@ Test The K Shell
 ```
 $ rlwrap ./target/debug/console init etc/fe.q
 
-Ok(Adverb(Over, Nil, Adverb(Assign, Call(Call(Call(Call(Call(Call(Call(Name("FE"), Name("common")), Name("code")), Name("system")), Sequence("l net.q")), Name("system")), Sequence("l jrnl.q")), Name("data")), Verb(Dot, Nil, Verb(Dot, Name("net"), Adverb(Assign, Name("getData"), Adverb(Assign, Call(Lambda(Nil, Verb(Less, Call(Call(Name("data"), Name("where")),....
+Ok(Adverb(Over, Nil, Adverb(Assign, Call(Call(Call(Call(Call(Call(Call(Name("FE"), 
+Name("common")), Name("code")), Name("system")), Sequence("l net.q")), Name("system")), 
+Sequence("l jrnl.q")), Name("data")), Verb(Dot, Nil, Verb(Dot, Name("net"), 
+Adverb(Assign, Name("getData"), Adverb(Assign, Call(Lambda(Nil, Verb(Less,
+Call(Call(Name("data"), Name("where")), ...
 ```
 
 Sample
