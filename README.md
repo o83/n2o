@@ -35,6 +35,9 @@ Ok(Adverb(Over, Call(Name("system"), Sequence("d .jrnl")), Verb(Minus, Name("jfn
 Adverb(Assign, Call(Call(Call(Call(Name("Journal"), Name("File")), Name("Path")), 
 Name("Template")), Name("jfpt")), Adverb(Over, Sequence(""), Verb(Minus, Name("jfn"), 
 Adverb(Over, Call(Call(Name("Journal"), ...
+
+Console is listening...
+> 
 ```
 
 Sample
