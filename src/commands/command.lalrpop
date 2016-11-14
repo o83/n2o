@@ -8,42 +8,42 @@ grammar;
 
 // Nouns 8 LOC
 
-pub Number:    AST = { <n:r"\d+">                                => AST::Number(u64::from_str(n).unwrap()), };
-pub Hexlit:    AST = { <h:r"0x[a-zA-Z\d]+">                      => AST::Number(u64::from_str_radix(&h[2..], 16).unwrap()), };
-pub Bool:      AST = { <b:r"[01]+b">                             => AST::Number(u64::from_str_radix(&b[0..String::from(b).len()-1], 2).unwrap()), };
-pub Name:      AST = { <n:r"[a-zA-Z][-a-zA-Z\d]*">               => AST::Name(String::from(n)), };
-pub Symbol:    AST = { <s:r"`([a-z.][a-z0-9.]*)?">               => AST::Symbol(String::from(s)), };
-pub Adverb: Adverb = { <a:r"[':\x5C\x2F]:?">                     => Adverb::from_str(a).unwrap(), };
-pub Verb:     Verb = { <v:r"[+\x2D*%!&|<>=~,^#_$?@\.]">          => Verb::from_str(v).unwrap(), };
-pub Ioverb:    AST = { <i:r"\d+:"> <e:Expr>                      => AST::Ioverb(String::from(i),Box::new(e)), };
+Number:    AST = { <n:r"\d+">                                => AST::Number(u64::from_str(n).unwrap()), };
+Hexlit:    AST = { <h:r"0x[a-zA-Z\d]+">                      => AST::Number(u64::from_str_radix(&h[2..], 16).unwrap()), };
+Bool:      AST = { <b:r"[01]+b">                             => AST::Number(u64::from_str_radix(&b[0..String::from(b).len()-1], 2).unwrap()), };
+Name:      AST = { <n:r"[a-zA-Z][-a-zA-Z\d]*">               => AST::Name(String::from(n)), };
+Symbol:    AST = { <s:r"`([a-z.][a-z0-9.]*)?">               => AST::Symbol(String::from(s)), };
+Adverb: Adverb = { <a:r"[':\x5C\x2F]:?">                     => Adverb::from_str(a).unwrap(), };
+Verb:     Verb = { <v:r"[+\x2D*%!&|<>=~,^#_$?@\.]">          => Verb::from_str(v).unwrap(), };
+Ioverb:    AST = { <i:r"\d+:"> <e:Expr>                      => AST::Ioverb(String::from(i),Box::new(e)), };
 
 // Three Type of Brackets and Their Lists 11 LOC
 
-pub NounCont:  AST = { ";" <m:NounList>                          => m };
-pub DictCont:  AST = { ";" <m:DictList>                          => m };
-pub ExprCont:  AST = { ";" <m:ExprList>                          => m };
-pub List:      AST = { "(" ")" => AST::Nil, "(" <l:ExprList> ")" => list(l), };
-pub Dict:      AST = { "[" "]" => AST::Nil, "[" <l:DictList> "]" => dict(l), };
-pub Cond:      AST = { "$" "[" <l:ExprList> "]"                  => l, };
-pub Args:      AST = { "[" <l:ExprList> "]"                      => l, };
-pub NounList:  AST = { Noun, <o:Noun> <m:NounCont>               => cons(o,m), };
-pub ExprList:  AST = { Expr, <o:Expr> <m:ExprCont>               => cons(o,m), };
-pub DictList:  AST = { KeyVal, <o:KeyVal> <m:DictCont>           => cons(o,m), };
-pub Call:      AST = { <c:Noun> <a:Applicable>                   => cons(c,a),
+NounCont:  AST = { ";" <m:NounList>                          => m };
+DictCont:  AST = { ";" <m:DictList>                          => m };
+ExprCont:  AST = { ";" <m:ExprList>                          => m };
+List:      AST = { "(" ")" => AST::Nil, "(" <l:ExprList> ")" => list(l), };
+Dict:      AST = { "[" "]" => AST::Nil, "[" <l:DictList> "]" => dict(l), };
+Cond:      AST = { "$" "[" <l:ExprList> "]"                  => l, };
+Args:      AST = { "[" <l:ExprList> "]"                      => l, };
+NounList:  AST = { Noun, <o:Noun> <m:NounCont>               => cons(o,m), };
+ExprList:  AST = { Expr, <o:Expr> <m:ExprCont>               => cons(o,m), };
+DictList:  AST = { KeyVal, <o:KeyVal> <m:DictCont>           => cons(o,m), };
+Call:      AST = { <c:Noun> <a:Applicable>                   => cons(c,a),
                        <c:Noun> <a:Args>                         => call(c,a) };
-pub Lambda:    AST = { "{" "[" <c:NounList> "]" <m:ExprList> "}" => fun(c,m),
+Lambda:    AST = { "{" "[" <c:NounList> "]" <m:ExprList> "}" => fun(c,m),
                        "{" <m:ExprList> "}"                      => fun(AST::Nil,m), };
 
 // Expressions and Statements 5 LOC
 
-pub Expr:      AST = { Noun, Statement, Assign, Ioverb, <v:Verb> => verb(v,AST::Nil,AST::Nil),
+Expr:      AST = { Noun, Statement, Assign, Ioverb, <v:Verb> => verb(v,AST::Nil,AST::Nil),
                        <a:Adverb> => adverb(a,AST::Nil,AST::Nil)};
-pub Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, List, Dict, Call, Lambda, Cond };
-pub Applicable:AST = { Name, Lambda, Bool, Hexlit, Number, Symbol, List };
+Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, List, Dict, Call, Lambda, Cond };
+Applicable:AST = { Name, Lambda, Bool, Hexlit, Number, Symbol, List };
 pub Mex:       AST = { ExprList, <o:ExprList> "\n" <m:Mex>       => cons(o,m), };
-pub KeyVal:    AST = { <n:Name> ":" <o:Expr>                     => assign(n,o), };
-pub Assign:    AST = { KeyVal, <n:Call> ":" <o:Expr>             => assign(n,o), };
-pub Statement: AST = {          <v:Verb>   <r:Expr>              => verb(v,AST::Nil,r),  // Verb Monadic
+KeyVal:    AST = { <n:Name> ":" <o:Expr>                     => assign(n,o), };
+Assign:    AST = { KeyVal, <n:Call> ":" <o:Expr>             => assign(n,o), };
+Statement: AST = {          <v:Verb>   <r:Expr>              => verb(v,AST::Nil,r),  // Verb Monadic
                        <l:Noun> <v:Verb>   <r:Expr>              => verb(v,l,r),         // Verb Diadic
                        <l:Verb> <v:Adverb> <r:Expr>              => adverb2(v,l,r),      // Adverb Diadic Verb Driven
                        <l:Noun> <v:Adverb> <r:Expr>              => adverb(v,l,r) };     // Adverb Diadic Noun Driven
