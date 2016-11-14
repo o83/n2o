@@ -111,10 +111,6 @@ impl Console {
                         let mut m = String::from_utf8_lossy(&msg[..s]);
                         match m.trim() {
                             "exit" => Ok(false),
-                            "" => {
-                                println!("{:?}", AST::Nil);
-                                Ok(true)
-                            }
                             line => {
                                 println!("{:?}", command::parse_Mex(&line));
                                 Ok(true)
