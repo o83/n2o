@@ -26,9 +26,11 @@ Lambda:    AST = { "{" "[" <c:NounList> "]" <m:ExprList> "}" => fun(c,m),
 
 Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, List, Dict, Sequence, Call, Lambda };
 Applicable:AST = { Name, Lambda, Bool, Hexlit, Number, Symbol, Sequence, List, Args };
-Expr:      AST = { Noun, Assign, Ioverb, Adverb2, Verb2 };
+Stmt:      AST = { Noun, Assign, Ioverb };
+Expr:      AST = { Stmt, Adverb2, Verb2 };
 pub Mex:   AST = { ExprList, <o:ExprList> "\n" <m:Mex>       => cons(o,m), };
 Verb2:     AST = { <v:Verb>                                  => verb(v,AST::Nil,AST::Nil),
+                   <v:Verb> <r:Stmt>                         => verb(v,AST::Nil,r),
                    <v:Verb> <a:Adverb>   <r:Expr>            => adverb2(a,v,r),  // Verb dic
                    <l:Noun> <v:Verb>     <r:Expr>            => verb(v,l,r), };
 Adverb2:   AST = { <l:Noun> <v:Adverb>   <r:Expr>            => adverb(v,l,r),
