@@ -237,13 +237,13 @@ pub fn list(l: AST) -> AST {
 }
 
 pub fn verb(v: Verb, l: AST, r: AST) -> AST {
-    return AST::Verb(v,Box::new(l),Box::new(r));
+    return AST::Verb(v, Box::new(l), Box::new(r));
 }
 
 pub fn adverb(v: Adverb, l: AST, r: AST) -> AST {
-    return AST::Adverb(v,Box::new(l),Box::new(r));
+    return AST::Adverb(v, Box::new(l), Box::new(r));
 }
 
 pub fn adverb2(a: Adverb, v: Verb, r: AST) -> AST {
-    return AST::Adverb2(a,v,Box::new(r));
+    return AST::Adverb2(a, v, Box::new(r));
 }
