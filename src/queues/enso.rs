@@ -5,7 +5,7 @@ use std::cell::Cell;
 use std::cell::UnsafeCell;
 use std::cmp::min;
 use std::usize::MAX;
-use ring::RingBuffer;
+use super::ring::RingBuffer;
 
 type Sequence = usize;
 

@@ -30,6 +30,7 @@ pub mod slab;
 pub mod commands;
 pub mod args;
 pub mod iterators;
+pub mod queues;
 
 #[macro_use]
 extern crate libc;
