@@ -111,6 +111,10 @@ impl Console {
                         let mut m = String::from_utf8_lossy(&msg[..s]);
                         match m.trim() {
                             "exit" => Ok(false),
+                            "" => {
+                                println!("{:?}", AST::Nil);
+                                Ok(true)
+                            }
                             line => {
                                 println!("{:?}", command::parse_Mex(&line));
                                 Ok(true)
@@ -128,7 +132,14 @@ impl Console {
 
     pub fn from_buf<R: BufRead>(&mut self, config: R) -> io::Result<()> {
         for line in config.lines() {
-            println!("{:?}", command::parse_Mex(&line.unwrap()));
+            match line.unwrap().trim() {
+                "" => {
+                    println!("{:?}", AST::Nil);
+                }
+                line => {
+                    println!("{:?}", command::parse_Mex(&line));
+                }
+            }
         }
         Ok(())
     }
