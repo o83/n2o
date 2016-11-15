@@ -231,7 +231,10 @@ pub fn fun(l: AST, r: AST) -> AST {
 }
 
 pub fn dict(l: AST) -> AST {
-    return AST::Dict(Box::new(l));
+    match l.clone() {
+          AST::Cons(a,b) => return AST::Dict(Box::new(AST::Cons(a,b))),
+          x => return x,
+    }
 }
 
 pub fn list(l: AST) -> AST {
