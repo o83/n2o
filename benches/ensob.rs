@@ -10,13 +10,13 @@ use kernel::queues::enso::Enso;
 fn bench_enso_one2n(iterations: u64, consumers: usize, capacity: usize) {
     let mut enso: Enso<u64> = Enso::with_capacity(capacity);
     let (tx, rx) = channel::<u64>();
-    
+
     for t in 0..consumers {
         let cons = enso.new_consumer();
-        let tx_c = tx.clone();       
+        let tx_c = tx.clone();
         thread::spawn(move|| {
             let start = precise_time_ns();
-            //let mut expected = 0u64; 
+            //let mut expected = 0u64;
             'outer: loop {
                 'inner: loop {
                     match cons.recv() {
@@ -25,7 +25,7 @@ fn bench_enso_one2n(iterations: u64, consumers: usize, capacity: usize) {
                                 let _ = tx_c.send(*v);
                                 cons.release();
                                 break 'outer;
-                            } 
+                            }
                             //assert!(*v == expected);
                             //expected += 1;
                             cons.release();
@@ -38,9 +38,9 @@ fn bench_enso_one2n(iterations: u64, consumers: usize, capacity: usize) {
             let stop = precise_time_ns();
             let ns = stop - start;
             println!("cons {} recved {} msgs in {}ns. {}ns/msg", t, iterations, ns, ns / iterations);
-        });            
+        });
     }
-    
+
     let start = precise_time_ns();
     for i in 0..iterations {
         loop {
@@ -75,5 +75,5 @@ fn bench_enso_one2n(iterations: u64, consumers: usize, capacity: usize) {
 }
 
 fn main() {
-    bench_enso_one2n(10_000_000, 4, 1048 * 1024);
+    bench_enso_one2n(10_000_000, 4, 2048 * 1024);
 }

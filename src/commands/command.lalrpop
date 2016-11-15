@@ -11,6 +11,7 @@ pub Mex:   AST = { ExprList };
 
 List:      AST = { "(" ")" => AST::Nil, "(" <l:ExprList> ")" => list(l), };
 Dict:      AST = { "[" "]" => AST::Nil, "[" <l:ExprList> "]" => dict(l), };
+
 Lambda:    AST = { "{" <m:ExprList> "}"                      => fun(AST::Nil,m),
                    "{[" <c:NameList> "]" <m:ExprList> "}"    => fun(c,m),
                    "{" "}"                                   => fun(AST::Nil,AST::Nil)};
@@ -45,7 +46,7 @@ Number:    AST = { <n:r"\d+">                         => AST::Number(u64::from_s
 Hexlit:    AST = { <h:r"0x[a-zA-Z\d]+">               => AST::Number(u64::from_str_radix(&h[2..], 16).unwrap()), };
 Bool:      AST = { <b:r"[01]+b">                      => AST::Number(u64::from_str_radix(&b[0..b.len()-1], 2).unwrap()), };
 Name:      AST = { <n:r"[a-zA-Z][-a-zA-Z\d]*">        => AST::Name(String::from(n)), };
-Symbol:    AST = { <s:r"`([a-z][a-z0-9]*)?">          => AST::Symbol(String::from(s)), };
+Symbol:    AST = { <s:r"`([a-z][a-z0-9]*)?">          => AST::Symbol(String::from(&s[1..s.len()])), };
 Adverb: Adverb = { <a:r"[\x27:\x5C\x2F]:?">           => Adverb::from_str(a).unwrap(), };
 Verb:     Verb = { <v:r"[+\x2D*$%!&|<>=~,^#_?@.]">    => Verb::from_str(v).unwrap(), };
 Ioverb:    AST = { <i:r"\d+:">                        => AST::Ioverb(String::from(i),Box::new(AST::Nil)), };

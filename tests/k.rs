@@ -18,6 +18,14 @@ pub fn k_list() {
 }
 
 #[test]
+pub fn k_symbols() {
+    assert_eq!(format!("{:?}", command::parse_Mex("`a`b`c;`1`1`1")),
+               "Ok(Cons(Call(Symbol(\"a\"), Call(Symbol(\"b\"), Symbol(\"c\"))), \
+                Call(Symbol(\"\"), Call(Number(1), Call(Symbol(\"\"), Call(Number(1), \
+                Call(Symbol(\"\"), Number(1))))))))");
+}
+
+#[test]
 pub fn k_assign() {
     assert_eq!(format!("{:?}", command::parse_Mex("a:b:c:1")),
                "Ok(Adverb(Assign, Name(\"a\"), Adverb(Assign, Name(\"b\"), Adverb(Assign, \
@@ -29,6 +37,21 @@ pub fn k_func() {
     assert_eq!(format!("{:?}", command::parse_Mex("{x*2}[(1;2;3)]")),
                "Ok(Call(Lambda(Nil, Verb(Times, Name(\"x\"), Number(2))), \
                 List(Cons(Number(1), Cons(Number(2), Number(3))))))");
+}
+
+#[test]
+pub fn k_mini_spec() {
+    assert_eq!(format!("{:?}",
+                       command::parse_Mex("();[];{};(());[[]];{{}};()();1 2 3;(1 2 3);[1 2 \
+                                           3];[a[b[c[d]]]];(a(b(c(d))));{a{b{c{d}}}};")),
+               "Ok(Cons(Nil, Cons(Nil, Cons(Lambda(Nil, Nil), Cons(Nil, Cons(Nil, \
+                Cons(Lambda(Nil, Lambda(Nil, Nil)), Cons(Call(Nil, Nil), Cons(Call(Number(1), \
+                Call(Number(2), Number(3))), Cons(Call(Number(1), Call(Number(2), Number(3))), \
+                Cons(Call(Number(1), Call(Number(2), Number(3))), Cons(Call(Name(\"a\"), \
+                Call(Name(\"b\"), Call(Name(\"c\"), Name(\"d\")))), Cons(Call(Name(\"a\"), \
+                Call(Name(\"b\"), Call(Name(\"c\"), Name(\"d\")))), Cons(Lambda(Nil, \
+                Call(Name(\"a\"), Lambda(Nil, Call(Name(\"b\"), Lambda(Nil, Call(Name(\"c\"), \
+                Lambda(Nil, Name(\"d\")))))))), Nil))))))))))))))");
 }
 
 #[test]

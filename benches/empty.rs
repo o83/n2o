@@ -12,16 +12,24 @@ fn empty(b: &mut Bencher) {
 }
 
 #[bench]
-fn parse(b: &mut Bencher) {
-    b.iter(|| { command::parse_Mex("+/{x*y}[(a;b;c;d;e);(2;6;2;1;3)]"); })
+fn parse1(b: &mut Bencher) {
+    b.iter(|| {
+        command::parse_Mex("1*2+3");
+    })
 }
 
 #[bench]
 fn parse2(b: &mut Bencher) {
-    b.iter(|| { command::parse_Mex("1+2+3+4+5+6+7"); })
+    b.iter(|| {
+        command::parse_Mex("+/{x*y}[(a;b;c;d;e);(2;6;2;1;3)]");
+    })
 }
 
+
 #[bench]
-fn parse3(b: &mut Bencher) {
-    b.iter(|| { command::parse_Mex("1+2"); })
+fn parse4(b: &mut Bencher) {
+    b.iter(|| {
+        command::parse_Mex("();[];{};(());[[]];{{}};()();1 2 3;(1 2 3);[1 2 \
+                            3];[a[b[c[d]]]];(a(b(c(d))));{a{b{c{d}}}};");
+    })
 }

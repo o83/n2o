@@ -238,11 +238,14 @@ pub fn dict(l: AST) -> AST {
 }
 
 pub fn list(l: AST) -> AST {
-    return AST::List(Box::new(l));
+    match l.clone() {
+          AST::Cons(a,b) => return AST::List(Box::new(AST::Cons(a,b))),
+          x => return x,
+    }
 }
 
 pub fn verb(v: Verb, l: AST, r: AST) -> AST {
-    match r { // optional AST transformations could be done during parsing
+    match r.clone() { // optional AST transformations could be done during parsing
         AST::Adverb(a, al, ar) => {
             return AST::Adverb(a.clone(),
                                Box::new(AST::Verb(v.clone(),
