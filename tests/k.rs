@@ -28,7 +28,7 @@ pub fn k_assign() {
 pub fn k_func() {
     assert_eq!(format!("{:?}", command::parse_Mex("{x*2}[(1;2;3)]")),
                "Ok(Call(Lambda(Nil, Verb(Times, Name(\"x\"), Number(2))), \
-                Dict(List(Cons(Number(1), Cons(Number(2), Number(3)))))))");
+                List(Cons(Number(1), Cons(Number(2), Number(3))))))");
 }
 
 #[test]
@@ -43,8 +43,8 @@ pub fn k_adverb() {
 pub fn k_reduce() {
     assert_eq!(format!("{:?}",
                        command::parse_Mex("+/{x*y}[(1;3;4;5;6);(2;6;2;1;3)]")),
-               "Ok(Verb(Plus, Nil, Adverb(Over, Nil, Call(Lambda(Nil, Verb(Times, Name(\"x\"), \
+               "Ok(Adverb(Over, Verb(Plus, Nil, Nil), Call(Lambda(Nil, Verb(Times, Name(\"x\"), \
                 Name(\"y\"))), Dict(Cons(List(Cons(Number(1), Cons(Number(3), Cons(Number(4), \
                 Cons(Number(5), Number(6)))))), List(Cons(Number(2), Cons(Number(6), \
-                Cons(Number(2), Cons(Number(1), Number(3))))))))))))");
+                Cons(Number(2), Cons(Number(1), Number(3)))))))))))");
 }
