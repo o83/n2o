@@ -191,27 +191,22 @@ pub enum Token {
 
 #[derive(Debug,Clone)]
 pub enum AST {
-    Number(u64),
-    Hexlit(u64),
-    Bool(bool),
-    Name(String),
-    Symbol(String),
-    Sequence(String),
-    Verb(Verb, Box<AST>, Box<AST>),
-    Ioverb(String, Box<AST>),
-    Adverb(Adverb, Box<AST>, Box<AST>),
-    Adverb2(Adverb, Verb, Box<AST>),
-    Assign(Box<AST>, Box<AST>),
-    View(Box<AST>, Box<AST>),
-    List(Box<AST>),
-    Dict(Box<AST>),
-    Call(Box<AST>, Box<AST>),
-    Lambda(Box<AST>, Box<AST>),
-    Nil,
-    CommaList(Box<AST>),
-    ColonList(Box<AST>),
-    DictCons(Box<AST>, Box<AST>),
-    Cons(Box<AST>, Box<AST>),
+    /* 0  */ Nil,
+    /* 1  */ Cons(          Box<AST>, Box<AST>),
+    /* 2  */ List(          Box<AST>),
+    /* 3  */ Dict(          Box<AST>),
+    /* 4  */ Call(          Box<AST>, Box<AST>),
+    /* 5  */ Lambda(        Box<AST>, Box<AST>),
+    /* 6  */ Verb(Verb,     Box<AST>, Box<AST>),
+    /* 7  */ Adverb(Adverb, Box<AST>, Box<AST>),
+    /* 8  */ Ioverb(        String),
+    /* 9  */ Name(          String),
+    /* A  */ Number(        u64),
+    /* B  */ Hexlit(        u64),
+    /* C  */ Bool(          bool),
+    /* D  */ Symbol(        String),
+    /* E  */ Sequence(      String),
+    /* F  */ Reserved(      Box<AST>, Box<AST>),
 }
 
 pub fn call(l: AST, r: AST) -> AST {
@@ -220,10 +215,6 @@ pub fn call(l: AST, r: AST) -> AST {
 
 pub fn cons(l: AST, r: AST) -> AST {
     return AST::Cons(Box::new(l), Box::new(r));
-}
-
-pub fn assign(l: AST, r: AST) -> AST {
-    return AST::Assign(Box::new(l), Box::new(r));
 }
 
 pub fn fun(l: AST, r: AST) -> AST {
@@ -261,6 +252,3 @@ pub fn adverb(v: Adverb, l: AST, r: AST) -> AST {
     return AST::Adverb(v, Box::new(l), Box::new(r));
 }
 
-pub fn adverb2(a: Adverb, v: Verb, r: AST) -> AST {
-    return AST::Adverb2(a, v, Box::new(r));
-}
