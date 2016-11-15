@@ -47,6 +47,10 @@ path = "src/apps/sched.rs"
 name = "ensob"
 path = "benches/ensob.rs"
 
+[[bin]]
+name = "streams"
+path = "src/apps/iter_stream.rs"
+
 [dependencies]
 net2         = "0.2.19"
 log          = "0.3"
