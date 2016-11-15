@@ -75,5 +75,5 @@ fn bench_enso_one2n(iterations: u64, consumers: usize, capacity: usize) {
 }
 
 fn main() {
-    bench_enso_one2n(10_000_000, 4, 2048 * 1024);
+    bench_enso_one2n(10_000_000, 4, 1048 * 1024);
 }
