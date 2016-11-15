@@ -60,7 +60,7 @@ pub struct Cell {
 // "/" : [null,      null,       null,       null,       pack,       pack,       null,    null  ],
 // "\\": [null,      null,       null,       unpack,     split,      null,       null,    null  ],
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum Verb {
     Plus = 0,
     Minus = 1,
@@ -138,7 +138,7 @@ impl Verb {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum Adverb {
     Each,
     EachPrio,
@@ -189,7 +189,7 @@ pub enum Token {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum AST {
     Number(u64),
     Hexlit(u64),
@@ -239,7 +239,16 @@ pub fn list(l: AST) -> AST {
 }
 
 pub fn verb(v: Verb, l: AST, r: AST) -> AST {
-    return AST::Verb(v, Box::new(l), Box::new(r));
+    match r { // optional AST transformations could be done during parsing
+        AST::Adverb(a, al, ar) => {
+            return AST::Adverb(a.clone(),
+                               Box::new(AST::Verb(v.clone(),
+                                                  Box::new(l.clone()),
+                                                  Box::new(AST::Nil))),
+                               ar.clone())
+        }
+        _ => return AST::Verb(v, Box::new(l), Box::new(r)),
+    }
 }
 
 pub fn adverb(v: Adverb, l: AST, r: AST) -> AST {

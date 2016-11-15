@@ -1,5 +1,5 @@
 
-// O: The Kernel DSL LR(1) formal grammar by 5HT et all.
+// O: The Language
 
 grammar;
 use commands::ast;
@@ -29,15 +29,15 @@ ExprCont:  AST = { ";" => AST::Nil, ";" <m:ExprList>         => m };
 Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, List, Dict, Sequence, Lambda, Ioverb };
 Expr:      AST = { Noun, Call, Verbs, Adverbs, };
 
-Verbs:     AST = {          <v:Verb>               => verb(v,AST::Nil,AST::Nil),
-                            <v:Verb>     <r:Expr>  => verb(v,AST::Nil,r),
-                   <l:Call> <v:Verb>     <r:Expr>  => verb(v,l,r),
-                   <l:Noun> <v:Verb>     <r:Expr>  => verb(v,l,r), };
+Verbs:     AST = {           <v:Verb>               => verb(v,AST::Nil,AST::Nil),
+                             <v:Verb>     <r:Expr>  => verb(v,AST::Nil,r),
+                   <l:Call>  <v:Verb>     <r:Expr>  => verb(v,l,r),
+                   <l:Noun>  <v:Verb>     <r:Expr>  => verb(v,l,r), };
 
-Adverbs:   AST = {          <a:Adverb>             => adverb(a,AST::Nil,AST::Nil),
-                            <a:Adverb>   <e:Expr>  => adverb(a,AST::Nil,e),
-                   <l:Call> <a:Adverb>   <r:Expr>  => adverb(a,l,r),
-                   <l:Noun> <a:Adverb>   <r:Expr>  => adverb(a,l,r), };
+Adverbs:   AST = {           <a:Adverb>             => adverb(a,AST::Nil,AST::Nil),
+                             <a:Adverb>   <e:Expr>  => adverb(a,AST::Nil,e),
+                   <l:Call>  <a:Adverb>   <r:Expr>  => adverb(a,l,r),
+                   <l:Noun>  <a:Adverb>   <r:Expr>  => adverb(a,l,r), };
 
 // NOM
 
