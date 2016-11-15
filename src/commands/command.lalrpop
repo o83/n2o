@@ -10,31 +10,38 @@ pub Mex:   AST = { ExprList };
 // Three Type of Brackets and Their Lists 11 LOC
 
 NounCont:  AST = { ";" => AST::Nil, ";" <m:NounList>         => m };
-DictCont:  AST = { ";" => AST::Nil, ";" <m:DictList>         => m };
+CallCont:  AST = { Applicable, <m:Call>                      => m };
+//DictCont:  AST = { ";" => AST::Nil, ";" <m:DictList>         => m };
 ExprCont:  AST = { ";" => AST::Nil, ";" <m:ExprList>         => m };
 List:      AST = { "(" ")" => AST::Nil, "(" <l:ExprList> ")" => list(l), };
-Dict:      AST = { "[" "]" => AST::Nil, "[" <l:DictList> "]" => dict(l), };
+//Dict:      AST = { "[" "]" => AST::Nil, "[" <l:DictList> "]" => dict(l), };
 Args:      AST = { "[" "]" => AST::Nil, "[" <l:ExprList> "]" => l, };
-NounList:  AST = { Noun,    <o:Noun>   <m:NounCont>          => cons(o,m), };
+NounList:  AST = { Noun, <o:Noun> <m:NounCont>               => cons(o,m), };
 ExprList:  AST = { ExprCont, Expr, <o:Expr> <m:ExprCont>     => cons(o,m), };
-DictList:  AST = { Stmt, <n:Stmt> <m:DictCont>               => cons(n,m), };
-Call:      AST = { <c:Noun>     <a:Applicable>               => call(c,a), };
+//DictList:  AST = { Stmt, <a:Stmt> <l:DictCont>               => cons(a,l), };
+Call:      AST = { <c:Noun> <a:CallCont>                     => call(c,a), 
+                  //<c:Args> <a:CallCont>                     => call(c,a),
+                    };
 Lambda:    AST = { "{" <m:ExprList> "}"                      => fun(AST::Nil,m),
-                   "{" "[" <c:NounList> "]" <m:ExprList> "}" => fun(c,m),
+                   //"{" "[" <c:NounList> "]" <m:ExprList> "}" => fun(c,m),
                    "{" "}"                                   => fun(AST::Nil,AST::Nil)};
 
 // Expressions and Statements 4 LOC
 
-Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, List, Dict, Sequence, Call, Lambda, Ioverb };
-Applicable:AST = { Name, Lambda, Bool, Hexlit, Number, Symbol, Sequence, List, Args, Ioverb };
-Expr:      AST = { Noun, Stmt, }; 
-Stmt:      AST = { Verb2, Adverb2, };
+Noun:      AST = { Name, Number, Hexlit, Args, Bool, Symbol, List, Sequence, Lambda, Ioverb };
+Applicable:AST = { Name, Lambda, Bool, Hexlit, Number, Symbol, Sequence, List, Ioverb, Args };
+Expr:      AST = { Noun, Stmt, Call, }; 
+Stmt:      AST = { Verb2, Adverb2,   };
 Verb2:     AST = {          <v:Verb>               => verb(v,AST::Nil,AST::Nil), 
                             <v:Verb>     <r:Expr>  => verb(v,AST::Nil,r),
+                   <l:Call> <v:Verb>     <r:Expr>  => verb(v,l,r),
+                   //<l:Args> <v:Verb>     <r:Expr>  => verb(v,l,r), 
                    <l:Noun> <v:Verb>     <r:Expr>  => verb(v,l,r), };
 Adverb2:   AST = {          <a:Adverb>             => adverb(a,AST::Nil,AST::Nil),                          
                             <a:Adverb>   <e:Expr>  => adverb(a,AST::Nil,e),
-                   <l:Noun> <v:Adverb>   <r:Expr>  => adverb(v,l,r), };
+                   <l:Call> <a:Adverb>   <r:Expr>  => adverb(a,l,r),
+                //   <l:Args> <a:Adverb>   <r:Expr>  => adverb(a,l,r),
+                   <l:Noun> <a:Adverb>   <r:Expr>  => adverb(a,l,r), };
 
 // Nouns 8 LOC
 
@@ -44,6 +51,6 @@ Bool:      AST = { <b:r"[01]+b">                   => AST::Number(u64::from_str_
 Name:      AST = { <n:r"[a-zA-Z][-a-zA-Z\d]*">     => AST::Name(String::from(n)), };
 Symbol:    AST = { <s:r"`([a-z][a-z0-9]*)?">       => AST::Symbol(String::from(s)), };
 Adverb: Adverb = { <a:r"[\x27:\x5C\x2F]:?">        => Adverb::from_str(a).unwrap(), };
-Verb:     Verb = { <v:r"[+\x2D*$%!&|<>=~,^#_?@.]">  => Verb::from_str(v).unwrap(), };
+Verb:     Verb = { <v:r"[+\x2D*$%!&|<>=~,^#_?@.]"> => Verb::from_str(v).unwrap(), };
 Ioverb:    AST = { <i:r"\d+:">                     => AST::Ioverb(String::from(i),Box::new(AST::Nil)), };
 Sequence:  AST = { <s:r"\x22[^\x22]*\x22">         => AST::Sequence(String::from(&s[1..s.len()-1])), };
