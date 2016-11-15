@@ -8,8 +8,8 @@ extern crate kernel;
 
 use kernel::reactors::reactor::Reactor;
 use kernel::reactors::streams::stream::{Async, Poll, Stream};
-use kernel::reactors::streams::into_stream::IntoStream;
-use kernel::reactors::streams::done::{self, Done};
+//use kernel::reactors::streams::into_stream::IntoStream;
+//use kernel::reactors::streams::done::{self, Done};
 
 struct TestStream {
     id: u32,
