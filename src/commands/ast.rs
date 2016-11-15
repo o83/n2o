@@ -206,7 +206,7 @@ pub enum AST {
     /* C  */ Bool(          bool),
     /* D  */ Symbol(        String),
     /* E  */ Sequence(      String),
-    /* F  */ Reserved(      Box<AST>, Box<AST>),
+    /* F  */ Cell(          u8, u8, u16, u32, u64),
 }
 
 pub fn call(l: AST, r: AST) -> AST {

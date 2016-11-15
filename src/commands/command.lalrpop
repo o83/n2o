@@ -49,5 +49,5 @@ Name:      AST = { <n:r"[a-zA-Z][-a-zA-Z\d]*">        => AST::Name(String::from(
 Symbol:    AST = { <s:r"`([a-z][a-z0-9]*)?">          => AST::Symbol(String::from(&s[1..s.len()])), };
 Adverb: Adverb = { <a:r"[\x27:\x5C\x2F]:?">           => Adverb::from_str(a).unwrap(), };
 Verb:     Verb = { <v:r"[+\x2D*$%!&|<>=~,^#_?@.]">    => Verb::from_str(v).unwrap(), };
-Ioverb:    AST = { <i:r"\d+:">                        => AST::Ioverb(String::from(i),Box::new(AST::Nil)), };
+Ioverb:    AST = { <i:r"\d+:">                        => AST::Ioverb(String::from(i), ), };
 Sequence:  AST = { <s:r"\x22(\\.|[^\x5C\x22])*\x22">  => AST::Sequence(String::from(&s[1..s.len()-1])), };
