@@ -31,10 +31,12 @@ Test The K Shell
 ```
 $ rlwrap ./target/debug/console init etc/ath/jrnl.q
 
-Ok(Adverb(Over, Call(Name("system"), Sequence("d .jrnl")), Verb(Minus, Name("jfnpt"),
-Adverb(Assign, Call(Call(Call(Call(Name("Journal"), Name("File")), Name("Path")), 
-Name("Template")), Name("jfpt")), Adverb(Over, Sequence(""), Verb(Minus, Name("jfn"), 
-Adverb(Over, Call(Call(Name("Journal"), ...
+Ok(Adverb(Over, Call(Name("system"), Sequence("d .jrnl")), Verb(Minus, Name("jfnpt"), 
+Adverb(Assign, Call(Name("Journal"), Call(Name("File"), Call(Name("Path"), 
+Call(Name("Template"), Name("jfpt"))))), Adverb(Over, Sequence(""), Verb(Minus, 
+Name("jfn"), Adverb(Over, Call(Name("Journal"), Call(Name("File"), Name("Name"))), 
+Verb(Minus, Name("jfh"), Adverb(Over, Call(Name("Journal"), Call(Name("File"), 
+Name("Hande"))), ...
 
 Console is listening...
 > 
