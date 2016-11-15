@@ -227,6 +227,9 @@ impl<T> Consumer<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::thread;
+    use std::u64;
+    use std::sync::mpsc::channel;
 
     #[test]
     fn test_enso_cursor() {
@@ -238,4 +241,237 @@ mod tests {
         c.set_seq(43);
         assert_eq!(c.get_seq(), 43);
     }
+
+    #[test]
+    fn test_enso_next() {
+        let mut enso: Enso<u64> = Enso::with_capacity(8);
+        let cons = enso.new_consumer();
+        
+        for i in 0..8 {
+            match enso.next() {
+                Some(v) => {
+                    *v = i as u64;
+                    enso.flush();
+                },
+                None => {}
+            }
+        }
+
+        match enso.next() {
+            Some(_) => assert!(false, "Queue should not have accepted another write!"),
+            None => {}
+        }
+    }
+
+    #[test]
+    fn test_enso_next_n() {
+        let mut enso: Enso<u64> = Enso::with_capacity(8);
+        let cons = enso.new_consumer();
+        
+        for i in 0..4 {
+            match enso.next_n(2) {
+                Some(vs) => {
+                    vs[0] = 2*i as u64;
+                    vs[1] = 2*i + 1 as u64;
+                    enso.flush();
+                },
+                None => {}
+            }
+        }
+
+        match enso.next_n(2) {
+            Some(_) => assert!(false, "Queue should not have accepted another write!"),
+            None => {}
+        }
+    }
+    
+
+    #[test]
+    fn test_enso_recv() {
+        let mut enso: Enso<u64> = Enso::with_capacity(8);
+        let cons = enso.new_consumer();
+
+        match cons.recv() {
+            Some(_) => { assert!(false, "Queue was empty but a value was read!")},
+            None => {}
+        } 
+        
+        match enso.next() {
+            Some(v) => {
+                        *v = 42u64;
+                        enso.flush();
+                        },
+            None => {}
+        }
+
+        match cons.recv() {
+            Some(v) => {
+                assert!(*v == 42);
+                cons.release();
+            },
+            None => assert!(false, "Queue was not empty but recv() returned nothing!")
+        }
+
+        match cons.recv() {
+            Some(_) => {
+                assert!(false, "Queue was empty but a value was read!")
+            },
+            None => {}
+        }
+
+    }
+
+    #[test]
+    fn test_enso_recv_n() {
+        let mut enso: Enso<u64> = Enso::with_capacity(8);
+        let cons = enso.new_consumer();
+        
+        for i in 0..4 {
+            match enso.next_n(2) {
+                Some(vs) => {
+                    vs[0] = 2*i as u64;
+                    vs[1] = 2*i + 1 as u64;
+                    enso.flush();
+                },
+                None => {}
+            }
+        }
+
+        for i in 0..4 {
+            match cons.recv_n(2) {
+                Some(vs) => {
+                    assert!(vs[0] == 2*i as u64);
+                    assert!(vs[1] == 2*i + 1 as u64);
+                    cons.release();
+                },
+                None => assert!(false, "Queue was not empty but recv() returned nothing!")
+            }
+        }
+    }
+
+    #[test]
+    fn test_enso_recv_all() {
+        let mut enso: Enso<u64> = Enso::with_capacity(8);
+        let cons = enso.new_consumer();
+        
+        for i in 0..4 {
+            match enso.next_n(2) {
+                Some(vs) => {
+                    vs[0] = 2*i as u64;
+                    vs[1] = 2*i + 1 as u64;
+                    enso.flush();
+                },
+                None => {}
+            }
+        }
+
+        match cons.recv_all() {
+            Some(vs) => {
+                assert_eq!(vs, &[0u64, 1, 2, 3, 4, 5, 6, 7]);
+                cons.release();
+            },
+            None => assert!(false, "Queue was not empty but recv_all() returned nothing!")
+        }
+
+        match cons.recv() {
+            Some(_) => {
+                assert!(false, "Queue was empty but a value was read!")
+            },
+            None => {}
+        }
+    }
+
+    #[test]
+    fn test_enso_one2one() {
+        let mut enso: Enso<u64> = Enso::with_capacity(8);
+        let cons = enso.new_consumer();
+        
+        thread::spawn(move|| {        
+            for i in 0..4 {
+                loop {
+                    match enso.next_n(2) {
+                        Some(vs) => {
+                            vs[0] = 2*i as u64;
+                            vs[1] = 2*i + 1 as u64;
+                            enso.flush();
+                            break;
+                        },
+                        None => {}
+                    }
+                }
+            }
+        });
+
+        for i in 0..4 {
+            loop {
+                match cons.recv_n(2) {
+                    Some(vs) => {
+                        assert!(vs[0] == 2*i as u64);
+                        assert!(vs[1] == 2*i + 1 as u64);
+                        cons.release();
+                        break;
+                    },
+                    None => {}
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_enso_one2n() {
+        let mut enso: Enso<u64> = Enso::with_capacity(8);
+        let (tx, rx) = channel::<u64>();
+        for t in 0..4 {
+            let cons = enso.new_consumer();
+            let tx_c = tx.clone();       
+            thread::spawn(move|| {
+                let mut expected = 0u64; 
+                'outer: loop {
+                    'inner: loop {
+                        match cons.recv() {
+                            Some(v) => {
+                                if *v == u64::MAX {
+                                    let _ = tx_c.send(*v);
+                                    cons.release();
+                                    break 'outer;
+                                } 
+                                assert!(*v == expected);
+                                expected += 1;
+                                cons.release();
+                                break 'inner;
+                            },
+                            None => {}
+                        }
+                    }
+                }
+            });            
+        }
+
+        for i in 0..8 {
+            match enso.next() {
+                Some(v) => {
+                    *v = i as u64;
+                    enso.flush();
+                    break;
+                },
+                None => {}
+            }
+        }
+
+       loop {
+            match enso.next() {
+                Some(v) => {
+                    *v = u64::MAX;
+                    enso.flush();
+                    break;
+                },
+                None => {}
+            }
+        }
+
+        for i in 0..4 {
+            let _ = rx.recv(); //wait for readers
+        }
+    }
+
 }
