@@ -6,7 +6,7 @@ num:   {*(0:`)-"0"}                           / read a digit from stdin
 
 lines: (,0 4 8),(,2 4 6),t,(+t:3 3#!9)        / diags, rows, cols
 won:   {|/(&/(y+1)=[])'x[lines]}                / did player y win board x?
-cell:  {$a[~x;"012345678"@y;".xo"@x]}          / format one board cell
+cell:  {$[~x;"012345678"@y;".xo"@x]}          / format one board cell
 disp:  {pr@"\n"/"|"/'3 3#cell.'x,'!#x;x}      / display the whole board
 ask:   {pr("ox"@p),"> ";num[]}                / prompt for a move
 pick:  {[a]{~0~a[x]}{x;9!ask[]}/0}            / repeat until valid move
