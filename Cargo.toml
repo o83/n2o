@@ -43,6 +43,10 @@ path = "src/apps/console.rs"
 name = "sched"
 path = "src/apps/sched.rs"
 
+[[bin]]
+name = "ensob"
+path = "benches/ensob.rs"
+
 [dependencies]
 net2         = "0.2.19"
 log          = "0.3"
@@ -54,6 +58,7 @@ hwloc        = "0.3.0"
 lalrpop-util = "0.12.0"
 num_cpus     = "1.0"
 deque        = "0.3.1"
+time         = "0.1.35"
 
 [target.'cfg(unix)'.dependencies]
 nix          = "0.6.0"

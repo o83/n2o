@@ -448,13 +448,15 @@ mod tests {
         }
 
         for i in 0..8 {
-            match enso.next() {
-                Some(v) => {
-                    *v = i as u64;
-                    enso.flush();
-                    break;
-                },
-                None => {}
+            loop {
+                match enso.next() {
+                    Some(v) => {
+                        *v = i as u64;
+                        enso.flush();
+                        break;
+                    },
+                    None => {}
+                }
             }
         }
 
