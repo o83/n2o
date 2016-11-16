@@ -189,10 +189,11 @@ pub enum AST {
 #[derive(Debug, Clone)]
 pub struct Cell {
     t: Type,
-    v: Vec<Cell>,
+    v: Vec<ByteCode>,
 }
 
 #[derive(Debug, Clone)]
+#[repr(C)]
 pub enum ByteCode {
     /* 0 */ Nil,
     /* 1 */ Cons(          u16, u16),
@@ -202,10 +203,14 @@ pub enum ByteCode {
     /* 5 */ Lambda(        u16, u16),
     /* 6 */ Verb(Verb,     u16, u16),
     /* 7 */ Adverb(Adverb, u16, u16),
-    /* A */ Number(        u16),
-    /* B */ Hexlit(        u16),
-    /* C */ Bool(          u16),
-    /* F */ Cell(          u16, u16),
+    /* 8 */ Ioverb(        u64),
+    /* 9 */ Name(          u16),
+    /* A */ Bool(          u16),
+    /* B */ Number(        u64),
+    /* C */ Hexlit(        u64),
+    /* D */ Symbol(        u64),
+    /* E */ Sequence(      u64),
+    /* F */ Cell(          u64),
 }
 
 pub struct Machine {
