@@ -8,7 +8,9 @@ extern crate kernel;
 
 use std::io::prelude::*;
 use std::io;
+use std::mem;
 use kernel::commands::*;
+use kernel::commands::ast::*;
 
 pub fn prompt() {
     print!("> ");
@@ -17,6 +19,7 @@ pub fn prompt() {
 
 fn main() {
     let mut input_line = String::new();
+    println!("AST ByteCode size: {} bytes", mem::size_of::<ByteCode>());
     loop {
         prompt();
         let res = io::stdin().read_line(&mut input_line);

@@ -9,7 +9,7 @@ pub enum Error {
     ParseError,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Type {
     Nil = 0,
     Number = 1,
@@ -28,11 +28,6 @@ pub enum Type {
     Quote = 14,
 }
 
-#[derive(Debug)]
-pub struct Cell {
-    t: Type,
-    v: Vec<Cell>,
-}
 
 // OK LANG
 
@@ -171,42 +166,51 @@ impl Adverb {
     }
 }
 
-#[derive(Debug)]
-pub enum Token {
-    Space,
-    Assign,
-    Semi,
-    Colon,
-    View,
-    Cond,
-    Apply,
-    OpenB,
-    OpenP,
-    OpenC,
-    CloseB,
-    CloseP,
-    CloseC,
-}
-
-
 #[derive(Debug,Clone)]
 pub enum AST {
-    /* 0  */ Nil,
-    /* 1  */ Cons(          Box<AST>, Box<AST>),
-    /* 2  */ List(          Box<AST>),
-    /* 3  */ Dict(          Box<AST>),
-    /* 4  */ Call(          Box<AST>, Box<AST>),
-    /* 5  */ Lambda(        Box<AST>, Box<AST>),
-    /* 6  */ Verb(Verb,     Box<AST>, Box<AST>),
-    /* 7  */ Adverb(Adverb, Box<AST>, Box<AST>),
-    /* 8  */ Ioverb(        String),
-    /* 9  */ Name(          String),
-    /* A  */ Number(        u64),
-    /* B  */ Hexlit(        u64),
-    /* C  */ Bool(          bool),
-    /* D  */ Symbol(        String),
-    /* E  */ Sequence(      String),
-    /* F  */ Cell(          u8, u8, u16, u32, u64),
+    /* 0 */ Nil,
+    /* 1 */ Cons(          Box<AST>, Box<AST>),
+    /* 2 */ List(          Box<AST>),
+    /* 3 */ Dict(          Box<AST>),
+    /* 4 */ Call(          Box<AST>, Box<AST>),
+    /* 5 */ Lambda(        Box<AST>, Box<AST>),
+    /* 6 */ Verb(Verb,     Box<AST>, Box<AST>),
+    /* 7 */ Adverb(Adverb, Box<AST>, Box<AST>),
+    /* 8 */ Ioverb(        String),
+    /* 9 */ Name(          String),
+    /* A */ Number(        u64),
+    /* B */ Hexlit(        u64),
+    /* C */ Bool(          bool),
+    /* D */ Symbol(        String),
+    /* E */ Sequence(      String),
+    /* F */ Cell(          Box<Cell>),
+}
+
+#[derive(Debug, Clone)]
+pub struct Cell {
+    t: Type,
+    v: Vec<Cell>,
+}
+
+#[derive(Debug, Clone)]
+pub enum ByteCode {
+    /* 0 */ Nil,
+    /* 1 */ Cons(          u16, u16),
+    /* 2 */ List(          u16),
+    /* 3 */ Dict(          u16),
+    /* 4 */ Call(          u16, u16),
+    /* 5 */ Lambda(        u16, u16),
+    /* 6 */ Verb(Verb,     u16, u16),
+    /* 7 */ Adverb(Adverb, u16, u16),
+    /* A */ Number(        u16),
+    /* B */ Hexlit(        u16),
+    /* C */ Bool(          u16),
+    /* F */ Cell(          u16, u16),
+}
+
+pub struct Machine {
+    ip: u16,
+    stream: Vec<ByteCode>,
 }
 
 pub fn call(l: AST, r: AST) -> AST {
