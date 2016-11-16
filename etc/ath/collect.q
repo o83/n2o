@@ -6,7 +6,7 @@ collect:{
         'mismatch;
         ];
     getTbls[];
-    {@a[{x (exit;0)};x;{}]} peach rdbh;
+    {@[{x (exit;0)};x;{}]} peach rdbh;
     rdbh::();
     exit 0;
     }

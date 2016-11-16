@@ -8,7 +8,7 @@ jfpt:""
 /jinit - init / replay journal
 jinit:{
     jfn::hsym `$jfpt,string .z.D;
-    exists:{0 < @a[hcount; x; {0}]};
+    exists:{0 < @[hcount; x; {0}]};
     init:{jfn set (); :jfh::hopen jfn;};
     if [not exists jfn;
         0N!"Log: started";

@@ -43,7 +43,7 @@ system "d ."
 
 tryreconn:{
     if [.net.mode & .net.feh=-1;
-        @a[{.net.feh::hopen (.net.fea;.net.reConnTO); upd each .net.feh (`.net.sub;.core.seq)};
+        @[{.net.feh::hopen (.net.fea;.net.reConnTO); upd each .net.feh (`.net.sub;.core.seq)};
             0b;
             {if [.net.feh<>-1; hclose .net.feh; .net.feh::-1]}]
         ];

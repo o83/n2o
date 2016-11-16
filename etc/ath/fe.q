@@ -35,5 +35,5 @@ init:{
     .net.netinit[];
     }
 
-@a[init;0b;{exit 1}]
+@[init;0b;{exit 1}]
 
