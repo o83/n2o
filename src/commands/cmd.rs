@@ -31,15 +31,11 @@ Noun:      AST = { Name, Number, Hexlit, Bool, Symbol, List, Dict, Sequence, Lam
 Expr:      AST = { Noun, Call, Verbs, Adverbs, };
 
 Verbs:     AST = {           <v:Verb>               => verb(v,AST::Nil,AST::Nil),
-                   <l:Call>  <v:Verb>               => verb(v,l,AST::Nil),
-                   <l:Noun>  <v:Verb>               => verb(v,l,AST::Nil),
                              <v:Verb>     <r:Expr>  => verb(v,AST::Nil,r),
                    <l:Call>  <v:Verb>     <r:Expr>  => verb(v,l,r),
                    <l:Noun>  <v:Verb>     <r:Expr>  => verb(v,l,r), };
 
 Adverbs:   AST = {           <a:Adverb>             => adverb(a,AST::Nil,AST::Nil),
-                   <l:Call>  <a:Adverb>             => adverb(a,l,AST::Nil,),
-                   <l:Noun>  <a:Adverb>             => adverb(a,l,AST::Nil,),
                              <a:Adverb>   <e:Expr>  => adverb(a,AST::Nil,e),
                    <l:Call>  <a:Adverb>   <r:Expr>  => adverb(a,l,r),
                    <l:Noun>  <a:Adverb>   <r:Expr>  => adverb(a,l,r), };
@@ -53,5 +49,5 @@ Name:      AST = { <n:r"[a-zA-Z][-a-zA-Z\d]*">        => AST::Name(String::from(
 Symbol:    AST = { <s:r"`([a-z][a-z0-9]*)?">          => AST::Symbol(String::from(&s[1..s.len()])), };
 Adverb: Adverb = { <a:r"[\x27:\x5C\x2F]:?">           => Adverb::from_str(a).unwrap(), };
 Verb:     Verb = { <v:r"[+\x2D*$%!&|<>=~,^#_?@.]">    => Verb::from_str(v).unwrap(), };
-Ioverb:    AST = { <i:r"\d+:">                        => AST::Ioverb(String::from(i), ), };
+Ioverb:    AST = { <i:r"\d+:">                        => AST::Ioverb(String::from(i),Box::new(AST::Nil)), };
 Sequence:  AST = { <s:r"\x22(\\.|[^\x5C\x22])*\x22">  => AST::Sequence(String::from(&s[1..s.len()-1])), };

@@ -12,15 +12,15 @@
 &/~^(48+!10)?"697"                                           /  5. string contains only digits?
 {1+#:'=x@&=':x@:<x}"Programmming"                            /  6. find duplicates and their count
 {+/'(x;~x)}@^"aeiouy"?"verbage"                              /  7. count vowels and consonants
-(+/=)["skimmed";"m"]                                           /  8. count occurrences of a character
++/=["skimmed";"m"]                                           /  8. count occurrences of a character
 ."231"                                                       /  9. convert numeric string to int
-{(#z)_[],/(z,[])'y\x}["x y  z";" ";"%20"]                        / 10. replace character with a string
-(p:{$[x;,/x,''p'x^/:x;,x]})["xyz"]                           / 11. permutations of a string
+{(#z)_,/(z,)'y\x}["x y  z";" ";"%20"]                        / 10. replace character with a string
+(p:{$a[x;,/x,''p'x^/:x;,x]})["xyz"]                           / 11. permutations of a string
 " "/|:'" "\"a few words";                                    / 12. reverse words in a sentence
 {x~|x}"racecar"                                              / 13. is a string a palindrome?
 ?"bananas"                                                   / 14. unique characters in order
 {[a;s]t:#:'a;t~0 0{x+y~'a@'x&t-1}/s}[("ab";"def");"dabef"]   / 15. is s an interleave of two others?
-{|/(y~[])',/(1_[])\',\x}["hneay";"ne"]                           / 16. string contains a substring?
+{|/(y~)',/(1_[])\',\x}["hneay";"ne"]                           / 16. string contains a substring?
 *>#:'="abdbbac"                                              / 17. most frequently occurring char
 {,/y\x}["peeled";"e"]                                        / 18. remove instances of a character
 *{x~|x}#t@:>#:'t:,/(-1_[])\'(1_[])\"issrawar"                    / 19. longest palindrome substring
