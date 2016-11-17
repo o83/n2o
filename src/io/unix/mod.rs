@@ -4,6 +4,7 @@ pub mod tcp;
 
 #[cfg(any(target_os = "linux"))]
 mod linux;
+mod xsock;
 
 #[cfg(any(target_os = "linux"))]
 pub use ::io::unix::linux::{Events, Selector};
