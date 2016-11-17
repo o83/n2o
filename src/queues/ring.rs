@@ -3,11 +3,17 @@ use core::ptr;
 use core::mem::transmute;
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 use std::fmt;
+use std;
+use std::ffi::CString;
+use std::io;
+use std::io::{Result, Error};
+use libc;
 
 #[repr(C)]
 pub struct RingBuffer<T> {
     buffer: RawVec<T>,
     mask: usize,
+    with_mirror: bool,
 }
 
 impl<T> RingBuffer<T> {
@@ -16,13 +22,81 @@ impl<T> RingBuffer<T> {
         RingBuffer {
             buffer: RawVec::with_capacity(adjusted),
             mask: adjusted - 1,
+            with_mirror: false,
         }
+    }
+
+    pub fn with_mirror(name: CString, cap: usize) -> Result<RingBuffer<T>> {
+        let adjusted = cap.next_power_of_two();
+        let mask = 4096 - 1; 
+        let size = (adjusted * std::mem::size_of::<T>() + mask) & !mask;
+
+        let fd_raw = unsafe {
+            libc::shm_open(name.as_ptr(),
+                           libc::O_RDWR | libc::O_CREAT | libc::O_EXCL,
+                           0666)
+        };
+        let n = unsafe { libc::ftruncate(fd_raw, size as libc::off_t) };
+        let ptr = unsafe {
+            libc::mmap(ptr::null_mut(),
+                       2 * size as libc::size_t,
+                       libc::PROT_NONE,
+                       libc::MAP_ANONYMOUS | libc::MAP_PRIVATE,
+                       -1,
+                       0)
+        };
+
+        if ptr == libc::MAP_FAILED {
+            return Err(io::Error::last_os_error());
+        }
+
+        let addr = unsafe {
+            libc::mmap(ptr,
+                       size as libc::size_t,
+                       libc::PROT_READ | libc::PROT_WRITE,
+                       libc::MAP_FIXED | libc::MAP_SHARED,
+                       fd_raw,
+                       0)
+        };
+
+        if addr != ptr {
+            return Err(io::Error::last_os_error());
+        }
+
+        let addr = unsafe {
+            libc::mmap(ptr.offset(size as isize),
+                       size as libc::size_t,
+                       libc::PROT_READ | libc::PROT_WRITE,
+                       libc::MAP_FIXED | libc::MAP_SHARED,
+                       fd_raw,
+                       0)
+        };
+
+        if addr != unsafe { ptr.offset(size as isize) } {
+            return Err(io::Error::last_os_error());
+        }
+
+        let n = unsafe { libc::close(fd_raw) };
+        if n != 0 {
+            println!("error {} when closing file descriptor {}", n, fd_raw);
+            return Err(io::Error::last_os_error());
+        }
+        
+        if unsafe { libc::shm_unlink(name.as_ptr()) < 0 } {
+            return Err(io::Error::last_os_error());
+        }
+        Ok(RingBuffer {
+            buffer: unsafe { RawVec::from_raw_parts(ptr as *mut T, adjusted) },
+            mask: adjusted - 1,
+            with_mirror: false,
+        })
     }
 
     pub fn from_raw_parts(ptr: *mut T, cap: usize) -> Self {
         RingBuffer {
             buffer: unsafe { RawVec::from_raw_parts(ptr, cap) },
             mask: cap - 1,
+            with_mirror: false,
         }
     }
 
