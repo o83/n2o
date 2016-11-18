@@ -6,6 +6,7 @@ use std::cell::UnsafeCell;
 use std::cmp::min;
 use std::usize::MAX;
 use super::ring::RingBuffer;
+use std::ffi::CString;
 
 type Sequence = usize;
 
@@ -97,6 +98,19 @@ impl<T> Enso<T> {
 
         Enso {
             ring: Arc::new(RingBuffer::with_capacity(cap)),
+            _padding1: [0; 7],
+            next_seq_cache: Cell::new(0),
+            _padding2: [0; 7],
+            cursors: UncheckedUnsafeArc::new(cursors),
+        }
+    }
+
+    pub fn with_mirror(name: CString, cap: usize) -> Self {
+        let mut cursors = vec![];
+        cursors.push(Cursor::new(0));
+
+        Enso {
+            ring: Arc::new(RingBuffer::with_mirror(name, cap).unwrap()),
             _padding1: [0; 7],
             next_seq_cache: Cell::new(0),
             _padding2: [0; 7],

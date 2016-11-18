@@ -1,14 +1,17 @@
 extern crate time;
 extern crate kernel;
+extern crate libc;
 
 use std::thread;
 use std::u64;
 use std::sync::mpsc::channel;
 use time::precise_time_ns;
 use kernel::queues::enso::Enso;
+use std::ffi::CString;
 
 fn bench_enso_one2n(iterations: u64, consumers: usize, capacity: usize) {
-    let mut enso: Enso<u64> = Enso::with_capacity(capacity);
+    //let mut enso: Enso<u64> = Enso::with_capacity(capacity);
+    let mut enso: Enso<u64> = Enso::with_mirror(CString::new("/test").unwrap(), capacity);
     let (tx, rx) = channel::<u64>();
 
     for t in 0..consumers {
