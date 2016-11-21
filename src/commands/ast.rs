@@ -269,21 +269,21 @@ pub fn fun(l: AST, r: AST) -> AST {
 }
 
 pub fn dict(l: AST) -> AST {
-    match l.clone() {
+    match l {
         AST::Cons(a, b) => return AST::Dict(Box::new(AST::Cons(a, b))),
         x => return x,
     }
 }
 
 pub fn list(l: AST) -> AST {
-    match l.clone() {
+    match l {
         AST::Cons(a, b) => return AST::List(Box::new(AST::Cons(a, b))),
         x => return x,
     }
 }
 
 pub fn verb(v: Verb, l: AST, r: AST) -> AST {
-    match r.clone() { // optional AST transformations could be done during parsing
+    match r { // optional AST transformations could be done during parsing
         AST::Adverb(a, al, ar) => {
             return AST::Adverb(a.clone(),
                                Box::new(AST::Verb(v.clone(),
