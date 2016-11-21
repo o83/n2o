@@ -202,6 +202,12 @@ pub enum AST {
     Cell(Box<Cell>),
 }
 
+impl AST {
+    pub fn boxed(self) -> Box<Self> {
+        Box::new(self)
+    }
+}
+
 #[derive(PartialEq,Debug, Clone)]
 pub struct Cell {
     t: Type,
