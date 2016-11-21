@@ -10,8 +10,8 @@ use kernel::queues::enso::Enso;
 use std::ffi::CString;
 
 fn bench_enso_one2n(iterations: u64, consumers: usize, capacity: usize) {
-    //let mut enso: Enso<u64> = Enso::with_capacity(capacity);
-    let mut enso: Enso<u64> = Enso::with_mirror(CString::new("/test").unwrap(), capacity);
+    let mut enso: Enso<u64> = Enso::with_capacity(capacity);
+    //let mut enso: Enso<u64> = Enso::with_mirror(CString::new("/test").unwrap(), capacity);
     let (tx, rx) = channel::<u64>();
 
     for t in 0..consumers {
@@ -78,5 +78,5 @@ fn bench_enso_one2n(iterations: u64, consumers: usize, capacity: usize) {
 }
 
 fn main() {
-    bench_enso_one2n(10_000_000, 4, 2048 * 1024);
+    bench_enso_one2n(10_000_000, 640_000, 1048 * 1024);
 }

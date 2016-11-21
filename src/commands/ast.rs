@@ -9,7 +9,7 @@ pub enum Error {
     ParseError,
 }
 
-#[derive(Debug, Clone)]
+#[derive(PartialEq,Debug, Clone)]
 pub enum Type {
     Nil = 0,
     Number = 1,
@@ -55,7 +55,7 @@ pub enum Type {
 // "/" : [null,      null,       null,       null,       pack,       pack,       null,    null  ],
 // "\\": [null,      null,       null,       unpack,     split,      null,       null,    null  ],
 
-#[derive(Debug,Clone)]
+#[derive(PartialEq,Debug,Clone)]
 pub enum Verb {
     Plus = 0,
     Minus = 1,
@@ -133,7 +133,7 @@ impl Verb {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(PartialEq,Debug,Clone)]
 pub enum Adverb {
     Each,
     EachPrio,
@@ -166,51 +166,83 @@ impl Adverb {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(PartialEq,Debug,Clone)]
 pub enum AST {
-    /* 0 */ Nil,
-    /* 1 */ Cons(          Box<AST>, Box<AST>),
-    /* 2 */ List(          Box<AST>),
-    /* 3 */ Dict(          Box<AST>),
-    /* 4 */ Call(          Box<AST>, Box<AST>),
-    /* 5 */ Lambda(        Box<AST>, Box<AST>),
-    /* 6 */ Verb(Verb,     Box<AST>, Box<AST>),
-    /* 7 */ Adverb(Adverb, Box<AST>, Box<AST>),
-    /* 8 */ Ioverb(        String),
-    /* 9 */ Name(          String),
-    /* A */ Number(        u64),
-    /* B */ Hexlit(        u64),
-    /* C */ Bool(          bool),
-    /* D */ Symbol(        String),
-    /* E */ Sequence(      String),
-    /* F */ Cell(          Box<Cell>),
+    // 0
+    Nil,
+    // 1
+    Cons(Box<AST>, Box<AST>),
+    // 2
+    List(Box<AST>),
+    // 3
+    Dict(Box<AST>),
+    // 4
+    Call(Box<AST>, Box<AST>),
+    // 5
+    Lambda(Box<AST>, Box<AST>),
+    // 6
+    Verb(Verb, Box<AST>, Box<AST>),
+    // 7
+    Adverb(Adverb, Box<AST>, Box<AST>),
+    // 8
+    Ioverb(String),
+    // 9
+    Name(String),
+    // A
+    Number(u64),
+    // B
+    Hexlit(u64),
+    // C
+    Bool(bool),
+    // D
+    Symbol(String),
+    // E
+    Sequence(String),
+    // F
+    Cell(Box<Cell>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(PartialEq,Debug, Clone)]
 pub struct Cell {
     t: Type,
     v: Vec<ByteCode>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(PartialEq,Debug, Clone)]
 #[repr(C)]
 pub enum ByteCode {
-    /* 0 */ Nil,
-    /* 1 */ Cons(          u16, u16),
-    /* 2 */ List(          u16),
-    /* 3 */ Dict(          u16),
-    /* 4 */ Call(          u16, u16),
-    /* 5 */ Lambda(        u16, u16),
-    /* 6 */ Verb(Verb,     u16, u16),
-    /* 7 */ Adverb(Adverb, u16, u16),
-    /* 8 */ Ioverb(        u64),
-    /* 9 */ Name(          u16),
-    /* A */ Bool(          u16),
-    /* B */ Number(        u64),
-    /* C */ Hexlit(        u64),
-    /* D */ Symbol(        u64),
-    /* E */ Sequence(      u64),
-    /* F */ Cell(          u64),
+    // 0
+    Nil,
+    // 1
+    Cons(u16, u16),
+    // 2
+    List(u16),
+    // 3
+    Dict(u16),
+    // 4
+    Call(u16, u16),
+    // 5
+    Lambda(u16, u16),
+    // 6
+    Verb(Verb, u16, u16),
+    // 7
+    Adverb(Adverb, u16, u16),
+    // 8
+    Ioverb(u64),
+    // 9
+    Name(u16),
+    // A
+    Bool(u16),
+    // B
+    Number(u64),
+    // C
+    Hexlit(u64),
+    // D
+    Symbol(u64),
+    // E
+    Sequence(u64),
+    // F
+    Cell(u64),
 }
 
 pub struct Machine {
@@ -232,15 +264,15 @@ pub fn fun(l: AST, r: AST) -> AST {
 
 pub fn dict(l: AST) -> AST {
     match l.clone() {
-          AST::Cons(a,b) => return AST::Dict(Box::new(AST::Cons(a,b))),
-          x => return x,
+        AST::Cons(a, b) => return AST::Dict(Box::new(AST::Cons(a, b))),
+        x => return x,
     }
 }
 
 pub fn list(l: AST) -> AST {
     match l.clone() {
-          AST::Cons(a,b) => return AST::List(Box::new(AST::Cons(a,b))),
-          x => return x,
+        AST::Cons(a, b) => return AST::List(Box::new(AST::Cons(a, b))),
+        x => return x,
     }
 }
 
@@ -260,4 +292,3 @@ pub fn verb(v: Verb, l: AST, r: AST) -> AST {
 pub fn adverb(v: Adverb, l: AST, r: AST) -> AST {
     return AST::Adverb(v, Box::new(l), Box::new(r));
 }
-
