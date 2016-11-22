@@ -202,6 +202,8 @@ pub enum AST {
     Cell(Box<Cell>),
     // Syntactic sugar
     Assign(Box<AST>, Box<AST>),
+    //
+    Cond(Box<AST>, Box<AST>, Box<AST>),
 }
 
 impl AST {
@@ -285,14 +287,42 @@ pub fn list(l: AST) -> AST {
 }
 
 pub fn verb(v: Verb, l: AST, r: AST) -> AST {
-    match r { // optional AST transformations could be done during parsing
-        AST::Adverb(a, al, ar) => {
-            match a {
-                Adverb::Assign => AST::Assign(al.boxed(), ar.boxed()),
-                _ => AST::Adverb(a, AST::Verb(v, l.boxed(), AST::Nil.boxed()).boxed(), ar),
+    match v {
+        Verb::Cast => {
+            let rexpr = match r {
+                // AST::Dict(box AST::Cons(box c, box AST::Cons(box t, box f))) => {
+                AST::Dict(box d) => {
+                    match d {
+                        AST::Cons(box a, box b) => {
+                            match b {
+                                AST::Cons(box t, box f) => {
+                                    AST::Cond(a.boxed(), t.boxed(), f.boxed())
+                                }
+                                x => x,
+                            }
+                        }
+                        x => x,
+                    }
+                }
+                x => x, 
+            };
+
+            match l {
+                AST::Nil => rexpr,
+                _ => AST::Call(l.boxed(), rexpr.boxed()), 
             }
         }
-        _ => AST::Verb(v, l.boxed(), r.boxed()),
+        _ => {
+            match r { // optional AST transformations could be done during parsing
+                AST::Adverb(a, al, ar) => {
+                    match a {
+                        Adverb::Assign => AST::Assign(al.boxed(), ar.boxed()),
+                        _ => AST::Adverb(a, AST::Verb(v, l.boxed(), AST::Nil.boxed()).boxed(), ar),
+                    }
+                }
+                _ => AST::Verb(v, l.boxed(), r.boxed()),
+            }
+        }
     }
 }
 
