@@ -200,6 +200,8 @@ pub enum AST {
     Sequence(String),
     // F
     Cell(Box<Cell>),
+    // Syntactic sugar
+    Assign(Box<AST>, Box<AST>),
 }
 
 impl AST {
@@ -285,12 +287,18 @@ pub fn list(l: AST) -> AST {
 pub fn verb(v: Verb, l: AST, r: AST) -> AST {
     match r { // optional AST transformations could be done during parsing
         AST::Adverb(a, al, ar) => {
-            AST::Adverb(a, AST::Verb(v, l.boxed(), AST::Nil.boxed()).boxed(), ar)
+            match a {
+                Adverb::Assign => AST::Assign(al.boxed(), ar.boxed()),
+                _ => AST::Adverb(a, AST::Verb(v, l.boxed(), AST::Nil.boxed()).boxed(), ar),
+            }
         }
         _ => AST::Verb(v, l.boxed(), r.boxed()),
     }
 }
 
-pub fn adverb(v: Adverb, l: AST, r: AST) -> AST {
-    AST::Adverb(v, l.boxed(), r.boxed())
+pub fn adverb(a: Adverb, l: AST, r: AST) -> AST {
+    match a {
+        Adverb::Assign => AST::Assign(l.boxed(), r.boxed()),
+        _ => AST::Adverb(a, l.boxed(), r.boxed()),
+    }
 }
