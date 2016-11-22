@@ -257,44 +257,42 @@ pub struct Machine {
 }
 
 pub fn call(l: AST, r: AST) -> AST {
-    return AST::Call(Box::new(l), Box::new(r));
+    AST::Call(Box::new(l), Box::new(r))
 }
 
 pub fn cons(l: AST, r: AST) -> AST {
-    return AST::Cons(Box::new(l), Box::new(r));
+    AST::Cons(Box::new(l), Box::new(r))
 }
 
 pub fn fun(l: AST, r: AST) -> AST {
-    return AST::Lambda(Box::new(l), Box::new(r));
+    AST::Lambda(Box::new(l), Box::new(r))
 }
 
 pub fn dict(l: AST) -> AST {
     match l {
-        AST::Cons(a, b) => return AST::Dict(Box::new(AST::Cons(a, b))),
-        x => return x,
+        AST::Cons(a, b) => AST::Dict(Box::new(AST::Cons(a, b))),
+        x => x,
     }
 }
 
 pub fn list(l: AST) -> AST {
     match l {
-        AST::Cons(a, b) => return AST::List(Box::new(AST::Cons(a, b))),
-        x => return x,
+        AST::Cons(a, b) => AST::List(Box::new(AST::Cons(a, b))),
+        x => x,
     }
 }
 
 pub fn verb(v: Verb, l: AST, r: AST) -> AST {
     match r { // optional AST transformations could be done during parsing
         AST::Adverb(a, al, ar) => {
-            return AST::Adverb(a.clone(),
-                               Box::new(AST::Verb(v.clone(),
-                                                  Box::new(l.clone()),
-                                                  Box::new(AST::Nil))),
-                               ar.clone())
+            AST::Adverb(a.clone(),
+                        Box::new(AST::Verb(v.clone(), Box::new(l.clone()), Box::new(AST::Nil))),
+                        ar.clone())
         }
-        _ => return AST::Verb(v, Box::new(l), Box::new(r)),
+        _ => AST::Verb(v, Box::new(l), Box::new(r)),
     }
 }
 
 pub fn adverb(v: Adverb, l: AST, r: AST) -> AST {
-    return AST::Adverb(v, Box::new(l), Box::new(r));
+    AST::Adverb(v, Box::new(l), Box::new(r))
 }
