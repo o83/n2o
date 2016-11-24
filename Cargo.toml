@@ -44,10 +44,6 @@ name = "sched"
 path = "src/apps/sched.rs"
 
 [[bin]]
-name = "ensob"
-path = "benches/ensob.rs"
-
-[[bin]]
 name = "streams"
 path = "src/apps/iter_stream.rs"
 
