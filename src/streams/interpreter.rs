@@ -13,13 +13,13 @@ pub struct Environment {
     values: HashMap<String, Value>,
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum List {
     Cons(Box<Value>, Box<List>),
     Nil,
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum Value {
     Symbol(String),
     Integer(i64),

@@ -5,6 +5,7 @@ use std::result::Result;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use streams::verb::plus;
 
 #[derive(Debug)]
 pub enum Error {
@@ -288,5 +289,19 @@ pub fn adverb(a: Adverb, l: AST, r: AST) -> AST {
     match a {
         Adverb::Assign => AST::Assign(l.boxed(), r.boxed()),
         _ => AST::Adverb(a, l.boxed(), r.boxed()),
+    }
+}
+
+pub fn eval(ast:AST) {
+    match ast {
+        AST::Verb(vt, box lv, box rv) => {
+            match vt {
+                Verb::Plus => { let mut a = plus::new(lv, rv);
+                  println!("{:?}", a.next().unwrap());
+                },
+                _ => println!("Unsupported Verb: {:?}", vt) 
+            }   
+        },
+        x => println!("{:?}", x), 
     }
 }

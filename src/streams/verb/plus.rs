@@ -4,19 +4,19 @@ use streams::interpreter::{self, Value, List};
 use commands::ast::AST;
 use streams::stream::{self, Error, Poll, Async};
 
-pub struct Add {
+pub struct Plus {
     lvalue: AST,
     rvalue: AST,
 }
 
-pub fn new(lvalue: AST, rvalue: AST) -> Add {
-    Add {
+pub fn new(lvalue: AST, rvalue: AST) -> Plus {
+    Plus {
         lvalue: lvalue,
         rvalue: rvalue,
     }
 }
 
-impl Add {
+impl Plus {
     // Now just returning simple int
     fn a_a(l: u64, r: u64) -> Value {
         // Need to figure out what integers we have (signed or unsigned)
@@ -33,7 +33,7 @@ impl Add {
     }
 }
 
-impl Iterator for Add {
+impl Iterator for Plus {
     type Item = Poll<Value>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -52,7 +52,7 @@ impl Iterator for Add {
     }
 }
 
-impl<'a> Iterator for &'a Add {
+impl<'a> Iterator for &'a Plus {
     type Item = Poll<Value>;
 
     fn next(&mut self) -> Option<Self::Item> {
