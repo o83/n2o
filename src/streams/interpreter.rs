@@ -48,3 +48,15 @@ impl Interpreter {
 pub fn process(program: AST, env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
    Ok(Value::Integer(100))
 }
+
+impl Environment {
+    fn new_root() -> Result<Rc<RefCell<Environment>>, Error> {
+        let mut env = Environment { parent: None, values: HashMap::new() };
+        Ok(Rc::new(RefCell::new(env)))
+    }
+
+    fn new_child(parent: Rc<RefCell<Environment>>) -> Rc<RefCell<Environment>> {
+        let env = Environment { parent: Some(parent), values: HashMap::new() };
+        Rc::new(RefCell::new(env))
+    }
+}

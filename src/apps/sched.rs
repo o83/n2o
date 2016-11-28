@@ -16,14 +16,14 @@ struct TestStream {
 impl Stream for TestStream {
     type Item = u32;
     type Error = ();
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+    fn poll(&mut self) -> Poll<Self::Item> {
         self.id += 1;
         if self.id == 11 {
-            return Ok(None);
+            return Ok(Async::NotReady);
         }
         match self.id % 2 {
-            0 => Ok(Some(Async::Ready(self.id))),
-            _ => Ok(Some(Async::NotReady)),
+            0 => Ok(Async::Ready(self.id)),
+            _ => Ok(Async::NotReady),
         }
     }
 }
@@ -41,25 +41,6 @@ fn test_map() {
     r.run();
 }
 
-fn test_then() {
-    println!("===> Testing then combinator...");
-    let s = TestStream { id: 0 }
-        .then(|v| {
-            println!("Then combinator received: {:?}", &v);
-            let r: Result<u32, u32> = Ok(1);
-            r
-        })
-        .then(|v| {
-            println!("Another Then combinator received: {:?}", &v);
-            let r: Result<u32, u32> = Ok(0);
-            r
-        });
-    let mut r = Reactor::new();
-    r.spawn(s);
-    r.run();
-}
-
 fn main() {
     test_map();
-    test_then();
 }

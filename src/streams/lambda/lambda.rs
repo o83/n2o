@@ -2,7 +2,6 @@ use streams::stream::*;
 use commands::ast::{self, AST};
 use streams::interpreter::*;
 
-
 pub struct Lambda {
     args: List,
     body: AST,

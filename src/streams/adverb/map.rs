@@ -25,9 +25,8 @@ impl<S, F, U> Stream for Map<S, F>
 
     fn poll(&mut self) -> Poll<Self::Item> {
         match self.stream.poll() {
-            Ok(Some(Async::Ready(i))) => Ok(Some(Async::Ready((&mut self.f)(i)))),
-            Ok(Some(Async::NotReady)) => Ok(Some(Async::NotReady)),
-            Ok(None) => Ok(None),
+            Ok(Async::Ready(i)) => Ok(Async::Ready((&mut self.f)(i))),
+            Ok(Async::NotReady) => Ok(Async::NotReady),
             Err(e) => Err(e),
         }
     }

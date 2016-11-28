@@ -3,15 +3,13 @@ use commands::ast::*;
 use streams::adverb::map::{self, Map};
 use streams::into_stream::IntoStream;
 
+#[derive(PartialEq,Debug, Clone)]
 pub enum Async<T> {
     Ready(T),
     NotReady,
 }
 
-
 pub type Poll<T> = Result<Async<T>, Error>;
-
-//pub type Poll<T, E> = Result<Option<Async<T>>, E>;
 
 pub trait Stream {
     type Item;

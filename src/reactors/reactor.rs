@@ -2,7 +2,7 @@
 // Task Reactor with Priorities by Anton
 
 use std::cmp::Ordering;
-use streams::stream::Stream;
+use streams::stream::*;
 
 pub struct Reactor<S> {
     tasks: Vec<S>,
@@ -55,7 +55,7 @@ impl<S: Stream> Reactor<S> {
             for t in &mut self.tasks {
                 let res = t.poll();
                 match res {
-                    Ok(None) => {
+                    Ok(Async::NotReady) => {
                         self.run = false;
                         break;
                     }
