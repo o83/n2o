@@ -299,9 +299,9 @@ pub fn eval(ast:AST) {
                 Verb::Plus => { let mut a = plus::new(lv, rv);
                   println!("{:?}", a.next().unwrap());
                 },
-                _ => println!("Unsupported Verb: {:?}", vt) 
+                x => println!("Not implemented Verb: {:?}", AST::Verb(x, box lv, box rv)) 
             }   
         },
-        x => println!("{:?}", x), 
+        x => println!("Not implemented AST node: {:?}", x), 
     }
 }
