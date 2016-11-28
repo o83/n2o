@@ -166,6 +166,22 @@ impl Adverb {
     }
 }
 
+#[derive(PartialEq, Clone)]
+pub enum Value {
+    Symbol(String),
+    Integer(i64),
+    Boolean(bool),
+    String(String),
+    List(List),
+    Lambda(List, AST),
+}
+
+#[derive(PartialEq, Clone)]
+pub enum List {
+    Cons(Box<Value>, Box<List>),
+    Nil,
+}
+
 #[derive(PartialEq,Debug,Clone)]
 pub enum AST {
     // 0
