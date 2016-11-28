@@ -292,16 +292,18 @@ pub fn adverb(a: Adverb, l: AST, r: AST) -> AST {
     }
 }
 
-pub fn eval(ast:AST) {
+pub fn eval(ast: AST) {
     match ast {
         AST::Verb(vt, box lv, box rv) => {
             match vt {
-                Verb::Plus => { let mut a = plus::new(lv, rv);
-                  println!("{:?}", a.next().unwrap());
-                },
-                x => println!("Not implemented Verb: {:?}", AST::Verb(x, box lv, box rv)) 
-            }   
-        },
+                Verb::Plus => {
+                    let mut a = plus::new(lv, rv);
+                    a.next().unwrap()
+                    //                  println!("{:?}", a.next().unwrap());
+                }
+                x => println!("Not implemented Verb: {:?}", AST::Verb(x, box lv, box rv)), 
+            }
+        }
         x => println!("Not implemented AST node: {:?}", x), 
     }
 }

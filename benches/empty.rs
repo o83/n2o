@@ -25,6 +25,10 @@ fn parse2(b: &mut Bencher) {
     })
 }
 
+#[bench]
+fn k_plus(b: &mut Bencher) {
+    b.iter(|| ast::eval(AST::Verb(Verb::Plus, AST::Number(2).boxed(), AST::Number(3).boxed())));
+}
 
 #[bench]
 fn parse4(b: &mut Bencher) {
