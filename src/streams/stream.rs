@@ -1,5 +1,4 @@
 
-use commands::ast::*;
 use streams::adverb::map::{self, Map};
 use streams::into_stream::IntoStream;
 
@@ -7,6 +6,12 @@ use streams::into_stream::IntoStream;
 pub enum Async<T> {
     Ready(T),
     NotReady,
+}
+
+
+#[derive(Debug)]
+pub enum Error {
+    RuntimeError,
 }
 
 pub type Poll<T> = Result<Async<T>, Error>;
