@@ -1,9 +1,7 @@
-// Pivot Stream Trait
-// All copyrights are removed since Max prohibited it.
 
-use reactors::combinators::map::{self, Map};
-use reactors::combinators::then::{self, Then};
-use super::into_stream::IntoStream;
+use streams::vectors::map::{self, Map};
+use streams::vectors::then::{self, Then};
+use streams::into_stream::IntoStream;
 
 pub enum Async<T> {
     Ready(T),

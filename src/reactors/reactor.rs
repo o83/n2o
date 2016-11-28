@@ -2,7 +2,7 @@
 // Task Reactor with Priorities by Anton
 
 use std::cmp::Ordering;
-use reactors::streams::stream::Stream;
+use streams::stream::Stream;
 
 pub struct Reactor<S> {
     tasks: Vec<S>,

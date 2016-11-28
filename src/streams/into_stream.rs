@@ -1,8 +1,6 @@
-// Much like rust's Iterator::into_iter: to
-// wrap any type by Stream.
 
-use super::stream::Stream;
-use super::done::{self, Done};
+use streams::stream::Stream;
+use streams::vectors::done::{self, Done};
 
 pub trait IntoStream {
     type Item;

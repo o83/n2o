@@ -1,7 +1,7 @@
 // Then combinator
 
-use reactors::streams::into_stream::IntoStream;
-use reactors::streams::stream::{Async, Stream, Poll};
+use streams::into_stream::IntoStream;
+use streams::stream::{Async, Stream, Poll};
 
 pub struct Then<S, F, U>
     where U: IntoStream

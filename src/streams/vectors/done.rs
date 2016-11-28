@@ -1,8 +1,5 @@
-// Tail of Stream chain.
-//
-// done.rs
-//
-use super::stream::{Async, Stream, Poll};
+
+use streams::stream::{Async, Stream, Poll};
 
 pub struct Done<T, E> {
     inner: Option<Result<Option<Async<T>>, E>>,

@@ -1,6 +1,6 @@
 extern crate kernel;
-use kernel::reactors::streams::iter::get;
-use kernel::reactors::streams::iter::stream::Async;
+use kernel::streams::effects::get;
+use kernel::streams::vectors::stream::Async;
 
 fn main() {
     // Create messages stream

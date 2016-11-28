@@ -1,6 +1,6 @@
 // Getter messages Stream from queue.
 
-use super::stream::*;
+use streams::vectors::stream::*;
 
 pub struct Proto {
     msg_type: u32,
