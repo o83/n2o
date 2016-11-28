@@ -43,11 +43,11 @@ pub fn k_symbols() {
 #[test]
 pub fn k_assign() {
     assert_eq!(command::parse_Mex("a:b:c:1"),
-    Ok(AST::Adverb(Adverb::Assign,
+    Ok(AST::Assign(
                    AST::Name(String::from("a")).boxed(),
-                   AST::Adverb(Adverb::Assign,
+                   AST::Assign(
                                AST::Name(String::from("b")).boxed(),
-                               AST::Adverb(Adverb::Assign,
+                               AST::Assign(
                                            AST::Name(String::from("c")).boxed(),
                                            AST::Number(1).boxed()).boxed()).boxed())));
 }

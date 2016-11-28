@@ -29,7 +29,6 @@ pub mod io;
 pub mod slab;
 pub mod commands;
 pub mod args;
-pub mod iterators;
 pub mod streams;
 pub mod queues;
 
