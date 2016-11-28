@@ -1,6 +1,6 @@
 // An add verb combinator.
 
-use streams::vectors::stream::*;
+use streams::adverb::stream::*;
 use commands::ast::AST;
 
 pub struct Add {

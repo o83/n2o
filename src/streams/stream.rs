@@ -1,6 +1,6 @@
 
-use streams::vectors::map::{self, Map};
-use streams::vectors::then::{self, Then};
+use streams::adverb::map::{self, Map};
+use streams::adverb::then::{self, Then};
 use streams::into_stream::IntoStream;
 
 pub enum Async<T> {

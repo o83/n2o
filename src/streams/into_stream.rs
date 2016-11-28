@@ -1,6 +1,6 @@
 
 use streams::stream::Stream;
-use streams::vectors::done::{self, Done};
+use streams::adverb::done::{self, Done};
 
 pub trait IntoStream {
     type Item;

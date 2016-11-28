@@ -1,4 +1,4 @@
-use streams::vectors::stream::*;
+use streams::adverb::stream::*;
 use commands::ast::{self, Value, List, AST};
 
 pub struct Lambda {

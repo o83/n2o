@@ -3,6 +3,8 @@
 
 use std::result::Result;
 use std::rc::Rc;
+use std::cell::RefCell;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum Error {
@@ -131,6 +133,13 @@ impl Verb {
             _ => Err(Error::ParseError),
         }
     }
+}
+
+
+#[derive(PartialEq)]
+struct Environment {
+    parent: Option<Rc<RefCell<Environment>>>,
+    values: HashMap<String, Value>,
 }
 
 #[derive(PartialEq,Debug,Clone)]
