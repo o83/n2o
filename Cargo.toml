@@ -40,10 +40,6 @@ name = "console"
 path = "src/apps/console.rs"
 
 [[bin]]
-name = "sched"
-path = "src/apps/sched.rs"
-
-[[bin]]
 name = "streams"
 path = "src/apps/iter_stream.rs"
 
