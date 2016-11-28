@@ -1,5 +1,6 @@
 // The map steram combinator.
 
+use commands::ast::*;
 use streams::stream::{Async, Stream, Poll};
 use streams::into_stream::IntoStream;
 
@@ -22,7 +23,7 @@ impl<S, F, U> Stream for Map<S, F>
     type Item = U;
     type Error = S::Error;
 
-    fn poll(&mut self) -> Poll<Self::Item, S::Error> {
+    fn poll(&mut self) -> Poll<Self::Item> {
         match self.stream.poll() {
             Ok(Some(Async::Ready(i))) => Ok(Some(Async::Ready((&mut self.f)(i)))),
             Ok(Some(Async::NotReady)) => Ok(Some(Async::NotReady)),

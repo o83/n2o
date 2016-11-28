@@ -1,6 +1,5 @@
 
 use streams::stream::Stream;
-use streams::adverb::done::{self, Done};
 
 pub trait IntoStream {
     type Item;
@@ -20,12 +19,3 @@ impl<S: Stream> IntoStream for S {
     }
 }
 
-impl<T, E> IntoStream for Result<T, E> {
-    type Stream = Done<T, E>;
-    type Item = T;
-    type Error = E;
-
-    fn into_stream(self) -> Done<T, E> {
-        done::new(self)
-    }
-}

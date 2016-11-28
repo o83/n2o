@@ -1,5 +1,7 @@
-use streams::adverb::stream::*;
-use commands::ast::{self, Value, List, AST};
+use streams::stream::*;
+use commands::ast::{self, AST};
+use streams::interpreter::*;
+
 
 pub struct Lambda {
     args: List,

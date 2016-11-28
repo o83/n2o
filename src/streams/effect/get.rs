@@ -1,6 +1,6 @@
 // Getter messages Stream from queue.
 
-use streams::adverb::stream::*;
+use streams::stream::*;
 
 pub struct Proto {
     msg_type: u32,

@@ -135,13 +135,6 @@ impl Verb {
     }
 }
 
-
-#[derive(PartialEq)]
-struct Environment {
-    parent: Option<Rc<RefCell<Environment>>>,
-    values: HashMap<String, Value>,
-}
-
 #[derive(PartialEq,Debug,Clone)]
 pub enum Adverb {
     Each,
@@ -173,22 +166,6 @@ impl Adverb {
             _ => Err(Error::ParseError),
         }
     }
-}
-
-#[derive(PartialEq, Clone)]
-pub enum Value {
-    Symbol(String),
-    Integer(i64),
-    Boolean(bool),
-    String(String),
-    List(List),
-    Lambda(List, AST),
-}
-
-#[derive(PartialEq, Clone)]
-pub enum List {
-    Cons(Box<Value>, Box<List>),
-    Nil,
 }
 
 #[derive(PartialEq,Debug,Clone)]

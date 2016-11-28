@@ -1,7 +1,8 @@
 // An add verb combinator.
 
-use streams::adverb::stream::*;
-use commands::ast::AST;
+use streams::interpreter::{self, Value, List};
+use commands::ast::*;
+use streams::stream::{self, Poll, Async};
 
 pub struct Add {
     lvalue: AST,
@@ -16,15 +17,15 @@ pub fn new(lvalue: AST, rvalue: AST) -> Add {
 }
 
 impl Iterator for Add {
-    type Item = Poll<AST>;
+    type Item = Poll<Value>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        Some(Ok(Async::Ready(AST::Number(1))))
+        Some(Ok(Async::Ready(Value::Integer(1))))
     }
 }
 
 impl<'a> Iterator for &'a Add {
-    type Item = Poll<AST>;
+    type Item = Poll<Value>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // not implemented yet

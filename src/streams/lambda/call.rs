@@ -1,6 +1,7 @@
-use streams::adverb::stream::*;
+use streams::stream::*;
 use streams::lambda::lambda::Lambda;
-use commands::ast::{self, Value, List, AST};
+use commands::ast::{self, AST};
+use streams::interpreter::*;
 
 pub struct Call {
     callee: Lambda,
