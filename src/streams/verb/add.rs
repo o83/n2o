@@ -18,16 +18,17 @@ pub fn new(lvalue: AST, rvalue: AST) -> Add {
 
 impl Add {
     // Now just returning simple int
-    fn a_a(&mut self) -> Value {
+    fn a_a(l: u64, r: u64) -> Value {
+        // Need to figure out what integers we have (signed or unsigned)
+        Value::Integer(l as i64 +r as i64)
+    }
+    fn l_a(l: AST, r: AST) -> Value {
         Value::Integer(1)
     }
-    fn l_a(&mut self) -> Value {
+    fn a_l(l: AST, r: AST) -> Value {
         Value::Integer(1)
     }
-    fn l_l(&mut self) -> Value {
-        Value::Integer(1)
-    }
-    fn a_l(&mut self) -> Value {
+    fn l_l(l: &[u64], r: &[u64]) -> Value {
         Value::Integer(1)
     }
 }
@@ -36,13 +37,15 @@ impl Iterator for Add {
     type Item = Poll<Value>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let lr = (&mut self.lvalue, &mut self.rvalue);
-        match lr {
-            (&mut AST::Number(l), &mut AST::Number(ref r)) => {
-                Some(Ok(Async::Ready(Value::Integer(1))))
+        match (&mut self.lvalue, &mut self.rvalue) {
+            (&mut AST::Number(ref l), &mut AST::Number(ref r)) => {
+                Some(Ok(Async::Ready(Self::a_a(*l, *r))))
             }
-            (&mut AST::Number(l), &mut AST::List(ref r)) => {
-                Some(Ok(Async::Ready(Value::Integer(2))))
+            (&mut AST::List(ref l), &mut AST::List(ref r)) => {
+                // Here we need to get Vec from Box and pass to l_l()
+                // Some(Ok(Async::Ready(Self::l_l(l.borrow(), r.borrow()))))
+                Some(Err(Error::NotImplemented))
+
             }
             _ => Some(Err(Error::NotImplemented)),
         }

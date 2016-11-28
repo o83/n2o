@@ -4,3 +4,4 @@ Cargo.lock
 target/
 .vscode/
 src/commands/command.rs
+*.fmt
