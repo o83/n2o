@@ -215,49 +215,7 @@ impl AST {
 #[derive(PartialEq,Debug, Clone)]
 pub struct Cell {
     t: Type,
-    v: Vec<ByteCode>,
-}
-
-#[derive(PartialEq,Debug, Clone)]
-#[repr(C)]
-pub enum ByteCode {
-    // 0
-    Nil,
-    // 1
-    Cons(u16, u16),
-    // 2
-    List(u16),
-    // 3
-    Dict(u16),
-    // 4
-    Call(u16, u16),
-    // 5
-    Lambda(u16, u16),
-    // 6
-    Verb(Verb, u16, u16),
-    // 7
-    Adverb(Adverb, u16, u16),
-    // 8
-    Ioverb(u64),
-    // 9
-    Name(u16),
-    // A
-    Bool(u16),
-    // B
-    Number(u64),
-    // C
-    Hexlit(u64),
-    // D
-    Symbol(u64),
-    // E
-    Sequence(u64),
-    // F
-    Cell(u64),
-}
-
-pub struct Machine {
-    ip: u16,
-    stream: Vec<ByteCode>,
+    v: Vec<AST>,
 }
 
 pub fn call(l: AST, r: AST) -> AST {
@@ -290,7 +248,6 @@ pub fn verb(v: Verb, l: AST, r: AST) -> AST {
     match v {
         Verb::Cast => {
             let rexpr = match r {
-                // AST::Dict(box AST::Cons(box c, box AST::Cons(box t, box f))) => {
                 AST::Dict(box d) => {
                     match d {
                         AST::Cons(box a, box b) => {
@@ -306,7 +263,6 @@ pub fn verb(v: Verb, l: AST, r: AST) -> AST {
                 }
                 x => x, 
             };
-
             match l {
                 AST::Nil => rexpr,
                 _ => AST::Call(l.boxed(), rexpr.boxed()), 
