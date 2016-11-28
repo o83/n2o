@@ -117,7 +117,8 @@ impl Console {
                             }
                             line => {
                                 // println!("{:?}", command::parse_Mex(&line));
-                                ast::eval(command::parse_Mex(&line).unwrap());
+                                let v = ast::eval(command::parse_Mex(&line).unwrap());
+                                println!("{:?}", v);
                                 Ok(true)
                             }
                         }

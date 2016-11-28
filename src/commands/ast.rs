@@ -6,10 +6,12 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use streams::verb::plus;
+use streams::interpreter::Value;
 
 #[derive(Debug)]
 pub enum Error {
     ParseError,
+    EvalError {desc:String, ast:AST},
 }
 
 #[derive(PartialEq,Debug, Clone)]
@@ -292,18 +294,17 @@ pub fn adverb(a: Adverb, l: AST, r: AST) -> AST {
     }
 }
 
-pub fn eval(ast: AST) {
+pub fn eval(ast: AST) -> Result<Value, Error> {
     match ast {
         AST::Verb(vt, box lv, box rv) => {
             match vt {
                 Verb::Plus => {
                     let mut a = plus::new(lv, rv);
-                    a.next().unwrap()
-                    //                  println!("{:?}", a.next().unwrap());
+                    Ok(a.next().unwrap().unwrap().unwrap())
                 }
-                x => println!("Not implemented Verb: {:?}", AST::Verb(x, box lv, box rv)), 
+                x => Err(Error::EvalError{desc:"Not implemented Verb: {:?}".to_string(), ast:AST::Verb(x, box lv, box rv)}), 
             }
         }
-        x => println!("Not implemented AST node: {:?}", x), 
+        x => Err(Error::EvalError{desc:"Not implemented AST node: {:?}".to_string(), ast:x}), 
     }
 }
