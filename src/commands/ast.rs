@@ -302,9 +302,9 @@ pub fn eval(ast: AST) -> Result<Value, Error> {
                     let mut a = plus::new(lv, rv);
                     Ok(a.next().unwrap().unwrap().unwrap())
                 }
-                x => Err(Error::EvalError{desc:"Not implemented Verb: {:?}".to_string(), ast:AST::Verb(x, box lv, box rv)}), 
+                x => Err(Error::EvalError{desc: format!("Not implemented Verb: {:?}", &x).to_string(), ast:AST::Verb(x, box lv, box rv)}), 
             }
         }
-        x => Err(Error::EvalError{desc:"Not implemented AST node: {:?}".to_string(), ast:x}), 
+        x => Err(Error::EvalError{desc: format!("Not implemented AST node: {:?}", &x).to_string(), ast:x}), 
     }
 }
