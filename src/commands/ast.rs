@@ -5,8 +5,6 @@ use std::result::Result;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use streams::verb::plus;
-use streams::interpreter::Value;
 
 #[derive(Debug)]
 pub enum Error {
@@ -291,20 +289,5 @@ pub fn adverb(a: Adverb, l: AST, r: AST) -> AST {
     match a {
         Adverb::Assign => AST::Assign(l.boxed(), r.boxed()),
         _ => AST::Adverb(a, l.boxed(), r.boxed()),
-    }
-}
-
-pub fn eval(ast: AST) -> Result<Value, Error> {
-    match ast {
-        AST::Verb(vt, box lv, box rv) => {
-            match vt {
-                Verb::Plus => {
-                    let mut a = plus::new(lv, rv);
-                    Ok(a.next().unwrap().unwrap().unwrap())
-                }
-                x => Err(Error::EvalError{desc: format!("Not implemented Verb: {:?}", &x).to_string(), ast:AST::Verb(x, box lv, box rv)}), 
-            }
-        }
-        x => Err(Error::EvalError{desc: format!("Not implemented AST node: {:?}", &x).to_string(), ast:x}), 
     }
 }

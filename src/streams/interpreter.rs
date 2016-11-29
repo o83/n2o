@@ -6,6 +6,7 @@ use std::cell::RefCell;
 use std::iter;
 use std::vec;
 use commands::ast::*;
+use streams::verb::plus;
 
 #[derive(PartialEq)]
 pub struct Environment {
@@ -40,13 +41,20 @@ impl Interpreter {
         Ok(Interpreter { root: env })
     }
 
-    pub fn run(&self, program: AST) -> Result<Value, Error> {
-        process(program, self.root.clone())
+    pub fn run(&mut self, program: AST) -> Result<Value, Error> {
+        match program {
+        AST::Verb(vt, box lv, box rv) => {
+            match vt {
+                Verb::Plus => {
+                    let mut a = plus::new(lv, rv);
+                    Ok(a.next().unwrap().unwrap().unwrap())
+                }
+                x => Err(Error::EvalError{desc: format!("Not implemented Verb: {:?}", &x).to_string(), ast:AST::Verb(x, box lv, box rv)}), 
+            }
+        }
+        x => Err(Error::EvalError{desc: format!("Not implemented AST node: {:?}", &x).to_string(), ast:x}), 
+    }     
     }
-}
-
-pub fn process(program: AST, env: Rc<RefCell<Environment>>) -> Result<Value, Error> {
-   Ok(Value::Integer(100))
 }
 
 impl Environment {
