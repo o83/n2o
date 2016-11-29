@@ -89,7 +89,9 @@ impl Selector {
                     interests: Ready,
                     opts: PollOpt)
                     -> io::Result<()> {
-        trace!("KEVENT registering; token={:?}; interests={:?}", token, interests);
+        trace!("KEVENT registering; token={:?}; interests={:?}",
+               token,
+               interests);
 
         self.ev_register(fd,
                          usize::from(token),

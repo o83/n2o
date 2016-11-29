@@ -19,10 +19,10 @@ use std::cell::UnsafeCell;
 const NANOS_PER_MILLI: u32 = 1_000_000;
 const MILLIS_PER_SEC: u64 = 1_000;
 
-    pub fn millis(duration: Duration) -> u64 {
-        let millis = (duration.subsec_nanos() + NANOS_PER_MILLI - 1) / NANOS_PER_MILLI;
-        duration.as_secs().saturating_mul(MILLIS_PER_SEC).saturating_add(millis as u64)
-    }
+pub fn millis(duration: Duration) -> u64 {
+    let millis = (duration.subsec_nanos() + NANOS_PER_MILLI - 1) / NANOS_PER_MILLI;
+    duration.as_secs().saturating_mul(MILLIS_PER_SEC).saturating_add(millis as u64)
+}
 
 pub struct LazyCell<T> {
     inner: UnsafeCell<Option<T>>,
@@ -66,7 +66,6 @@ pub struct AtomicLazyCell<T> {
 }
 
 impl<T> AtomicLazyCell<T> {
-
     pub fn new() -> AtomicLazyCell<T> {
         AtomicLazyCell {
             inner: UnsafeCell::new(None),
@@ -104,8 +103,8 @@ impl<T> AtomicLazyCell<T> {
     }
 }
 
-unsafe impl<T: Sync> Sync for AtomicLazyCell<T> { }
-unsafe impl<T: Send> Send for AtomicLazyCell<T> { }
+unsafe impl<T: Sync> Sync for AtomicLazyCell<T> {}
+unsafe impl<T: Send> Send for AtomicLazyCell<T> {}
 
 use self::TimerErrorKind::TimerOverflow;
 

@@ -244,7 +244,7 @@ impl<T, I: From<usize> + Into<usize>> ops::IndexMut<I> for Slab<T, I> {
 
 impl<T, I> fmt::Debug for Slab<T, I>
     where T: fmt::Debug,
-          I: fmt::Debug,
+          I: fmt::Debug
 {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(fmt,
@@ -273,7 +273,6 @@ impl<'a, T, I: From<usize> + Into<usize>> IntoIterator for &'a mut Slab<T, I> {
 }
 
 impl<'a, T, I: From<usize> + Into<usize>> Entry<'a, T, I> {
-
     pub fn replace(&mut self, val: T) -> T {
         match mem::replace(&mut self.slab.entries[self.idx], Slot::Filled(val)) {
             Slot::Filled(v) => v,

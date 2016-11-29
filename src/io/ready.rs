@@ -143,4 +143,3 @@ impl ops::Not for Ready {
         Ready(!self.bits() & Ready::all().bits())
     }
 }
-

@@ -15,5 +15,5 @@ mod bsd;
 #[cfg(any(target_os = "macos"))]
 pub use ::io::unix::bsd::{Events, Selector};
 
-//pub mod fd;
+// pub mod fd;
 pub mod stdio;

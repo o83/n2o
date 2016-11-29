@@ -20,7 +20,7 @@ impl Plus {
     // Now just returning simple int
     fn a_a(l: u64, r: u64) -> Value {
         // Need to figure out what integers we have (signed or unsigned)
-        Value::Integer(l as i64 +r as i64)
+        Value::Integer(l as i64 + r as i64)
     }
     fn l_a(l: AST, r: AST) -> Value {
         Value::Integer(1)

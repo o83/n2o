@@ -9,7 +9,7 @@ use std::collections::HashMap;
 #[derive(Debug)]
 pub enum Error {
     ParseError,
-    EvalError {desc:String, ast:AST},
+    EvalError { desc: String, ast: AST },
 }
 
 #[derive(PartialEq,Debug, Clone)]

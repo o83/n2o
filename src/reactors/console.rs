@@ -117,7 +117,7 @@ impl Console {
                                 println!("{:?}", AST::Nil);
                                 Ok(true)
                             }
-                            line => {                                
+                            line => {
                                 println!("{:?}", i.run(command::parse_Mex(&line).unwrap()));
                                 Ok(true)
                             }
@@ -147,7 +147,7 @@ impl Console {
         Ok(())
     }
 
-    pub fn read_all<R: Read>(&mut self, mut config: R) -> io::Result<()> {        
+    pub fn read_all<R: Read>(&mut self, mut config: R) -> io::Result<()> {
         let mut text = String::new();
         try!(config.read_to_string(&mut text));
         let mut i = Interpreter::new().unwrap();
