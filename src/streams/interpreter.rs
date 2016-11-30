@@ -55,14 +55,14 @@ impl iter::IntoIterator for List {
 impl fmt::Display for List {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let strs: Vec<String> = self.clone().into_iter().map(|v| format!("{}", v)).collect();
-        write!(f, "({})", &strs.connect(" "))
+        write!(f, "({})", &strs.join(" "))
     }
 }
 
 impl fmt::Debug for List {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let strs: Vec<String> = self.clone().into_iter().map(|v| format!("{:?}", v)).collect();
-        write!(f, "({})", &strs.connect(" "))
+        write!(f, "({})", &strs.join(" "))
     }
 }
 
@@ -73,7 +73,7 @@ pub enum Value {
     Boolean(bool),
     String(String),
     List(List),
-    Lambda(List, AST),
+    Function(List, AST),
     Continuation(AST),
 }
 
@@ -85,7 +85,7 @@ impl fmt::Display for Value {
             Value::Boolean(val) => write!(f, "#{}", if val { "t" } else { "f" }),
             Value::String(ref val) => write!(f, "{}", val),
             Value::List(ref list) => write!(f, "List'{}", list),
-            Value::Lambda(_, _) => write!(f, "#<procedure>"),
+            Value::Function(_, _) => write!(f, "#<function>"),
             Value::Continuation(_) => write!(f, "#<continuation>"),
         }
     }
@@ -153,6 +153,51 @@ impl Environment {
             values: HashMap::new(),
         };
         Rc::new(RefCell::new(env))
+    }
+
+    fn define(&mut self, key: String, value: Value) -> Result<(), Error> {
+        if self.values.contains_key(&key) {
+            println!("Duplicate define: {:?}", key);
+            Ok(())
+        } else {
+            self.values.insert(key, value);
+            Ok(())
+        }
+    }
+
+    fn set(&mut self, key: String, value: Value) -> Result<(), Error> {
+        if self.values.contains_key(&key) {
+            self.values.insert(key, value);
+            Ok(())
+        } else {
+            match self.parent {
+                Some(ref parent) => parent.borrow_mut().set(key, value),
+                None => {
+                    println!("Can't set! an undefined variable: {:?}", key);
+                    Ok(())
+                }
+            }
+        }
+    }
+
+    fn get(&self, key: &String) -> Option<Value> {
+        match self.values.get(key) {
+            Some(val) => Some(val.clone()),
+            None => {
+                match self.parent {
+                    Some(ref parent) => parent.borrow().get(key),
+                    None => None,
+                }
+            }
+        }
+    }
+
+    fn get_root(env_ref: Rc<RefCell<Environment>>) -> Rc<RefCell<Environment>> {
+        let env = env_ref.borrow();
+        match env.parent {
+            Some(ref parent) => Environment::get_root(parent.clone()),
+            None => env_ref.clone(),
+        }
     }
 }
 
