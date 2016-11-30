@@ -213,6 +213,12 @@ impl AST {
     pub fn boxed(self) -> Box<Self> {
         Box::new(self)
     }
+    pub fn shift(self) -> Option<(AST, AST)> {
+        match self {
+            AST::Cons(car, cdr) => Some((*car, *cdr)),
+            _ => None,
+        }
+    }
 }
 
 #[derive(PartialEq,Debug, Clone)]
