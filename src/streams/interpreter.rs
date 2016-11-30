@@ -223,7 +223,6 @@ impl fmt::Debug for Environment {
 #[derive(Clone)]
 pub enum Trampoline {
     Bounce(Value, Rc<RefCell<Environment>>, Continuation),
-    QuasiBounce(Value, Rc<RefCell<Environment>>, Continuation),
     Run(Value, Continuation),
     Land(Value),
 }
@@ -234,9 +233,6 @@ impl fmt::Display for Trampoline {
             Trampoline::Bounce(ref value, ref env, ref cc) => {
                 let a = unsafe { env.as_unsafe_cell().get() };
                 write!(f, "Bounce {} env {}", value, unsafe { &*a })
-            }
-            Trampoline::QuasiBounce(ref value, ref env, ref cc) => {
-                write!(f, "QuasiBounce {}", value)
             }
             Trampoline::Run(ref value, ref cc) => write!(f, "Run {}", value),
             Trampoline::Land(ref value) => write!(f, "Land {}", value),
