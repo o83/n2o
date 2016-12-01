@@ -355,7 +355,10 @@ pub fn cons(l: AST, r: AST) -> AST {
 }
 
 pub fn fun(l: AST, r: AST) -> AST {
-    AST::Lambda(l.boxed(), r.boxed())
+    match l {
+        AST::Nil => AST::Lambda(AST::Name("x".to_string()).boxed(), r.boxed()),
+    _ => AST::Lambda(l.boxed(), r.boxed()),
+    }
 }
 
 pub fn dict(l: AST) -> AST {
