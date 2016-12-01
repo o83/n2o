@@ -20,6 +20,7 @@ pub struct Console {
     running: bool,
     token: Token,
     events: Events,
+    interpreter: Interpreter,
 }
 
 impl Console {
@@ -30,6 +31,7 @@ impl Console {
             token: Token(tok),
             running: true,
             events: Events::with_capacity(1024),
+            interpreter: Interpreter::new().unwrap(),
         }
     }
 
@@ -103,7 +105,6 @@ impl Console {
         trace!("console is readable; token={:?}", token);
         let mut msg = [0u8; 128];
         let size = self.tele.read(&mut msg);
-        let mut i = Interpreter::new().unwrap();
         match size {
             Ok(s) => {
                 trace!("Read size: {:?}", &s);
@@ -118,7 +119,7 @@ impl Console {
                                 Ok(true)
                             }
                             line => {
-                                match i.run(command::parse_Mex(&line).unwrap()) {
+                                match self.interpreter.run(command::parse_Mex(&line).unwrap()) {
                                     Ok(r) => println!("{}", r),
                                     Err(e) => print!("{}", e),
                                 };
@@ -136,14 +137,13 @@ impl Console {
     }
 
     pub fn read_lines<R: BufRead>(&mut self, config: R) -> io::Result<()> {
-        let mut i = Interpreter::new().unwrap();
         for line in config.lines() {
             match line.unwrap().trim() {
                 "" => {
                     println!("{}", AST::Nil);
                 }
                 line => {
-                    match i.run(command::parse_Mex(&line).unwrap()) {
+                    match self.interpreter.run(command::parse_Mex(&line).unwrap()) {
                         Ok(r) => println!("{}", r),
                         Err(e) => print!("{:?}", e),
                     };
@@ -156,8 +156,7 @@ impl Console {
     pub fn read_all<R: Read>(&mut self, mut config: R) -> io::Result<()> {
         let mut text = String::new();
         try!(config.read_to_string(&mut text));
-        let mut i = Interpreter::new().unwrap();
-        match i.run(command::parse_Mex(&text).unwrap()) {
+        match self.interpreter.run(command::parse_Mex(&text).unwrap()) {
             Ok(r) => println!("{}", r),
             Err(e) => print!("{:?}", e),
         };
