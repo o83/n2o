@@ -247,7 +247,7 @@ impl AST {
 impl fmt::Display for AST {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            AST::Number(n) => write!(f, "{}", n), 
+            AST::Number(n) => write!(f, "\033[0m{}", n), 
             _ => write!(f, "{:?}", *self),
         }
 
