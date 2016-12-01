@@ -8,12 +8,6 @@ use std::vec;
 use commands::ast::*;
 use streams::verb::plus;
 
-#[derive(PartialEq)]
-pub struct Environment {
-    parent: Option<Rc<RefCell<Environment>>>,
-    values: HashMap<String, AST>,
-}
-
 #[derive(Clone)]
 pub struct Interpreter {
     root: Rc<RefCell<Environment>>,
@@ -26,27 +20,47 @@ impl Interpreter {
     }
 
     pub fn run(&mut self, program: AST) -> Result<AST, Error> {
-        match program {
-            AST::Verb(vt, box lv, box rv) => {
-                match vt {
-                    Verb::Plus => {
-                        let mut a = plus::new(lv, rv);
-                        Ok(a.next().unwrap().unwrap().unwrap())
+        // test(program.clone())
+        process(program.clone(), self.root.clone())
+    }
+}
+
+fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
+    println!("Len: {:?}", exprs.clone().len());
+    if exprs.clone().len() == 0 {
+        return Ok(AST::Nil);
+    }
+    let mut b = try!(evaluate_expressions(exprs.clone(), env, Box::new(Continuation::Return)));
+    loop {
+        println!("Tramploline: {:?}", b);
+        match b {
+            Trampoline::Bounce(a, env, k) => {
+                b = match a.clone() {
+                    AST::Assign(box name, box body) => {
+                        Trampoline::Bounce(body,
+                                           env.clone(),
+                                           Continuation::EvaluateAssign(name, env, Box::new(k)))
                     }
-                    x => {
-                        Err(Error::EvalError {
-                            desc: format!("Not implemented Verb: {:?}", &x).to_string(),
-                            ast: AST::Verb(x, box lv, box rv),
-                        })
-                    } 
+                    AST::Name(name) => {
+                        let val = match env.borrow().get(&name) {
+                            Some(v) => v,
+                            None => {
+                                return Err(Error::EvalError {
+                                    desc: "Identifier not found".to_string(),
+                                    ast: AST::Name(name),
+                                })
+                            }
+
+                        };
+                        try!(k.run(val))
+                    }
+                    _ => try!(k.run(a)),
                 }
             }
-            x => {
-                Err(Error::EvalError {
-                    desc: format!("Not implemented AST node: {:?}", &x).to_string(),
-                    ast: x,
-                })
-            } 
+            Trampoline::Run(x, k) => b = try!(k.run(x)),
+            Trampoline::Land(a) => {
+                return Ok(a);
+            }
         }
     }
 }
@@ -71,21 +85,49 @@ fn evaluate_expressions(exprs: AST,
     }
 }
 
-fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
-    if exprs.len() == 0 {
-        return Ok(AST::Number(0));
-    }
-    let mut b = try!(evaluate_expressions(exprs, env, Box::new(Continuation::Return)));
-    loop {
-        println!("Tramploline: {}", b);
-        match b {
-            Trampoline::Bounce(a, env, k) => b = Trampoline::Land(a),
-            Trampoline::Run(a, k) => b = try!(k.run(a)),
-            Trampoline::Land(a) => {
-                return Ok(a);
+
+impl Continuation {
+    pub fn run(self, val: AST) -> Result<Trampoline, Error> {
+        println!("CC:Run: {:?}", val);
+        match self {
+            Continuation::EvaluateExpressions(rest, env, k) => {
+                if rest.is_cons() || !rest.is_empty() {
+                    evaluate_expressions(rest, env, k)
+                } else {
+                    Ok(Trampoline::Run(val, *k))
+                }
             }
+            Continuation::EvaluateCond(if_expr, else_expr, env, k) => {
+                match val {
+                    AST::Bool(false) => Ok(Trampoline::Bounce(else_expr, env, *k)),
+                    _ => Ok(Trampoline::Bounce(if_expr, env, *k)),
+                }
+            }
+            Continuation::EvaluateAssign(name, env, k) => {
+                match name {
+                    AST::Name(ref s) => {
+                        try!(env.borrow_mut().define(s.to_string(), val));
+                        Ok(Trampoline::Run(AST::Nil, *k))
+                    }
+                    x => {
+                        Err(Error::EvalError {
+                            desc: "can assign only to name".to_string(),
+                            ast: x,
+                        })
+                    }
+
+                }
+            }
+            Continuation::Return => Ok(Trampoline::Land(val)),
+            _ => Ok(Trampoline::Land(val)),
         }
     }
+}
+
+#[derive(PartialEq)]
+pub struct Environment {
+    parent: Option<Rc<RefCell<Environment>>>,
+    values: HashMap<String, AST>,
 }
 
 impl Environment {
@@ -170,7 +212,7 @@ impl fmt::Debug for Environment {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Trampoline {
     Bounce(AST, Rc<RefCell<Environment>>, Continuation),
     Run(AST, Continuation),
@@ -182,10 +224,10 @@ impl fmt::Display for Trampoline {
         match *self {
             Trampoline::Bounce(ref value, ref env, ref cc) => {
                 let a = unsafe { env.as_unsafe_cell().get() };
-                write!(f, "Bounce {} env {} cc {}", value, unsafe { &*a }, cc)
+                write!(f, "Bounce {:?} env {:?} cc {:?}", value, unsafe { &*a }, cc)
             }
-            Trampoline::Run(ref value, ref cc) => write!(f, "Run {}", value),
-            Trampoline::Land(ref value) => write!(f, "Land {}", value),
+            Trampoline::Run(ref value, ref cc) => write!(f, "Run {:?}", value),
+            Trampoline::Land(ref value) => write!(f, "Land {:?}", value),
         }
     }
 }
@@ -195,7 +237,7 @@ pub enum Continuation {
     EvaluateExpressions(AST, Rc<RefCell<Environment>>, Box<Continuation>),
     BeginFunc(AST, Rc<RefCell<Environment>>, Box<Continuation>),
     EvaluateCond(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
-    EvaluateDefine(String, Rc<RefCell<Environment>>, Box<Continuation>),
+    EvaluateAssign(AST, Rc<RefCell<Environment>>, Box<Continuation>),
     EvaluateLambda(String, Rc<RefCell<Environment>>, Box<Continuation>),
     EvaluateFunc(AST, AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     EvaluateLet(String, AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
@@ -204,30 +246,6 @@ pub enum Continuation {
     Return,
 }
 
-impl Continuation {
-    pub fn run(self, val: AST) -> Result<Trampoline, Error> {
-        match self {
-            Continuation::EvaluateExpressions(rest, env, k) => {
-                if !rest.is_empty() {
-                    evaluate_expressions(rest, env, k)
-                } else {
-                    Ok(Trampoline::Run(val, *k))
-                }
-            }
-            Continuation::EvaluateCond(if_expr, else_expr, env, k) => {
-                match val {
-                    AST::Bool(false) => Ok(Trampoline::Bounce(else_expr, env, *k)),
-                    _ => Ok(Trampoline::Bounce(if_expr, env, *k)),
-                }
-            }
-            Continuation::EvaluateDefine(name, env, k) => {
-                try!(env.borrow_mut().define(name, val));
-                Ok(Trampoline::Run(list(AST::Nil), *k))
-            }
-            _ => Ok(Trampoline::Land(AST::Nil)),
-        }
-    }
-}
 
 impl fmt::Display for Continuation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -247,12 +265,37 @@ impl fmt::Display for Continuation {
                 let a = unsafe { env.as_unsafe_cell().get() };
                 write!(f, "ExecuteEval {}", unsafe { &*a })
             }       
-            Continuation::EvaluateDefine(ref value, ref env, ref cc) => {
+            Continuation::EvaluateAssign(ref value, ref env, ref cc) => {
                 write!(f, "EvaluateDefine {}", value)
             }  
             Continuation::Return => write!(f, "Return"),
             Continuation::ExecuteApply(ref value, ref cc) => write!(f, "ExecuteApply {}", value), 
             _ => write!(f, "Unknown {}", 1),
+        }
+    }
+}
+
+pub fn test(program: AST) -> Result<AST, Error> {
+    match program {
+        AST::Verb(vt, box lv, box rv) => {
+            match vt {
+                Verb::Plus => {
+                    let mut a = plus::new(lv, rv);
+                    Ok(a.next().unwrap().unwrap().unwrap())
+                }
+                x => {
+                    Err(Error::EvalError {
+                        desc: format!("Not implemented Verb: {:?}", &x).to_string(),
+                        ast: AST::Verb(x, box lv, box rv),
+                    })
+                }
+            }
+        }
+        x => {
+            Err(Error::EvalError {
+                desc: format!("Not implemented AST node: {:?}", &x).to_string(),
+                ast: x,
+            })
         }
     }
 }

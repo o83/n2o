@@ -245,13 +245,20 @@ impl AST {
     }
     pub fn len(&self) -> usize {
         match self {
+            &AST::List(ref car) => car.len(),
             &AST::Cons(_, ref cdr) => 1 + cdr.len(),
             &AST::Nil => 0,
-            _ => 0,
+            _ => 1,
         }
     }
     pub fn is_empty(&self) -> bool {
         self == &AST::Nil
+    }
+    pub fn is_cons(&self) -> bool {
+        match self {
+            &AST::Cons(_, _) => true,
+            _ => false,
+        }
     }
     pub fn shift(self) -> Option<(AST, AST)> {
         match self {
