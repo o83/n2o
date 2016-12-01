@@ -13,6 +13,17 @@ pub enum Error {
     EvalError { desc: String, ast: AST },
 }
 
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Error::ParseError => write!(f, "Parse error!\n"),
+            Error::EvalError { ref desc, ref ast } => {
+                write!(f, "Eval error: {}.\nCaused here: {:?}\n", desc, ast)
+            }    
+        }
+    }
+}
+
 #[derive(PartialEq,Debug, Clone)]
 pub enum Type {
     Nil = 0,
@@ -242,7 +253,11 @@ impl AST {
 
 impl fmt::Display for AST {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", *self)
+        match *self {
+            AST::Number(n) => write!(f, "{}", n), 
+            _ => write!(f, "{:?}", *self),
+        }
+
     }
 }
 
