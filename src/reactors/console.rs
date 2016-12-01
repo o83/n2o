@@ -114,11 +114,14 @@ impl Console {
                         match m.trim() {
                             "exit" => Ok(false),
                             "" => {
-                                println!("{:?}", AST::Nil);
+                                println!("{}", AST::Nil);
                                 Ok(true)
                             }
                             line => {
-                                println!("{:?}", i.run(command::parse_Mex(&line).unwrap()));
+                                match i.run(command::parse_Mex(&line).unwrap()) {
+                                    Ok(r) => println!("{}", r),
+                                    Err(e) => print!("{}", e),
+                                };
                                 Ok(true)
                             }
                         }
@@ -137,10 +140,13 @@ impl Console {
         for line in config.lines() {
             match line.unwrap().trim() {
                 "" => {
-                    println!("{:?}", AST::Nil);
+                    println!("{}", AST::Nil);
                 }
                 line => {
-                    println!("{:?}", i.run(command::parse_Mex(&line).unwrap()));
+                    match i.run(command::parse_Mex(&line).unwrap()) {
+                        Ok(r) => println!("{}", r),
+                        Err(e) => print!("{:?}", e),
+                    };
                 }
             }
         }
@@ -151,7 +157,10 @@ impl Console {
         let mut text = String::new();
         try!(config.read_to_string(&mut text));
         let mut i = Interpreter::new().unwrap();
-        println!("{:?}", i.run(command::parse_Mex(&text).unwrap()));
+        match i.run(command::parse_Mex(&text).unwrap()) {
+            Ok(r) => println!("{}", r),
+            Err(e) => print!("{:?}", e),
+        };
         Ok(())
     }
 }
