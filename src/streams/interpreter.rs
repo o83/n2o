@@ -74,11 +74,11 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
                     }
                     AST::Name(name) => {
                         match lookup(name, env) {
-                            Ok(v) => Trampoline::Force(v, k),
+                            Ok(v) => try!(k.run(v)),
                             Err(x) => return Err(x),
                         }
                     }
-                    _ => Trampoline::Force(a, k),
+                    _ => try!(k.run(a)),
                 }
             }
             Trampoline::Force(x, k) => b = try!(k.run(x)),
