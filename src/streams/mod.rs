@@ -4,3 +4,4 @@ pub mod lambda;
 pub mod adverb;
 pub mod verb;
 pub mod interpreter;
+pub mod env;
