@@ -40,16 +40,15 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
                                            env.clone(),
                                            Continuation::EvaluateAssign(name, env, Box::new(k)))
                     }
-                    AST::Lambda(box callee, box args) => {
-                        println!("Lambda!");
-                        Trampoline::Run(AST::Lambda(callee.boxed(), args.boxed()), k)
-                    }
+                    //   AST::Lambda(box callee, box args) => {
+                    //       println!("Lambda!");
+                    //       Trampoline::Run(AST::Lambda(callee.boxed(), args.boxed()), k)
+                    //   }
                     AST::Call(box callee, box args) => {
-                        let mut fun = try!(evaluate_expressions(callee.clone(),
-                                                                env.clone(),
-                                                                Box::new(Continuation::Return)));
+                        let mut fun = try!(process(callee.clone(), env.clone()));
+                        println!("Fun calculation {:?}!", callee);
                         match fun {
-                            Trampoline::Land(AST::Lambda(box names, box body)) => {
+                            AST::Lambda(box names, box body) => {
                                 println!("Names: {:?}", names);
                                 println!("Body: {:?}", body);
                                 println!("Callee: {:?}", callee);
@@ -62,7 +61,10 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
                                                                               env,
                                                                               Box::new(k)))
                             }
-                            x => try!(k.run(a)),
+                            x => {
+                                println!("Call Error!");
+                                try!(k.run(a))
+                            }
                             // {
                             // Err(Error::EvalError {
                             // desc: "Function expected".to_string(),
@@ -72,16 +74,10 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
                         }
                     }
                     AST::Name(name) => {
-                        let val = match env.borrow().get(&name) {
-                            Some(v) => v,
-                            None => {
-                                return Err(Error::EvalError {
-                                    desc: "Identifier not found".to_string(),
-                                    ast: AST::Name(name),
-                                })
-                            }
-                        };
-                        try!(k.run(val))
+                        match lookup(name, env) {
+                            Ok(v) => try!(k.run(v)),
+                            Err(x) => return Err(x),
+                        }
                     }
                     _ => try!(k.run(a)),
                 }
@@ -92,6 +88,18 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
             }
         }
     }
+}
+
+fn lookup(name: String, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
+    return match env.borrow().get(&name) {
+        Some(v) => Ok(v),
+        None => {
+            Err(Error::EvalError {
+                desc: "Identifier not found".to_string(),
+                ast: AST::Name(name),
+            })
+        }
+    };
 }
 
 fn evaluate_expressions(exprs: AST,
@@ -154,7 +162,7 @@ impl Continuation {
 
                 }
             }
-            Continuation::Return => Ok(Trampoline::Land(val)),
+            _ => Ok(Trampoline::Land(val)),
         }
     }
 }
