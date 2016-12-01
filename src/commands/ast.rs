@@ -272,14 +272,14 @@ impl AST {
 impl fmt::Display for AST {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            AST::Nil => write!(f, "nil."),
+            AST::Nil => write!(f, ""),
             AST::Cons(box ref a, box ref b) => write!(f, "({} {})", a, b),
-            AST::List(box ref a) => write!(f, "({})", a),
+            AST::List(box ref a) => write!(f, "{}", a),
             AST::Dict(box ref d) => write!(f, "[{};]", d),
             AST::Call(box ref a, box ref b) => write!(f, "({} {})", a, b),
-            AST::Lambda(box ref a, box ref b) => write!(f, "{{[{}] {}}}", a, b),
-            AST::Verb(ref v, box ref a, box ref b) => write!(f, "{} {} {}", v, a, b),
-            AST::Adverb(ref v, box ref a, box ref b) => write!(f, "{} {} {}", v, a, b),
+            AST::Lambda(box ref a, box ref b) => write!(f, "{{{} {}}}", a, b),
+            AST::Verb(ref v, box ref a, box ref b) => write!(f, "{} {} {}", a, v, b),
+            AST::Adverb(ref v, box ref a, box ref b) => write!(f, "{} {} {}", a, v, b),
             AST::Ioverb(ref v) => write!(f, "{}", v),
             AST::Name(ref n) => write!(f, "{}", n),
             AST::Number(n) => write!(f, "{}", n),
@@ -287,7 +287,7 @@ impl fmt::Display for AST {
             AST::Bool(b) => write!(f, "{:?}", b),
             AST::Symbol(ref s) => write!(f, "{}", s),
             AST::Sequence(ref s) => write!(f, "{:?}", s),
-            AST::Cell(box ref c) => write!(f, "({})", c),
+            AST::Cell(box ref c) => write!(f, "{}", c),
             AST::Assign(box ref a, box ref b) => write!(f, "{}:{}", a, b),
             AST::Cond(box ref c, box ref a, box ref b) => write!(f, "$[{};{};{}]", c, a, b),
         }
