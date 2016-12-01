@@ -41,6 +41,7 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
                                            env.clone(),
                                            Continuation::EvaluateAssign(name, env, Box::new(k)))
                     }
+                    AST::Call(box callee, box AST::Nil) => Trampoline::Land(AST::Nil),
                     AST::Name(name) => {
                         let val = match env.borrow().get(&name) {
                             Some(v) => v,
@@ -235,14 +236,10 @@ impl fmt::Display for Trampoline {
 #[derive(PartialEq, Clone, Debug)]
 pub enum Continuation {
     EvaluateExpressions(AST, Rc<RefCell<Environment>>, Box<Continuation>),
-    BeginFunc(AST, Rc<RefCell<Environment>>, Box<Continuation>),
     EvaluateCond(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     EvaluateAssign(AST, Rc<RefCell<Environment>>, Box<Continuation>),
-    EvaluateLambda(String, Rc<RefCell<Environment>>, Box<Continuation>),
     EvaluateFunc(AST, AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     EvaluateLet(String, AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
-    ExecuteEval(Rc<RefCell<Environment>>, Box<Continuation>),
-    ExecuteApply(AST, Box<Continuation>),
     Return,
 }
 
@@ -254,22 +251,16 @@ impl fmt::Display for Continuation {
                 let a = unsafe { env.as_unsafe_cell().get() };
                 write!(f, "EvaluateExpressions {}", unsafe { &*a })
             }
-            Continuation::BeginFunc(ref value, ref env, ref cc) => write!(f, "BeginFunc {}", value),
             Continuation::EvaluateCond(ref value, ref value2, ref env, ref cc) => {
                 write!(f, "EvaluateIf {} {}", value, value2)
             }
             Continuation::EvaluateFunc(ref value, ref list, ref list2, ref env, ref cc) => {
                 write!(f, "EvaluateFunc {} list {}", value, list2)
             }   
-            Continuation::ExecuteEval(ref env, ref cc) => {
-                let a = unsafe { env.as_unsafe_cell().get() };
-                write!(f, "ExecuteEval {}", unsafe { &*a })
-            }       
             Continuation::EvaluateAssign(ref value, ref env, ref cc) => {
                 write!(f, "EvaluateDefine {}", value)
             }  
             Continuation::Return => write!(f, "Return"),
-            Continuation::ExecuteApply(ref value, ref cc) => write!(f, "ExecuteApply {}", value), 
             _ => write!(f, "Unknown {}", 1),
         }
     }
