@@ -273,13 +273,16 @@ impl fmt::Display for AST {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             AST::Nil => write!(f, ""),
-            AST::Cons(box ref a, box ref b) => write!(f, "({} {})", a, b),
+            AST::Cons(box ref a, box ref b) => write!(f, "{} {}", a, b),
             AST::List(box ref a) => write!(f, "{}", a),
             AST::Dict(box ref d) => write!(f, "[{};]", d),
             AST::Call(box ref a, box ref b) => write!(f, "({} {})", a, b),
-            AST::Lambda(box ref a, box ref b) => write!(f, "{{{} {}}}", a, b),
-            AST::Verb(ref v, box ref a, box ref b) => write!(f, "{} {} {}", a, v, b),
-            AST::Adverb(ref v, box ref a, box ref b) => write!(f, "{} {} {}", a, v, b),
+            AST::Lambda(box ref a, box ref b) => {
+                let args = format!("{}", a).replace(" ", ";");
+                    write!(f, "{{[{}]{}}}", args, b)
+                }
+                        AST::Verb(ref v, box ref a, box ref b) => write!(f, "{}{}{}", a, v, b),
+            AST::Adverb(ref v, box ref a, box ref b) => write!(f, "{}{}{}", a, v, b),
             AST::Ioverb(ref v) => write!(f, "{}", v),
             AST::Name(ref n) => write!(f, "{}", n),
             AST::Number(n) => write!(f, "{}", n),
