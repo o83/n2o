@@ -148,6 +148,15 @@ impl Verb {
     }
 }
 
+impl fmt::Display for Verb {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Verb::Plus => write!(f, "+"),
+            _ => write!(f, "{:?}", self),
+        }
+    }
+}
+
 #[derive(PartialEq,Debug,Clone)]
 pub enum Adverb {
     Each,
@@ -177,6 +186,15 @@ impl Adverb {
             "\\:" => Ok(Adverb::EachLeft),
             "/:" => Ok(Adverb::EachRight),
             _ => Err(Error::ParseError),
+        }
+    }
+}
+
+impl fmt::Display for Adverb {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Adverb::Over => write!(f, "/"),
+            _ => write!(f, "{:?}", self),
         }
     }
 }
@@ -247,8 +265,24 @@ impl AST {
 impl fmt::Display for AST {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            AST::Number(n) => write!(f, "\033[0m{}", n), 
-            _ => write!(f, "{:?}", *self),
+            AST::Nil => write!(f, "nil."),
+            AST::Cons(box ref a, box ref b) => write!(f, "({} {})", a, b),
+            AST::List(box ref a) => write!(f, "({})", a),
+            AST::Dict(box ref d) => write!(f, "[{};]", d),
+            AST::Call(box ref a, box ref b) => write!(f, "({} {})", a, b),
+            AST::Lambda(box ref a, box ref b) => write!(f, "{{[{}] {}}}", a, b),
+            AST::Verb(ref v, box ref a, box ref b) => write!(f, "{} {} {}", v, a, b),
+            AST::Adverb(ref v, box ref a, box ref b) => write!(f, "{} {} {}", v, a, b),
+            AST::Ioverb(ref v) => write!(f, "{}", v),
+            AST::Name(ref n) => write!(f, "{}", n),
+            AST::Number(n) => write!(f, "{}", n),
+            AST::Hexlit(h) => write!(f, "0x{}", h),
+            AST::Bool(b) => write!(f, "{:?}", b),
+            AST::Symbol(ref s) => write!(f, "{}", s),
+            AST::Sequence(ref s) => write!(f, "{:?}", s),
+            AST::Cell(box ref c) => write!(f, "({})", c),
+            AST::Assign(box ref a, box ref b) => write!(f, "{}:{}", a, b),
+            AST::Cond(box ref c, box ref a, box ref b) => write!(f, "$[{};{};{}]", c, a, b),
         }
 
     }
@@ -258,6 +292,16 @@ impl fmt::Display for AST {
 pub struct Cell {
     t: Type,
     v: Vec<AST>,
+}
+
+impl fmt::Display for Cell {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "(");
+        for i in &self.v {
+            write!(f, "{}", i);
+        }
+        write!(f, ")")
+    }
 }
 
 pub fn call(l: AST, r: AST) -> AST {
