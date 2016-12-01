@@ -305,8 +305,13 @@ impl fmt::Display for AST {
             AST::Dict(box ref d) => write!(f, "[{};]", d),
             AST::Call(box ref a, box ref b) => write!(f, "{} {}", a, b),
             AST::Lambda(box ref a, box ref b) => {
-                let args = format!("{}", a).replace(" ", ";");
-                write!(f, "{{[{}]{}}}", args, b)
+                match a {
+                    &AST::Nil => write!(f, "{{[x]{}}}", b),
+                    _ => {
+                        let args = format!("{}", a).replace(" ", ";");
+                        write!(f, "{{[{}]{}}}", args, b)
+                    }
+                }
             }
             AST::Verb(ref v, box ref a, box ref b) => write!(f, "{}{}{}", a, v, b),
             AST::Adverb(ref v, box ref a, box ref b) => write!(f, "{}{}{}", a, v, b),
