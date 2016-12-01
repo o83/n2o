@@ -3,11 +3,11 @@ use commands::ast::{self, AST};
 use streams::interpreter::*;
 
 pub struct Lambda {
-    args: List,
+    args: AST,
     body: AST,
 }
 
-pub fn new(args: List, body: AST) -> Lambda {
+pub fn new(args: AST, body: AST) -> Lambda {
     Lambda {
         args: args,
         body: body,
@@ -15,16 +15,16 @@ pub fn new(args: List, body: AST) -> Lambda {
 }
 
 impl Iterator for Lambda {
-    type Item = Poll<Value>;
+    type Item = Poll<AST>;
     fn next(&mut self) -> Option<Self::Item> {
-        Some(Ok(Async::Ready(Value::Integer(123))))
+        Some(Ok(Async::Ready(AST::Number(123))))
     }
 }
 
 impl<'a> Iterator for &'a Lambda {
-    type Item = Poll<Value>;
+    type Item = Poll<AST>;
     fn next(&mut self) -> Option<Self::Item> {
-        let offset = Value::Integer(123);
+        let offset = AST::Number(123);
         Some(Ok(Async::Ready(offset)))
     }
 }

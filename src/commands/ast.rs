@@ -1,6 +1,7 @@
 
 // O-DSL AST
 
+use std::fmt;
 use std::result::Result;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -213,11 +214,28 @@ impl AST {
     pub fn boxed(self) -> Box<Self> {
         Box::new(self)
     }
+    pub fn len(&self) -> usize {
+        match self {
+            &AST::Cons(_, ref cdr) => 1 + cdr.len(),
+            &AST::Nil => 0,
+            _ => 0,
+        }
+    }
+    pub fn is_empty(&self) -> bool {
+        self == &AST::Nil
+    }
     pub fn shift(self) -> Option<(AST, AST)> {
         match self {
             AST::Cons(car, cdr) => Some((*car, *cdr)),
-            _ => None,
+            AST::Nil => None,
+            x => Some((x, AST::Nil)),
         }
+    }
+}
+
+impl fmt::Display for AST {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", *self)
     }
 }
 

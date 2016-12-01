@@ -2,6 +2,7 @@
 // TODO: remove unstable features
 
 #![feature(fnbox, static_in_const, as_unsafe_cell, heap_api, unboxed_closures, oom, alloc, box_syntax, optin_builtin_traits, const_fn, step_by, box_syntax, box_patterns)]
+#![feature(custom_derive)]
 
 #![allow(non_snake_case)]
 #![allow(dead_code)]

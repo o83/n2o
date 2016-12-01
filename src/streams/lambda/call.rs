@@ -5,10 +5,10 @@ use streams::interpreter::*;
 
 pub struct Call {
     callee: Lambda,
-    args: List,
+    args: AST,
 }
 
-pub fn new(callee: Lambda, args: List) -> Call {
+pub fn new(callee: Lambda, args: AST) -> Call {
     Call {
         callee: callee,
         args: args,
@@ -16,16 +16,16 @@ pub fn new(callee: Lambda, args: List) -> Call {
 }
 
 impl Iterator for Call {
-    type Item = Poll<Value>;
+    type Item = Poll<AST>;
     fn next(&mut self) -> Option<Self::Item> {
-        Some(Ok(Async::Ready(Value::Integer(123))))
+        Some(Ok(Async::Ready(AST::Number(123))))
     }
 }
 
 impl<'a> Iterator for &'a Call {
-    type Item = Poll<Value>;
+    type Item = Poll<AST>;
     fn next(&mut self) -> Option<Self::Item> {
-        let res = Value::Integer(123);
+        let res = AST::Number(123);
         Some(Ok(Async::Ready(res)))
     }
 }

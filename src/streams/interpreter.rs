@@ -11,94 +11,7 @@ use streams::verb::plus;
 #[derive(PartialEq)]
 pub struct Environment {
     parent: Option<Rc<RefCell<Environment>>>,
-    values: HashMap<String, Value>,
-}
-
-#[derive(PartialEq, Clone)]
-pub enum List {
-    Cons(Box<Value>, Box<List>),
-    Nil,
-}
-
-impl List {
-    pub fn shift(self) -> Option<(Value, List)> {
-        match self {
-            List::Cons(car, cdr) => Some((*car, *cdr)),
-            List::Nil => None,
-        }
-    }
-    fn to_vec(self) -> Vec<Value> {
-        let mut out = vec![];
-        let mut l = self;
-        loop {
-            match l.shift() {
-                Some((car, cdr)) => {
-                    out.push(car);
-                    l = cdr;
-                }
-                None => break,
-            }
-        }
-        out
-    }
-}
-
-impl iter::IntoIterator for List {
-    type Item = Value;
-    type IntoIter = vec::IntoIter<Value>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.to_vec().into_iter()
-    }
-}
-
-impl fmt::Display for List {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let strs: Vec<String> = self.clone().into_iter().map(|v| format!("{}", v)).collect();
-        write!(f, "({})", &strs.join(" "))
-    }
-}
-
-impl fmt::Debug for List {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let strs: Vec<String> = self.clone().into_iter().map(|v| format!("{:?}", v)).collect();
-        write!(f, "({})", &strs.join(" "))
-    }
-}
-
-#[derive(PartialEq, Clone)]
-pub enum Value {
-    Symbol(String),
-    Integer(i64),
-    Boolean(bool),
-    String(String),
-    List(List),
-    Function(List, AST),
-    Continuation(AST),
-}
-
-impl fmt::Display for Value {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Value::Symbol(ref val) => write!(f, "{}", val),
-            Value::Integer(val) => write!(f, "{}", val),
-            Value::Boolean(val) => write!(f, "#{}", if val { "t" } else { "f" }),
-            Value::String(ref val) => write!(f, "{}", val),
-            Value::List(ref list) => write!(f, "List'{}", list),
-            Value::Function(_, _) => write!(f, "#<function>"),
-            Value::Continuation(_) => write!(f, "#<continuation>"),
-        }
-    }
-}
-
-impl fmt::Debug for Value {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Value::String(ref val) => write!(f, "\"{}\"", val),
-            Value::List(ref list) => write!(f, "{:?}", list),
-            _ => write!(f, "{}", self),
-        }
-    }
+    values: HashMap<String, AST>,
 }
 
 #[derive(Clone)]
@@ -112,7 +25,7 @@ impl Interpreter {
         Ok(Interpreter { root: env })
     }
 
-    pub fn run(&mut self, program: AST) -> Result<Value, Error> {
+    pub fn run(&mut self, program: AST) -> Result<AST, Error> {
         match program {
             AST::Verb(vt, box lv, box rv) => {
                 match vt {
@@ -138,6 +51,43 @@ impl Interpreter {
     }
 }
 
+fn evaluate_expressions(exprs: AST,
+                        env: Rc<RefCell<Environment>>,
+                        k: Box<Continuation>)
+                        -> Result<Trampoline, Error> {
+    match exprs.shift() {
+        Some((car, cdr)) => {
+            Ok(Trampoline::Bounce(car,
+                                  env.clone(),
+                                  Continuation::EvaluateExpressions(cdr, env, k)))
+        }
+        None => {
+            println!("Trying to evaluate an empty expression list");
+            Err(Error::EvalError {
+                desc: "empty list".to_string(),
+                ast: AST::Nil,
+            })
+        }
+    }
+}
+
+fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
+    if exprs.len() == 0 {
+        return Ok(AST::Number(0));
+    }
+    let mut b = try!(evaluate_expressions(exprs, env, Box::new(Continuation::Return)));
+    loop {
+        println!("Tramploline: {}", b);
+        match b {
+            Trampoline::Bounce(a, env, k) => b = Trampoline::Land(a),
+            Trampoline::Run(a, k) => b = try!(k.run(a)),
+            Trampoline::Land(a) => {
+                return Ok(a);
+            }
+        }
+    }
+}
+
 impl Environment {
     fn new_root() -> Result<Rc<RefCell<Environment>>, Error> {
         let mut env = Environment {
@@ -155,7 +105,7 @@ impl Environment {
         Rc::new(RefCell::new(env))
     }
 
-    fn define(&mut self, key: String, value: Value) -> Result<(), Error> {
+    fn define(&mut self, key: String, value: AST) -> Result<(), Error> {
         if self.values.contains_key(&key) {
             println!("Duplicate define: {:?}", key);
             Ok(())
@@ -165,7 +115,7 @@ impl Environment {
         }
     }
 
-    fn set(&mut self, key: String, value: Value) -> Result<(), Error> {
+    fn set(&mut self, key: String, value: AST) -> Result<(), Error> {
         if self.values.contains_key(&key) {
             self.values.insert(key, value);
             Ok(())
@@ -180,7 +130,7 @@ impl Environment {
         }
     }
 
-    fn get(&self, key: &String) -> Option<Value> {
+    fn get(&self, key: &String) -> Option<AST> {
         match self.values.get(key) {
             Some(val) => Some(val.clone()),
             None => {
@@ -222,9 +172,9 @@ impl fmt::Debug for Environment {
 
 #[derive(Clone)]
 pub enum Trampoline {
-    Bounce(Value, Rc<RefCell<Environment>>, Continuation),
-    Run(Value, Continuation),
-    Land(Value),
+    Bounce(AST, Rc<RefCell<Environment>>, Continuation),
+    Run(AST, Continuation),
+    Land(AST),
 }
 
 impl fmt::Display for Trampoline {
@@ -232,7 +182,7 @@ impl fmt::Display for Trampoline {
         match *self {
             Trampoline::Bounce(ref value, ref env, ref cc) => {
                 let a = unsafe { env.as_unsafe_cell().get() };
-                write!(f, "Bounce {} env {}", value, unsafe { &*a })
+                write!(f, "Bounce {} env {} cc {}", value, unsafe { &*a }, cc)
             }
             Trampoline::Run(ref value, ref cc) => write!(f, "Run {}", value),
             Trampoline::Land(ref value) => write!(f, "Land {}", value),
@@ -244,11 +194,65 @@ impl fmt::Display for Trampoline {
 pub enum Continuation {
     EvaluateExpressions(AST, Rc<RefCell<Environment>>, Box<Continuation>),
     BeginFunc(AST, Rc<RefCell<Environment>>, Box<Continuation>),
-    EvaluateCond(AST, Value, Rc<RefCell<Environment>>, Box<Continuation>),
+    EvaluateCond(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
+    EvaluateDefine(String, Rc<RefCell<Environment>>, Box<Continuation>),
     EvaluateLambda(String, Rc<RefCell<Environment>>, Box<Continuation>),
-    EvaluateFunc(Value, AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
+    EvaluateFunc(AST, AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     EvaluateLet(String, AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     ExecuteEval(Rc<RefCell<Environment>>, Box<Continuation>),
     ExecuteApply(AST, Box<Continuation>),
     Return,
+}
+
+impl Continuation {
+    pub fn run(self, val: AST) -> Result<Trampoline, Error> {
+        match self {
+            Continuation::EvaluateExpressions(rest, env, k) => {
+                if !rest.is_empty() {
+                    evaluate_expressions(rest, env, k)
+                } else {
+                    Ok(Trampoline::Run(val, *k))
+                }
+            }
+            Continuation::EvaluateCond(if_expr, else_expr, env, k) => {
+                match val {
+                    AST::Bool(false) => Ok(Trampoline::Bounce(else_expr, env, *k)),
+                    _ => Ok(Trampoline::Bounce(if_expr, env, *k)),
+                }
+            }
+            Continuation::EvaluateDefine(name, env, k) => {
+                try!(env.borrow_mut().define(name, val));
+                Ok(Trampoline::Run(list(AST::Nil), *k))
+            }
+            _ => Ok(Trampoline::Land(AST::Nil)),
+        }
+    }
+}
+
+impl fmt::Display for Continuation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Continuation::EvaluateExpressions(ref value, ref env, ref cc) => {
+                let a = unsafe { env.as_unsafe_cell().get() };
+                write!(f, "EvaluateExpressions {}", unsafe { &*a })
+            }
+            Continuation::BeginFunc(ref value, ref env, ref cc) => write!(f, "BeginFunc {}", value),
+            Continuation::EvaluateCond(ref value, ref value2, ref env, ref cc) => {
+                write!(f, "EvaluateIf {} {}", value, value2)
+            }
+            Continuation::EvaluateFunc(ref value, ref list, ref list2, ref env, ref cc) => {
+                write!(f, "EvaluateFunc {} list {}", value, list2)
+            }   
+            Continuation::ExecuteEval(ref env, ref cc) => {
+                let a = unsafe { env.as_unsafe_cell().get() };
+                write!(f, "ExecuteEval {}", unsafe { &*a })
+            }       
+            Continuation::EvaluateDefine(ref value, ref env, ref cc) => {
+                write!(f, "EvaluateDefine {}", value)
+            }  
+            Continuation::Return => write!(f, "Return"),
+            Continuation::ExecuteApply(ref value, ref cc) => write!(f, "ExecuteApply {}", value), 
+            _ => write!(f, "Unknown {}", 1),
+        }
+    }
 }

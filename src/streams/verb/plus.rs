@@ -1,6 +1,6 @@
 // An add verb combinator.
 
-use streams::interpreter::{self, Value, List};
+use streams::interpreter::*;
 use commands::ast::AST;
 use streams::stream::{self, Error, Poll, Async};
 
@@ -18,23 +18,23 @@ pub fn new(lvalue: AST, rvalue: AST) -> Plus {
 
 impl Plus {
     // Now just returning simple int
-    fn a_a(l: u64, r: u64) -> Value {
+    fn a_a(l: u64, r: u64) -> AST {
         // Need to figure out what integers we have (signed or unsigned)
-        Value::Integer(l as i64 + r as i64)
+        AST::Number(l as u64 + r as u64)
     }
-    fn l_a(l: AST, r: AST) -> Value {
-        Value::Integer(1)
+    fn l_a(l: AST, r: AST) -> AST {
+        AST::Number(1)
     }
-    fn a_l(l: AST, r: AST) -> Value {
-        Value::Integer(1)
+    fn a_l(l: AST, r: AST) -> AST {
+        AST::Number(1)
     }
-    fn l_l(l: &[u64], r: &[u64]) -> Value {
-        Value::Integer(1)
+    fn l_l(l: &[u64], r: &[u64]) -> AST {
+        AST::Number(1)
     }
 }
 
 impl Iterator for Plus {
-    type Item = Poll<Value>;
+    type Item = Poll<AST>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match (&mut self.lvalue, &mut self.rvalue) {
@@ -53,7 +53,7 @@ impl Iterator for Plus {
 }
 
 impl<'a> Iterator for &'a Plus {
-    type Item = Poll<Value>;
+    type Item = Poll<AST>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // not implemented yet

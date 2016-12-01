@@ -20,7 +20,7 @@ Call:      AST = { <c:Noun> <a:CallCont>                     => call(c,a), };
 NameList:  AST = { Name, <o:Name> <m:NameCont>               => cons(o,m), };
 ExprList:  AST = { ExprCont, Expr, <o:Expr> <m:ExprCont>     => cons(o,m), };
 
-CallCont:  AST = { Noun, <m:Call>                            => m };
+CallCont:  AST = { <o:Noun> => call(o,AST::Nil), <m:Call>    => m };
 NameCont:  AST = { ";" => AST::Nil, ";" <m:NameList>         => m };
 ExprCont:  AST = { ";" => AST::Nil, ";" <m:ExprList>         => m };
 
