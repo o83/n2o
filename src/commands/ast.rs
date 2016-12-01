@@ -279,7 +279,10 @@ impl AST {
                     l = cdr;
                 }
                 AST::Nil => break,
-                x => out.push(x),
+                x => {
+                    out.push(x);
+                    break;
+                }
             }
         }
         out
@@ -357,7 +360,7 @@ pub fn cons(l: AST, r: AST) -> AST {
 pub fn fun(l: AST, r: AST) -> AST {
     match l {
         AST::Nil => AST::Lambda(AST::Name("x".to_string()).boxed(), r.boxed()),
-    _ => AST::Lambda(l.boxed(), r.boxed()),
+        _ => AST::Lambda(l.boxed(), r.boxed()),
     }
 }
 
