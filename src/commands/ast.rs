@@ -21,7 +21,7 @@ impl fmt::Display for Error {
             Error::ParseError => write!(f, "Parse error!\n"),
             Error::EvalError { ref desc, ref ast } => {
                 write!(f, "Eval error: {}.\nCaused here: {:?}\n", desc, ast)
-            }    
+            }
         }
     }
 }
@@ -333,7 +333,7 @@ impl fmt::Display for AST {
     }
 }
 
-#[derive(PartialEq,Debug, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Cell {
     t: Type,
     v: Vec<AST>,

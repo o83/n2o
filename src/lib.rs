@@ -1,7 +1,17 @@
 
-// TODO: remove unstable features
-
-#![feature(fnbox, static_in_const, as_unsafe_cell, heap_api, unboxed_closures, oom, alloc, box_syntax, optin_builtin_traits, const_fn, step_by, box_syntax, box_patterns)]
+#![feature(fnbox)]
+#![feature(static_in_const)]
+#![feature(as_unsafe_cell)]
+#![feature(heap_api)]
+#![feature(unboxed_closures)]
+#![feature(oom)]
+#![feature(alloc)]
+#![feature(box_syntax)]
+#![feature(optin_builtin_traits)]
+#![feature(const_fn)]
+#![feature(step_by)]
+#![feature(box_syntax)]
+#![feature(box_patterns)]
 #![feature(custom_derive)]
 
 #![allow(non_snake_case)]
@@ -14,6 +24,7 @@
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
 #![feature(libc)]
+
 // TODO: remove these deps
 
 extern crate net2;

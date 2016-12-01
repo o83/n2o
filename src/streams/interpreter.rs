@@ -12,7 +12,7 @@ use streams::verb::plus;
 use streams::env::*;
 
 // Interpreter, Trampoline and Continuation
-//    -- are Embedded Contexts, Lazy Type and Combinators respectively
+//     -- are Embedded Contexts, Lazy Type and Combinators respectively
 
 #[derive(Clone)]
 pub struct Interpreter {
@@ -39,7 +39,6 @@ pub enum Continuation {
     Return,
 }
 
-
 fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     if exprs.clone().len() == 0 {
         return Ok(AST::Nil);
@@ -59,12 +58,6 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
                         let mut fun = try!(process(callee, env.clone()));
                         match fun {
                             AST::Lambda(box names, box body) => {
-
-                                // println!("Names: {:?}", names.clone().to_vec());
-                                // println!("Body: {:?}", body.clone().to_vec());
-                                // println!("Callee: {:?}", callee.clone().to_vec());
-                                // println!("Args: {:?}", args.clone());
-
                                 Trampoline::Force(body,
                                                   Continuation::EvaluateFunc(names,
                                                                              args,
@@ -72,18 +65,20 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
                                                                              Box::new(k)))
                             }
                             x => {
-                                println!("Call Error!");
-                                try!(k.run(a))
+                                return Err(Error::EvalError {
+                                    desc: "Call Error".to_string(),
+                                    ast: a,
+                                })
                             }
                         }
                     }
                     AST::Name(name) => {
                         match lookup(name, env) {
-                            Ok(v) => try!(k.run(v)),
+                            Ok(v) => Trampoline::Force(v, k),
                             Err(x) => return Err(x),
                         }
                     }
-                    _ => try!(k.run(a)),
+                    _ => Trampoline::Force(a, k),
                 }
             }
             Trampoline::Force(x, k) => b = try!(k.run(x)),
@@ -117,9 +112,8 @@ fn evaluate_expressions(exprs: AST,
                                  Continuation::EvaluateExpressions(cdr, env, k)))
         }
         None => {
-            println!("Trying to evaluate an empty expression list");
             Err(Error::EvalError {
-                desc: "empty list".to_string(),
+                desc: "Empty list".to_string(),
                 ast: AST::Nil,
             })
         }
@@ -168,7 +162,7 @@ impl Continuation {
                     }
                     x => {
                         Err(Error::EvalError {
-                            desc: "can assign only to name".to_string(),
+                            desc: "Can assign only to var".to_string(),
                             ast: x,
                         })
                     }
