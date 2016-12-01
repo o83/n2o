@@ -2,6 +2,8 @@
 // O-DSL AST
 
 use std::fmt;
+use std::iter;
+use std::vec;
 use std::result::Result;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -267,7 +269,32 @@ impl AST {
             x => Some((x, AST::Nil)),
         }
     }
+    pub fn to_vec(self) -> Vec<AST> {
+        let mut out = vec![];
+        let mut l = self;
+        loop {
+            match l.clone() {
+                AST::Cons(box car, box cdr) => {
+                    out.push(car);
+                    l = cdr;
+                }
+                AST::Nil => break,
+                x => out.push(x),
+            }
+        }
+        out
+    }
 }
+
+impl iter::IntoIterator for AST {
+    type Item = AST;
+    type IntoIter = vec::IntoIter<AST>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.to_vec().into_iter()
+    }
+}
+
 
 impl fmt::Display for AST {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -279,9 +306,9 @@ impl fmt::Display for AST {
             AST::Call(box ref a, box ref b) => write!(f, "{} {}", a, b),
             AST::Lambda(box ref a, box ref b) => {
                 let args = format!("{}", a).replace(" ", ";");
-                    write!(f, "{{[{}]{}}}", args, b)
-                }
-                        AST::Verb(ref v, box ref a, box ref b) => write!(f, "{}{}{}", a, v, b),
+                write!(f, "{{[{}]{}}}", args, b)
+            }
+            AST::Verb(ref v, box ref a, box ref b) => write!(f, "{}{}{}", a, v, b),
             AST::Adverb(ref v, box ref a, box ref b) => write!(f, "{}{}{}", a, v, b),
             AST::Ioverb(ref v) => write!(f, "{}", v),
             AST::Name(ref n) => write!(f, "{}", n),

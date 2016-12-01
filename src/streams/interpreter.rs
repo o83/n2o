@@ -20,8 +20,7 @@ impl Interpreter {
     }
 
     pub fn run(&mut self, program: AST) -> Result<AST, Error> {
-        // test(program.clone())
-        process(program.clone(), self.root.clone())
+        process(program, self.root.clone())
     }
 }
 
@@ -41,7 +40,37 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
                                            env.clone(),
                                            Continuation::EvaluateAssign(name, env, Box::new(k)))
                     }
-                    AST::Call(box callee, box AST::Nil) => Trampoline::Land(AST::Nil),
+                    AST::Lambda(box callee, box args) => {
+                        println!("Lambda!");
+                        Trampoline::Run(AST::Lambda(callee.boxed(), args.boxed()), k)
+                    }
+                    AST::Call(box callee, box args) => {
+                        let mut fun = try!(evaluate_expressions(callee.clone(),
+                                                                env.clone(),
+                                                                Box::new(Continuation::Return)));
+                        match fun {
+                            Trampoline::Land(AST::Lambda(box names, box body)) => {
+                                println!("Names: {:?}", names);
+                                println!("Body: {:?}", body);
+                                println!("Callee: {:?}", callee);
+                                println!("Args: {:?}", args);
+                                Trampoline::Bounce(body.clone(),
+                                                   env.clone(),
+                                                   Continuation::EvaluateFunc(names,
+                                                                              args,
+                                                                              body,
+                                                                              env,
+                                                                              Box::new(k)))
+                            }
+                            x => try!(k.run(a)),
+                            // {
+                            // Err(Error::EvalError {
+                            // desc: "Function expected".to_string(),
+                            // ast: callee,
+                            // })
+                            // }
+                        }
+                    }
                     AST::Name(name) => {
                         let val = match env.borrow().get(&name) {
                             Some(v) => v,
@@ -51,7 +80,6 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
                                     ast: AST::Name(name),
                                 })
                             }
-
                         };
                         try!(k.run(val))
                     }
@@ -89,7 +117,7 @@ fn evaluate_expressions(exprs: AST,
 
 impl Continuation {
     pub fn run(self, val: AST) -> Result<Trampoline, Error> {
-        println!("CC:Run: {:?}", val);
+        println!("Continuation::run {:?}", val);
         match self {
             Continuation::EvaluateExpressions(rest, env, k) => {
                 if rest.is_cons() || !rest.is_empty() {
@@ -97,6 +125,13 @@ impl Continuation {
                 } else {
                     Ok(Trampoline::Run(val, *k))
                 }
+            }
+            Continuation::EvaluateFunc(names, args, body, env, k) => {
+                let local_env = Environment::new_child(env);
+                for (name, value) in names.into_iter().zip(args.into_iter()) {
+                    try!(local_env.borrow_mut().define(name.to_string(), value));
+                }
+                evaluate_expressions(body, Environment::new_child(local_env), k)
             }
             Continuation::EvaluateCond(if_expr, else_expr, env, k) => {
                 match val {
@@ -120,7 +155,6 @@ impl Continuation {
                 }
             }
             Continuation::Return => Ok(Trampoline::Land(val)),
-            _ => Ok(Trampoline::Land(val)),
         }
     }
 }
@@ -239,7 +273,6 @@ pub enum Continuation {
     EvaluateCond(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     EvaluateAssign(AST, Rc<RefCell<Environment>>, Box<Continuation>),
     EvaluateFunc(AST, AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
-    EvaluateLet(String, AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Return,
 }
 
@@ -261,7 +294,6 @@ impl fmt::Display for Continuation {
                 write!(f, "EvaluateDefine {}", value)
             }  
             Continuation::Return => write!(f, "Return"),
-            _ => write!(f, "Unknown {}", 1),
         }
     }
 }
