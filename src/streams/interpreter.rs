@@ -43,7 +43,7 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     if exprs.len() == 0 {
         return Ok(AST::Nil);
     }
-    let mut b = try!(evaluate_expressions(exprs, env.clone(), Box::new(Continuation::Return)));
+    let mut b = try!(evaluate_expressions(exprs, env, Box::new(Continuation::Return)));
     loop {
         println!("Trampoline: {:?}", b);
         match b {
@@ -76,10 +76,6 @@ fn handle_defer(a: AST,
 }
 
 fn lookup(name: String, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
-    println!("Lookup {:?} {:?} {:?}",
-             Environment::index(env.clone()),
-             name,
-             env);
     match env.borrow().get(&name) {
         Some(v) => Ok(v),
         None => {
