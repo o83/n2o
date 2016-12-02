@@ -43,9 +43,11 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     if exprs.len() == 0 {
         return Ok(AST::Nil);
     }
+    let mut a = 0;
     let mut b = try!(evaluate_expressions(exprs, env, Box::new(Continuation::Return)));
     loop {
-        println!("Trampoline: {:?}", b);
+        a = a + 1;
+        println!("[Trampoline:{}]:{:?}\n", a, b);
         match b {
             Trampoline::Defer(a, e, k) => b = try!(handle_defer(a, e, k)),
             Trampoline::Force(x, k) => b = try!(k.run(x)),
@@ -60,9 +62,7 @@ fn handle_defer(a: AST,
                 -> Result<Trampoline, Error> {
     match a {
         AST::Assign(box name, box body) => {
-            Ok(Trampoline::Defer(body,
-                                 env.clone(),
-                                 Continuation::Assign(name, env, Box::new(k))))
+            Ok(Trampoline::Force(body, Continuation::Assign(name, env, Box::new(k))))
         }
         AST::Call(box callee, box args) => evaluate_function(callee, env, args, k),
         AST::Name(name) => {
@@ -145,7 +145,6 @@ impl Interpreter {
 
 impl Continuation {
     pub fn run(self, val: AST) -> Result<Trampoline, Error> {
-        println!("Continuation::run {:?}", val);
         match self {
             Continuation::Expressions(rest, env, k) => {
                 if rest.is_cons() || !rest.is_empty() {
@@ -155,7 +154,6 @@ impl Continuation {
                 }
             }
             Continuation::Func(names, args, env, k) => {
-                println!("Evaluate in Context {:?}", Environment::index(env.clone()));
                 let local_env = Environment::new_child(env);
                 for (name, value) in names.into_iter().zip(args.into_iter()) {
                     try!(local_env.borrow_mut().define(name.to_string(), value));
