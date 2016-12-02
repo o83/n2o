@@ -6,7 +6,7 @@ use std::iter;
 use std::vec;
 use commands::ast::*;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct Environment {
     index: u64,
     parent: Option<Rc<RefCell<Environment>>>,
@@ -17,7 +17,7 @@ impl fmt::Display for Environment {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.parent {
             Some(ref parent) => write!(f, "LVL {:?} {:?}", self.index, self.values),
-            None => write!(f, "{:?} ", self.values),
+            None => write!(f, "LVL {:?} {:?}", self.index, self.values),
         }
     }
 }
@@ -26,7 +26,7 @@ impl fmt::Debug for Environment {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.parent {
             Some(ref parent) => write!(f, "LVL {:?} {:?}", self.index, self.values),
-            None => write!(f, "{:?} ", self.values),
+            None => write!(f, "LVL {:?} {:?}", self.index, self.values),
         }
     }
 }
@@ -51,27 +51,15 @@ impl Environment {
         Rc::new(RefCell::new(env))
     }
 
-    pub fn define(&mut self, key: String, value: AST) -> Result<(), Error> {
-        println!("Set {:?}:{:?}", key, value);
-        self.values.insert(key, value);
-        Ok(())
+    pub fn index(parent: Rc<RefCell<Environment>>) -> u64 {
+        let a = unsafe { parent.as_unsafe_cell().get() };
+        unsafe { (&*a).index }
     }
 
-    pub fn set(&mut self, key: String, value: AST) -> Result<(), Error> {
-        if self.values.contains_key(&key) {
-            self.values.insert(key, value);
-            Ok(())
-        } else {
-            match self.parent {
-                Some(ref parent) => parent.borrow_mut().set(key, value),
-                None => {
-                    Err(Error::EvalError {
-                        desc: "Can't set! an undefined variable".to_string(),
-                        ast: value,
-                    })
-                }
-            }
-        }
+    pub fn define(&mut self, key: String, value: AST) -> Result<(), Error> {
+        println!("Set {:?}:{:?} in LVL {:?}", key, value, self.index);
+        self.values.insert(key, value);
+        Ok(())
     }
 
     pub fn get(&self, key: &String) -> Option<AST> {

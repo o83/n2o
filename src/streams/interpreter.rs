@@ -43,11 +43,11 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     if exprs.len() == 0 {
         return Ok(AST::Nil);
     }
-    let mut b = try!(evaluate_expressions(exprs, env, Box::new(Continuation::Return)));
+    let mut b = try!(evaluate_expressions(exprs, env.clone(), Box::new(Continuation::Return)));
     loop {
         println!("Trampoline: {:?}", b);
         match b {
-            Trampoline::Defer(a, env, k) => b = try!(handle_defer(a, env, k)),
+            Trampoline::Defer(a, _, k) => b = try!(handle_defer(a, env.clone(), k)),
             Trampoline::Force(x, k) => b = try!(k.run(x)),
             Trampoline::Return(a) => return Ok(a),
         }
@@ -79,6 +79,7 @@ fn handle_defer(a: AST,
 }
 
 fn lookup(name: String, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
+    println!("Lookup {:?} {:?}", Environment::index(env.clone()), name);
     return match env.borrow().get(&name) {
         Some(v) => Ok(v),
         None => {
