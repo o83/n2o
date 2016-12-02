@@ -64,29 +64,7 @@ fn handle_defer(a: AST,
                                  Environment::new_child(env.clone()),
                                  Continuation::Assign(name, env, Box::new(k))))
         }
-        AST::Call(box callee, box args) => {
-            let (fun, x) = match callee.clone() {
-                AST::Name(s) => {
-                    match env.borrow().find(&s) {
-                        Some((v, x)) => {
-                            println!("Found {:?} {:?}", v.clone(), x.clone());
-                            (v, x)
-                        }
-                        None => {
-                            return Err(Error::EvalError {
-                                desc: "".to_string(),
-                                ast: callee,
-                            })
-                        }
-
-                    }
-                }
-                _ => (try!(process(callee.clone(), env.clone())), env),
-            };
-            println!("AST:Call {:?} {:?}", fun, x);
-
-            evaluate_function(fun, x, args, k)
-        }
+        AST::Call(box callee, box args) => evaluate_function(callee, env, args, k),
         AST::Name(name) => {
             match lookup(name, env) {
                 Ok(v) => k.run(v),
