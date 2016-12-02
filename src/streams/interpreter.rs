@@ -187,19 +187,6 @@ impl Continuation {
     }
 }
 
-impl fmt::Display for Trampoline {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Trampoline::Defer(ref value, ref env, ref cc) => {
-                let a = unsafe { env.as_unsafe_cell().get() };
-                write!(f, "Bounce {:?} env {:?} cc {:?}", value, unsafe { &*a }, cc)
-            }
-            Trampoline::Force(ref value, ref cc) => write!(f, "Run {:?}", value),
-            Trampoline::Return(ref value) => write!(f, "Land {:?}", value),
-        }
-    }
-}
-
 impl fmt::Display for Continuation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
