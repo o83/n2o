@@ -46,11 +46,11 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     let mut a = 0;
     let mut b = try!(evaluate_expressions(exprs, env, Box::new(Continuation::Return)));
     loop {
-        a = a + 1;
+        // a = a + 1; // we should charge only forcing of evaluations
         println!("[Trampoline:{}]:{:?}\n", a, b);
         match b {
             Trampoline::Defer(a, e, k) => b = try!(handle_defer(a, e, k)),
-            Trampoline::Force(x, k) => b = try!(k.run(x)),
+            Trampoline::Force(x, k) => { a = a + 1; b = try!(k.run(x)) },
             Trampoline::Return(a) => return Ok(a),
         }
     }
