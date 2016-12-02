@@ -8,6 +8,7 @@ use commands::ast::*;
 
 #[derive(PartialEq)]
 pub struct Environment {
+    index: u64,
     parent: Option<Rc<RefCell<Environment>>>,
     values: HashMap<String, AST>,
 }
@@ -15,7 +16,7 @@ pub struct Environment {
 impl fmt::Display for Environment {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.parent {
-            Some(ref parent) => write!(f, "{:?}", self.values),
+            Some(ref parent) => write!(f, "LVL {:?} {:?}", self.index, self.values),
             None => write!(f, "{:?} ", self.values),
         }
     }
@@ -24,7 +25,7 @@ impl fmt::Display for Environment {
 impl fmt::Debug for Environment {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.parent {
-            Some(ref parent) => write!(f, "{:?}", self.values),
+            Some(ref parent) => write!(f, "LVL {:?} {:?}", self.index, self.values),
             None => write!(f, "{:?} ", self.values),
         }
     }
@@ -34,20 +35,24 @@ impl Environment {
     pub fn new_root() -> Result<Rc<RefCell<Environment>>, Error> {
         let mut env = Environment {
             parent: None,
+            index: 0,
             values: HashMap::new(),
         };
         Ok(Rc::new(RefCell::new(env)))
     }
 
     pub fn new_child(parent: Rc<RefCell<Environment>>) -> Rc<RefCell<Environment>> {
+        let idx = unsafe { (&*parent.as_unsafe_cell().get()).index };
         let env = Environment {
             parent: Some(parent),
+            index: idx + 1,
             values: HashMap::new(),
         };
         Rc::new(RefCell::new(env))
     }
 
     pub fn define(&mut self, key: String, value: AST) -> Result<(), Error> {
+        println!("Set {:?}:{:?}", key, value);
         self.values.insert(key, value);
         Ok(())
     }
