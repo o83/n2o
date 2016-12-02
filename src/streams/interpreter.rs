@@ -30,12 +30,12 @@ pub enum Trampoline {
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Continuation {
-    EvaluateExpressions(AST, Rc<RefCell<Environment>>, Box<Continuation>),
-    EvaluateAssign(AST, Rc<RefCell<Environment>>, Box<Continuation>),
-    EvaluateCond(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
-    EvaluateFunc(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
-    EvaluateVerb(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
-    EvaluateAdverb(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
+    Expressions(AST, Rc<RefCell<Environment>>, Box<Continuation>),
+    Assign(AST, Rc<RefCell<Environment>>, Box<Continuation>),
+    Cond(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
+    Func(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
+    Verb(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
+    Adverb(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Return,
 }
 
@@ -47,45 +47,34 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     loop {
         println!("Trampoline: {:?}", b);
         match b {
-            Trampoline::Defer(a, env, k) => {
-                b = match a.clone() {
-                    AST::Assign(box name, box body) => {
-                        Trampoline::Defer(body,
-                                          env.clone(),
-                                          Continuation::EvaluateAssign(name, env, Box::new(k)))
-                    }
-                    AST::Call(box callee, box args) => {
-                        let mut fun = try!(process(callee, env.clone()));
-                        match fun {
-                            AST::Lambda(box names, box body) => {
-                                Trampoline::Force(body,
-                                                  Continuation::EvaluateFunc(names,
-                                                                             args,
-                                                                             env,
-                                                                             Box::new(k)))
-                            }
-                            x => {
-                                return Err(Error::EvalError {
-                                    desc: "Call Error".to_string(),
-                                    ast: a,
-                                })
-                            }
-                        }
-                    }
-                    AST::Name(name) => {
-                        match lookup(name, env) {
-                            Ok(v) => try!(k.run(v)),
-                            Err(x) => return Err(x),
-                        }
-                    }
-                    _ => try!(k.run(a)),
-                }
-            }
+            Trampoline::Defer(a, env, k) => b = try!(handle_defer(a, env, k)),
             Trampoline::Force(x, k) => b = try!(k.run(x)),
-            Trampoline::Return(a) => {
-                return Ok(a);
+            Trampoline::Return(a) => return Ok(a),
+        }
+    }
+}
+
+fn handle_defer(a: AST,
+                env: Rc<RefCell<Environment>>,
+                k: Continuation)
+                -> Result<Trampoline, Error> {
+    match a.clone() {
+        AST::Assign(box name, box body) => {
+            Ok(Trampoline::Defer(body,
+                                 env.clone(),
+                                 Continuation::Assign(name, env, Box::new(k))))
+        }
+        AST::Call(box callee, box args) => {
+            let mut fun = try!(process(callee, env.clone()));
+            evaluate_function(fun, env, args, k)
+        }
+        AST::Name(name) => {
+            match lookup(name, env) {
+                Ok(v) => k.run(v),
+                Err(x) => Err(x),
             }
         }
+        _ => k.run(a),
     }
 }
 
@@ -101,15 +90,31 @@ fn lookup(name: String, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     };
 }
 
+fn evaluate_function(fun: AST,
+                     env: Rc<RefCell<Environment>>,
+                     args: AST,
+                     k: Continuation)
+                     -> Result<Trampoline, Error> {
+    match fun {
+        AST::Lambda(box names, box body) => {
+            Ok(Trampoline::Force(body, Continuation::Func(names, args, env, Box::new(k))))
+        }
+        x => {
+            Err(Error::EvalError {
+                desc: "Call Error".to_string(),
+                ast: x,
+            })
+        }
+    }
+}
+
 fn evaluate_expressions(exprs: AST,
                         env: Rc<RefCell<Environment>>,
                         k: Box<Continuation>)
                         -> Result<Trampoline, Error> {
     match exprs.shift() {
         Some((car, cdr)) => {
-            Ok(Trampoline::Defer(car,
-                                 env.clone(),
-                                 Continuation::EvaluateExpressions(cdr, env, k)))
+            Ok(Trampoline::Defer(car, env.clone(), Continuation::Expressions(cdr, env, k)))
         }
         None => {
             Err(Error::EvalError {
@@ -134,27 +139,27 @@ impl Continuation {
     pub fn run(self, val: AST) -> Result<Trampoline, Error> {
         println!("Continuation::run {:?}", val);
         match self {
-            Continuation::EvaluateExpressions(rest, env, k) => {
+            Continuation::Expressions(rest, env, k) => {
                 if rest.is_cons() || !rest.is_empty() {
                     evaluate_expressions(rest, env, k)
                 } else {
                     Ok(Trampoline::Force(val, *k))
                 }
             }
-            Continuation::EvaluateFunc(names, args, env, k) => {
+            Continuation::Func(names, args, env, k) => {
                 let local_env = Environment::new_child(env);
                 for (name, value) in names.into_iter().zip(args.into_iter()) {
                     try!(local_env.borrow_mut().define(name.to_string(), value));
                 }
                 evaluate_expressions(val, local_env, k)
             }
-            Continuation::EvaluateCond(if_expr, else_expr, env, k) => {
+            Continuation::Cond(if_expr, else_expr, env, k) => {
                 match val {
                     AST::Bool(false) => Ok(Trampoline::Defer(else_expr, env, *k)),
                     _ => Ok(Trampoline::Defer(if_expr, env, *k)),
                 }
             }
-            Continuation::EvaluateAssign(name, env, k) => {
+            Continuation::Assign(name, env, k) => {
                 match name {
                     AST::Name(ref s) => {
                         try!(env.borrow_mut().define(s.to_string(), val));
@@ -190,23 +195,23 @@ impl fmt::Display for Trampoline {
 impl fmt::Display for Continuation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Continuation::EvaluateExpressions(ref value, ref env, ref cc) => {
+            Continuation::Expressions(ref value, ref env, ref cc) => {
                 let a = unsafe { env.as_unsafe_cell().get() };
                 write!(f, "EvaluateExpressions {}", unsafe { &*a })
             }
-            Continuation::EvaluateCond(ref value, ref value2, ref env, ref cc) => {
+            Continuation::Cond(ref value, ref value2, ref env, ref cc) => {
                 write!(f, "EvaluateIf {} {}", value, value2)
             }
-            Continuation::EvaluateFunc(ref value, ref list, ref env, ref cc) => {
+            Continuation::Func(ref value, ref list, ref env, ref cc) => {
                 write!(f, "EvaluateFunc {} list {}", value, list)
             }
-            Continuation::EvaluateAssign(ref value, ref env, ref cc) => {
+            Continuation::Assign(ref value, ref env, ref cc) => {
                 write!(f, "EvaluateDefine {}", value)
             }
-            Continuation::EvaluateVerb(ref value, ref list, ref env, ref cc) => {
+            Continuation::Verb(ref value, ref list, ref env, ref cc) => {
                 write!(f, "EvaluateVerb {}", value)
             }
-            Continuation::EvaluateAdverb(ref value, ref list, ref env, ref cc) => {
+            Continuation::Adverb(ref value, ref list, ref env, ref cc) => {
                 write!(f, "EvaluateAdverb {}", value)
             }
             Continuation::Return => write!(f, "Return"),
