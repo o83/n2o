@@ -10,7 +10,7 @@ pub Mex:   AST = { ExprList };
 // Three Type of Brackets and Their Lists 9 LOC
 
 List:      AST = { "(" ")" => AST::Nil, "(" <l:ExprList> ")" => list(l), };
-Dict:      AST = { "[" "]" => AST::Nil, "[" <l:ExprList> "]" => dict(l), };
+Dict:      AST = { "[" "]" => AST::Nil, "[" <l:ExprList> "]" => l, };
 
 Lambda:    AST = { "{" <m:ExprList> "}"                      => fun(AST::Nil,m),
                    "{[" <c:NameList> "]" <m:ExprList> "}"    => fun(c,m),
