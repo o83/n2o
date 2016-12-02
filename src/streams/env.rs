@@ -6,29 +6,11 @@ use std::iter;
 use std::vec;
 use commands::ast::*;
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Environment {
     pub index: u64,
     pub parent: Option<Rc<RefCell<Environment>>>,
     pub values: HashMap<String, AST>,
-}
-
-impl fmt::Display for Environment {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.parent {
-            Some(ref parent) => write!(f, "LVL {:?} {:?}", self.index, self.values),
-            None => write!(f, "LVL {:?} {:?}", self.index, self.values),
-        }
-    }
-}
-
-impl fmt::Debug for Environment {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.parent {
-            Some(ref parent) => write!(f, "LVL {:?} {:?}", self.index, self.values),
-            None => write!(f, "LVL {:?} {:?}", self.index, self.values),
-        }
-    }
 }
 
 impl Environment {
@@ -57,7 +39,7 @@ impl Environment {
     }
 
     pub fn define(&mut self, key: String, value: AST) -> Result<(), Error> {
-        println!("Set {:?}:{:?} in LVL {:?}", key, value, self.index);
+        println!("Set {:?}:{:?} in Level {:?}", key, value, self.index);
         self.values.insert(key, value);
         Ok(())
     }

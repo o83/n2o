@@ -169,8 +169,8 @@ impl Continuation {
             Continuation::Assign(name, env, k) => {
                 match name {
                     AST::Name(ref s) => {
-                        try!(env.borrow_mut().define(s.to_string(), val));
-                        Ok(Trampoline::Force(AST::Nil, *k))
+                        try!(env.borrow_mut().define(s.to_string(), val.clone()));
+                        Ok(Trampoline::Force(val, *k))
                     }
                     x => {
                         Err(Error::EvalError {
