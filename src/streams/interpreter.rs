@@ -46,7 +46,7 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     let mut a = 0;
     let mut b = try!(evaluate_expressions(exprs, env, Box::new(Continuation::Return)));
     loop {
-        // a = a + 1; // we should charge only forcing of evaluations
+        // a = a + 1; // we should charge CPS ticks only on forcing of evaluations
         println!("[Trampoline:{}]:{:?}\n", a, b);
         match b {
             Trampoline::Defer(a, e, k) => b = try!(handle_defer(a, e, k)),

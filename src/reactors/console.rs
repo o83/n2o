@@ -42,7 +42,7 @@ impl Console {
 
     pub fn run(&mut self, poll: &mut Poll) -> io::Result<()> {
         try!(self.register(poll));
-        println!("Console is listening...");
+        println!("Welcome to O-CPS Interpreter!");
         while self.running {
             Console::prompt();
             let cnt = try!(poll.poll(&mut self.events, None));

@@ -13,6 +13,7 @@
 #![feature(box_syntax)]
 #![feature(box_patterns)]
 #![feature(custom_derive)]
+#![feature(libc)]
 
 #![allow(non_snake_case)]
 #![allow(dead_code)]
@@ -23,7 +24,6 @@
 #![allow(unused_mut)]
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
-#![feature(libc)]
 
 // TODO: remove these deps
 
