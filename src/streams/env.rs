@@ -74,6 +74,18 @@ impl Environment {
         }
     }
 
+    pub fn find(&self, key: &String) -> Option<(AST, Rc<RefCell<Environment>>)> {
+        match self.values.get(key) {
+            Some(val) => Some((val.clone(), Rc::new(RefCell::new(self.clone())))),
+            None => {
+                match self.parent {
+                    Some(ref parent) => parent.borrow().find(key),
+                    None => None,
+                }
+            }
+        }
+    }
+
     pub fn get_root(env_ref: Rc<RefCell<Environment>>) -> Rc<RefCell<Environment>> {
         let env = env_ref.borrow();
         match env.parent {

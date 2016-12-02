@@ -65,8 +65,27 @@ fn handle_defer(a: AST,
                                  Continuation::Assign(name, env, Box::new(k))))
         }
         AST::Call(box callee, box args) => {
-            let mut fun = try!(process(callee, env.clone()));
-            evaluate_function(fun, env, args, k)
+            let (fun, x) = match callee.clone() {
+                AST::Name(s) => {
+                    match env.borrow().find(&s) {
+                        Some((v, x)) => {
+                            println!("Found {} {:?}", v.clone(), x.clone());
+                            (v, x)
+                        }
+                        None => {
+                            (AST::Nil,
+                             Rc::new(RefCell::new(Environment {
+                                 parent: None,
+                                 index: 0,
+                                 values: HashMap::new(),
+                             })))
+                        }
+                    }
+                } 
+                _ => (try!(process(callee.clone(), env.clone())), env),
+            };
+            println!("AST:Call {} {:?}", callee, x);
+            evaluate_function(fun, x, args, k)
         }
         AST::Name(name) => {
             match lookup(name, env) {
@@ -101,8 +120,7 @@ fn evaluate_function(fun: AST,
                      -> Result<Trampoline, Error> {
     match fun {
         AST::Lambda(box names, box body) => {
-            Ok(Trampoline::Force(body,
-                                 Continuation::Func(names, args, env.clone(), Box::new(k))))
+            Ok(Trampoline::Force(body, Continuation::Func(names, args, env, Box::new(k))))
         }
         x => {
             Err(Error::EvalError {
@@ -119,9 +137,7 @@ fn evaluate_expressions(exprs: AST,
                         -> Result<Trampoline, Error> {
     match exprs.shift() {
         Some((car, cdr)) => {
-            Ok(Trampoline::Defer(car,
-                                 env.clone(),
-                                 Continuation::Expressions(cdr, env.clone(), k)))
+            Ok(Trampoline::Defer(car, env.clone(), Continuation::Expressions(cdr, env, k)))
         }
         None => {
             Err(Error::EvalError {
@@ -183,33 +199,6 @@ impl Continuation {
                 }
             }
             _ => Ok(Trampoline::Return(val)),
-        }
-    }
-}
-
-impl fmt::Display for Continuation {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Continuation::Expressions(ref value, ref env, ref cc) => {
-                let a = unsafe { env.as_unsafe_cell().get() };
-                write!(f, "EvaluateExpressions {}", unsafe { &*a })
-            }
-            Continuation::Cond(ref value, ref value2, ref env, ref cc) => {
-                write!(f, "EvaluateIf {} {}", value, value2)
-            }
-            Continuation::Func(ref value, ref list, ref env, ref cc) => {
-                write!(f, "EvaluateFunc {} list {}", value, list)
-            }
-            Continuation::Assign(ref value, ref env, ref cc) => {
-                write!(f, "EvaluateDefine {}", value)
-            }
-            Continuation::Verb(ref value, ref list, ref env, ref cc) => {
-                write!(f, "EvaluateVerb {}", value)
-            }
-            Continuation::Adverb(ref value, ref list, ref env, ref cc) => {
-                write!(f, "EvaluateAdverb {}", value)
-            }
-            Continuation::Return => write!(f, "Return"),
         }
     }
 }
