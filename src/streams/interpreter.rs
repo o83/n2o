@@ -40,10 +40,10 @@ pub enum Continuation {
 }
 
 fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
-    if exprs.clone().len() == 0 {
+    if exprs.len() == 0 {
         return Ok(AST::Nil);
     }
-    let mut b = try!(evaluate_expressions(exprs.clone(), env, Box::new(Continuation::Return)));
+    let mut b = try!(evaluate_expressions(exprs, env, Box::new(Continuation::Return)));
     loop {
         println!("Trampoline: {:?}", b);
         match b {
@@ -58,7 +58,7 @@ fn handle_defer(a: AST,
                 env: Rc<RefCell<Environment>>,
                 k: Continuation)
                 -> Result<Trampoline, Error> {
-    match a.clone() {
+    match a {
         AST::Assign(box name, box body) => {
             Ok(Trampoline::Defer(body,
                                  env.clone(),
@@ -74,7 +74,7 @@ fn handle_defer(a: AST,
                 Err(x) => Err(x),
             }
         }
-        _ => k.run(a),
+        x => k.run(x),
     }
 }
 
