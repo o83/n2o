@@ -7,9 +7,9 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::iter;
 use std::vec;
-use commands::ast::*;
-use streams::verb::plus;
+use streams::verb::*;
 use streams::env::*;
+use commands::ast::*;
 
 // Interpreter, Trampoline and Continuation
 //     -- are Embedded Contexts, Lazy Type and Combinators respectively
