@@ -61,7 +61,7 @@ fn handle_defer(a: AST,
     match a {
         AST::Assign(box name, box body) => {
             Ok(Trampoline::Defer(body,
-                                 Environment::new_child(env.clone()),
+                                 env.clone(),
                                  Continuation::Assign(name, env, Box::new(k))))
         }
         AST::Call(box callee, box args) => evaluate_function(callee, env, args, k),
