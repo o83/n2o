@@ -69,22 +69,22 @@ fn handle_defer(a: AST,
                 AST::Name(s) => {
                     match env.borrow().find(&s) {
                         Some((v, x)) => {
-                            println!("Found {} {:?}", v.clone(), x.clone());
+                            println!("Found {:?} {:?}", v.clone(), x.clone());
                             (v, x)
                         }
                         None => {
-                            (AST::Nil,
-                             Rc::new(RefCell::new(Environment {
-                                 parent: None,
-                                 index: 0,
-                                 values: HashMap::new(),
-                             })))
+                            return Err(Error::EvalError {
+                                desc: "".to_string(),
+                                ast: callee,
+                            })
                         }
+
                     }
-                } 
+                }
                 _ => (try!(process(callee.clone(), env.clone())), env),
             };
-            println!("AST:Call {} {:?}", callee, x);
+            println!("AST:Call {:?} {:?}", fun, x);
+
             evaluate_function(fun, x, args, k)
         }
         AST::Name(name) => {
@@ -121,6 +121,17 @@ fn evaluate_function(fun: AST,
     match fun {
         AST::Lambda(box names, box body) => {
             Ok(Trampoline::Force(body, Continuation::Func(names, args, env, Box::new(k))))
+        }
+        AST::Name(s) => {
+            match env.borrow().find(&s) {
+                Some((v, x)) => evaluate_function(v, x, args, k),
+                None => {
+                    Err(Error::EvalError {
+                        desc: "Function Name in all Contexts".to_string(),
+                        ast: AST::Name(s),
+                    })
+                }
+            }
         }
         x => {
             Err(Error::EvalError {

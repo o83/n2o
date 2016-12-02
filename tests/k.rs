@@ -106,3 +106,12 @@ pub fn k_repl() {
                            .unwrap()),
                "3");
 }
+
+#[test]
+pub fn k_repl2() {
+    let mut i = Interpreter::new().unwrap();
+    assert_eq!(format!("{}",
+                       i.run(command::parse_Mex("xo:{1};z:{[x]xo x};d:{[x]z x};e:{[x]d x};e[3]").unwrap())
+                           .unwrap()),
+               "1");
+}
