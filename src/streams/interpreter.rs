@@ -102,7 +102,7 @@ fn lookup(name: String, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
              Environment::index(env.clone()),
              name,
              env);
-    return match env.borrow().get(&name) {
+    match env.borrow().get(&name) {
         Some(v) => Ok(v),
         None => {
             Err(Error::EvalError {
@@ -110,7 +110,7 @@ fn lookup(name: String, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
                 ast: AST::Name(name),
             })
         }
-    };
+    }
 }
 
 fn evaluate_function(fun: AST,
