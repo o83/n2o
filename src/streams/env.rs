@@ -8,9 +8,9 @@ use commands::ast::*;
 
 #[derive(PartialEq, Clone)]
 pub struct Environment {
-    index: u64,
-    parent: Option<Rc<RefCell<Environment>>>,
-    values: HashMap<String, AST>,
+    pub index: u64,
+    pub parent: Option<Rc<RefCell<Environment>>>,
+    pub values: HashMap<String, AST>,
 }
 
 impl fmt::Display for Environment {

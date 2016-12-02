@@ -47,7 +47,7 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     loop {
         println!("Trampoline: {:?}", b);
         match b {
-            Trampoline::Defer(a, _, k) => b = try!(handle_defer(a, env.clone(), k)),
+            Trampoline::Defer(a, e, k) => b = try!(handle_defer(a, e, k)),
             Trampoline::Force(x, k) => b = try!(k.run(x)),
             Trampoline::Return(a) => return Ok(a),
         }
@@ -61,7 +61,7 @@ fn handle_defer(a: AST,
     match a {
         AST::Assign(box name, box body) => {
             Ok(Trampoline::Defer(body,
-                                 env.clone(),
+                                 Environment::new_child(env.clone()),
                                  Continuation::Assign(name, env, Box::new(k))))
         }
         AST::Call(box callee, box args) => {
@@ -79,7 +79,10 @@ fn handle_defer(a: AST,
 }
 
 fn lookup(name: String, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
-    println!("Lookup {:?} {:?}", Environment::index(env.clone()), name);
+    println!("Lookup {:?} {:?} {:?}",
+             Environment::index(env.clone()),
+             name,
+             env);
     return match env.borrow().get(&name) {
         Some(v) => Ok(v),
         None => {
@@ -98,7 +101,8 @@ fn evaluate_function(fun: AST,
                      -> Result<Trampoline, Error> {
     match fun {
         AST::Lambda(box names, box body) => {
-            Ok(Trampoline::Force(body, Continuation::Func(names, args, env, Box::new(k))))
+            Ok(Trampoline::Force(body,
+                                 Continuation::Func(names, args, env.clone(), Box::new(k))))
         }
         x => {
             Err(Error::EvalError {
@@ -115,7 +119,9 @@ fn evaluate_expressions(exprs: AST,
                         -> Result<Trampoline, Error> {
     match exprs.shift() {
         Some((car, cdr)) => {
-            Ok(Trampoline::Defer(car, env.clone(), Continuation::Expressions(cdr, env, k)))
+            Ok(Trampoline::Defer(car,
+                                 env.clone(),
+                                 Continuation::Expressions(cdr, env.clone(), k)))
         }
         None => {
             Err(Error::EvalError {
@@ -148,6 +154,7 @@ impl Continuation {
                 }
             }
             Continuation::Func(names, args, env, k) => {
+                println!("Evaluate in Context {:?}", Environment::index(env.clone()));
                 let local_env = Environment::new_child(env);
                 for (name, value) in names.into_iter().zip(args.into_iter()) {
                     try!(local_env.borrow_mut().define(name.to_string(), value));
