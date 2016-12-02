@@ -149,6 +149,7 @@ impl Continuation {
             Continuation::Func(names, args, env, k) => {
                 let local_env = Environment::new_child(env);
                 for (name, value) in names.into_iter().zip(args.into_iter()) {
+                    println!("Set {:?}:{:?}", name, value);
                     try!(local_env.borrow_mut().define(name.to_string(), value));
                 }
                 evaluate_expressions(val, local_env, k)
