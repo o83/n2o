@@ -61,29 +61,14 @@ pub fn k_assign() {
 #[test]
 pub fn k_func() {
     assert_eq!(format!("{:?}", command::parse_Mex("{x*2}[(1;2;3)]")),
-               "Ok(Call(Lambda(Nil, Verb(Times, Name(\"x\"), Number(2))), List(Cons(Number(1), \
-                Cons(Number(2), Number(3))))))");
-}
-
-#[test]
-pub fn k_mini_spec() {
-    assert_eq!(format!("{:?}",
-                       command::parse_Mex("();[];{};(());[[]];{{}};()();1 2 3;(1 2 3);[1 2 \
-                                          3];[a[b[c[d]]]];(a(b(c(d))));{a{b{c{d}}}};")),
-               "Ok(Cons(Nil, Cons(Nil, Cons(Lambda(Nil, Nil), Cons(Nil, Cons(Nil, \
-                Cons(Lambda(Nil, Lambda(Nil, Nil)), Cons(Call(Nil, Nil), Cons(Call(Number(1), \
-                Call(Number(2), Number(3))), Cons(Call(Number(1), Call(Number(2), Number(3))), \
-                Cons(Call(Number(1), Call(Number(2), Number(3))), Cons(Call(Name(\"a\"), \
-                Call(Name(\"b\"), Call(Name(\"c\"), Name(\"d\")))), Cons(Call(Name(\"a\"), \
-                Call(Name(\"b\"), Call(Name(\"c\"), Name(\"d\")))), Cons(Lambda(Nil, \
-                Call(Name(\"a\"), Lambda(Nil, Call(Name(\"b\"), Lambda(Nil, Call(Name(\"c\"), \
-                Lambda(Nil, Name(\"d\")))))))), Nil))))))))))))))");
+               "Ok(Call(Lambda(Name(\"x\"), Verb(Times, Name(\"x\"), Number(2))), \
+                List(Cons(Number(1), Cons(Number(2), Number(3))))))");
 }
 
 #[test]
 pub fn k_adverb() {
     assert_eq!(format!("{:?}", command::parse_Mex("{x+2}/(1;2;3)")),
-               "Ok(Adverb(Over, Lambda(Nil, Verb(Plus, Name(\"x\"), Number(2))), \
+               "Ok(Adverb(Over, Lambda(Name(\"x\"), Verb(Plus, Name(\"x\"), Number(2))), \
                 List(Cons(Number(1), Cons(Number(2), Number(3))))))");
 }
 
@@ -92,10 +77,10 @@ pub fn k_adverb() {
 pub fn k_reduce() {
     assert_eq!(format!("{:?}",
                        command::parse_Mex("+/{x*y}[(1;3;4;5;6);(2;6;2;1;3)]")),
-               "Ok(Adverb(Over, Verb(Plus, Nil, Nil), Call(Lambda(Nil, Verb(Times, Name(\"x\"), \
-                Name(\"y\"))), Dict(Cons(List(Cons(Number(1), Cons(Number(3), Cons(Number(4), \
-                Cons(Number(5), Number(6)))))), List(Cons(Number(2), Cons(Number(6), \
-                Cons(Number(2), Cons(Number(1), Number(3)))))))))))");
+               "Ok(Adverb(Over, Verb(Plus, Nil, Nil), Call(Lambda(Name(\"x\"), Verb(Times, \
+                Name(\"x\"), Name(\"y\"))), Cons(List(Cons(Number(1), Cons(Number(3), \
+                Cons(Number(4), Cons(Number(5), Number(6)))))), List(Cons(Number(2), \
+                Cons(Number(6), Cons(Number(2), Cons(Number(1), Number(3))))))))))");
 }
 
 #[test]
@@ -103,6 +88,11 @@ pub fn k_repl() {
     let mut i = Interpreter::new().unwrap();
     assert_eq!(format!("{}",
                        i.run(command::parse_Mex("y:3;add:{[x]y};f:{[y]add y};f 1").unwrap())
+                           .unwrap()),
+               "3");
+
+    assert_eq!(format!("{}",
+                       i.run(command::parse_Mex("y:3;addy:{[x]y};f:{[g;y]g y};f[addy;1]").unwrap())
                            .unwrap()),
                "3");
 }
@@ -114,4 +104,18 @@ pub fn k_repl2() {
                        i.run(command::parse_Mex("xo:{1};z:{[x]xo x};d:{[x]z x};e:{[x]d x};e[3]").unwrap())
                            .unwrap()),
                "1");
+}
+
+#[test]
+pub fn k_repl3() {
+    let mut i = Interpreter::new().unwrap();
+//    assert_eq!(format!("{}",
+//                       i.run(command::parse_Mex("x+/1 2 3").unwrap())
+//                           .unwrap()),
+//               "6");
+//    assert_eq!(format!("{}",
+//                       i.run(command::parse_Mex("+/{x*y}[(1;3;4;5;6);(2;6;2;1;3)]").unwrap())
+//                           .unwrap()),
+//               "51");
+
 }
