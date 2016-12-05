@@ -17,9 +17,7 @@ pub fn new(lvalue: AST, rvalue: AST) -> Eq {
 }
 
 impl Eq {
-    // Now just returning simple int
     fn a_a(l: i64, r: i64) -> AST {
-        // Need to figure out what integers we have (signed or unsigned)
         AST::Number(if r == l { 1 } else { 0 })
     }
     fn l_a(l: AST, r: AST) -> AST {
@@ -47,7 +45,6 @@ impl<'a> Iterator for &'a Eq {
     type Item = AST;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // not implemented yet
         None
     }
 }

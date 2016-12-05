@@ -17,10 +17,8 @@ pub fn new(lvalue: AST, rvalue: AST) -> Plus {
 }
 
 impl Plus {
-    // Now just returning simple int
     fn a_a(l: i64, r: i64) -> AST {
-        // Need to figure out what integers we have (signed or unsigned)
-        AST::Number(l as i64 + r as i64)
+        AST::Number(l + r)
     }
     fn l_a(l: AST, r: AST) -> AST {
         AST::Number(1)
@@ -47,7 +45,6 @@ impl<'a> Iterator for &'a Plus {
     type Item = AST;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // not implemented yet
         None
     }
 }

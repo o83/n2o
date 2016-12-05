@@ -7,12 +7,13 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::iter;
 use std::vec;
+use streams::verb;
 use streams::verb::*;
 use streams::env::*;
 use commands::ast::*;
 
 // Interpreter, Trampoline and Continuation
-//     -- are Embedded Contexts, Lazy Type and Combinators respectively
+// are Embedded Contexts, Lazy Type and Combinators respectively
 
 #[derive(Clone)]
 pub struct Interpreter {
@@ -65,11 +66,14 @@ fn handle_defer(a: AST,
                 -> Result<Trampoline, Error> {
     match a {
         AST::Assign(box name, box body) => {
-            Ok(Trampoline::Defer(body, env.clone(), Continuation::Assign(name, env, Box::new(k))))
+            Ok(Trampoline::Defer(body,
+                                 env.clone(),
+                                 Continuation::Assign(name, env, Box::new(k))))
         }
         AST::List(box x) => evaluate_expressions(x, env, box k),
         AST::Call(box callee, box args) => {
-            Ok(Trampoline::Defer(args.clone(), env.clone(),
+            Ok(Trampoline::Defer(args.clone(),
+                                 env.clone(),
                                  Continuation::Call(callee, args, env, box k)))
         }
         AST::Verb(verb, box left, box right) => {
@@ -95,16 +99,20 @@ fn handle_defer(a: AST,
                 (x, y) => {
                     Ok(Trampoline::Defer(x,
                                          env.clone(),
-                                         Continuation::Verb(verb, y, 0, env.clone(), box k)))
+                                         Continuation::Verb(verb, y, 0, env, box k)))
                 }
             }
         }
         AST::Cond(box val, box left, box right) => {
             match val {
-                AST::Number(x) => Ok(Trampoline::Force(val,
-                                 Continuation::Cond(left, right, env, Box::new(k.clone())))),
-                x => Ok(Trampoline::Defer(x, env.clone(),
-                                 Continuation::Cond(left, right, env, Box::new(k.clone()))))
+                AST::Number(x) => {
+                    Ok(Trampoline::Force(val, Continuation::Cond(left, right, env, box k)))
+                }
+                x => {
+                    Ok(Trampoline::Defer(x,
+                                         env.clone(),
+                                         Continuation::Cond(left, right, env, box k)))
+                }
             }
         }
         AST::Name(name) => {
@@ -136,11 +144,11 @@ fn evaluate_function(fun: AST,
                      -> Result<Trampoline, Error> {
     match fun {
         AST::Lambda(box names, box body) => {
-            Ok(Trampoline::Force(body, Continuation::Func(names, args, env, Box::new(k))))
+            Ok(Trampoline::Force(body, Continuation::Func(names, args, env, box k)))
         }
         AST::Name(s) => {
             match env.borrow().find(&s) {
-                Some((v, x)) => evaluate_function(v, x, args, k), 
+                Some((v, x)) => evaluate_function(v, x, args, k),
                 None => {
                     Err(Error::EvalError {
                         desc: "Function Name in all Contexts".to_string(),
@@ -195,11 +203,10 @@ impl Continuation {
                     Ok(Trampoline::Defer(val, env, *k))
                 }
             }
-            Continuation::Call(callee, args, env, k) =>
-            {
+            Continuation::Call(callee, args, env, k) => {
                 match args.clone() {
-                AST::Dict(box v) => evaluate_function(callee, env, v, *k),
-                _ => evaluate_function(callee, env, val, *k),
+                    AST::Dict(box v) => evaluate_function(callee, env, v, *k),
+                    _ => evaluate_function(callee, env, val, *k),
                 }
             }
             Continuation::Func(names, args, env, k) => {
@@ -215,23 +222,24 @@ impl Continuation {
                     AST::Number(0) => Ok(Trampoline::Defer(else_expr, env, *k)),
                     AST::Number(_) => Ok(Trampoline::Defer(if_expr, env, *k)),
                     x => {
-                        //evaluate_expressions(x, env, k)
                         Ok(Trampoline::Defer(x,
-                                         env.clone(),
+                                             env.clone(),
                                              Continuation::Cond(if_expr, else_expr, env, k)))
                     }
                 }
             }
             Continuation::Verb(verb, right, swap, env, k) => {
                 match (right.clone(), val.clone()) {
-                    (AST::Number(x), AST::Number(y)) => {
+                    (AST::Number(_), AST::Number(_)) => {
                         match swap {
-                            0 => Ok(Trampoline::Force(eval_verb(verb, right, val).unwrap(), *k)),
-                            _ => Ok(Trampoline::Force(eval_verb(verb, val, right).unwrap(), *k)),
+                            0 => Ok(Trampoline::Force(verb::eval(verb, right, val).unwrap(), *k)),
+                            _ => Ok(Trampoline::Force(verb::eval(verb, val, right).unwrap(), *k)),
                         }
                     }
                     (x, y) => {
-                        Ok(Trampoline::Defer(x, env.clone(), Continuation::Verb(verb, y, 0, env, k)))
+                        Ok(Trampoline::Defer(x,
+                                             env.clone(),
+                                             Continuation::Verb(verb, y, 0, env, k)))
                     }
                 }
             }
@@ -254,34 +262,3 @@ impl Continuation {
         }
     }
 }
-
-fn eval_verb(verb: Verb, left: AST, right:AST) -> Result<AST,Error> {
-    match verb {
-        Verb::Plus => {
-           let mut a = plus::new(left, right);
-           Ok(a.next().unwrap())
-        }
-        Verb::Minus => {
-           let mut a = minus::new(left, right);
-           Ok(a.next().unwrap())
-        }
-        Verb::Times => {
-           let mut a = mul::new(left, right);
-           Ok(a.next().unwrap())
-        }
-        Verb::Divide => {
-           let mut a = div::new(left, right);
-           Ok(a.next().unwrap())
-        }
-        Verb::Equal => {
-           let mut a = eq::new(left, right);
-           Ok(a.next().unwrap())
-        }
-       x => { Err(Error::EvalError {
-                        desc: format!("Not implemented Verb: {:?}", &x).to_string(),
-                        ast: AST::Verb(x, box left, box right)
-                 })
-        }
-    }
-}
-
