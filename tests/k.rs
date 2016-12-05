@@ -107,6 +107,15 @@ pub fn k_repl2() {
 }
 
 #[test]
+pub fn k_factorial() {
+    let mut i = Interpreter::new().unwrap();
+    assert_eq!(format!("{}",
+                       i.run(command::parse_Mex("fac:{$[x=0;1;x*fac[x-1]]};fac 5").unwrap())
+                           .unwrap()),
+               "120");
+}
+
+#[test]
 pub fn k_cond() {
     let mut i = Interpreter::new().unwrap();
 
