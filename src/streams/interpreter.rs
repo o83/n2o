@@ -12,8 +12,7 @@ use streams::verb::*;
 use streams::env::*;
 use commands::ast::*;
 
-// Interpreter, Trampoline and Continuation
-// are Embedded Contexts, Lazy Type and Combinators respectively
+// Interpreter, Lazy and Continuation
 
 #[derive(Clone)]
 pub struct Interpreter {
@@ -21,7 +20,7 @@ pub struct Interpreter {
 }
 
 #[derive(Clone, Debug)]
-pub enum Trampoline {
+pub enum Lazy {
     Defer(AST, Rc<RefCell<Environment>>, Continuation),
     Force(AST, Continuation),
     Return(AST),
@@ -52,12 +51,12 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     loop {
         debug!("[Trampoline:{}]:{:?}\n", a, b);
         match b {
-            Trampoline::Defer(a, e, k) => b = try!(handle_defer(a, e, k)),
-            Trampoline::Force(x, k) => {
+            Lazy::Defer(a, e, k) => b = try!(handle_defer(a, e, k)),
+            Lazy::Force(x, k) => {
                 a = a + 1;
                 b = try!(k.run(x))
             }
-            Trampoline::Return(a) => return Ok(a),
+            Lazy::Return(a) => return Ok(a),
         }
     }
     Err(Error::EvalError {
@@ -66,51 +65,40 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     })
 }
 
-fn handle_defer(a: AST,
-                env: Rc<RefCell<Environment>>,
-                k: Continuation)
-                -> Result<Trampoline, Error> {
+fn handle_defer(a: AST, env: Rc<RefCell<Environment>>, k: Continuation) -> Result<Lazy, Error> {
     match a {
         AST::Assign(box name, box body) => {
-            Ok(Trampoline::Defer(body,
-                                 env.clone(),
-                                 Continuation::Assign(name, env, Box::new(k))))
+            Ok(Lazy::Defer(body,
+                           env.clone(),
+                           Continuation::Assign(name, env, Box::new(k))))
         }
         AST::List(box x) => evaluate_expressions(x, env, box k),
         AST::Call(box callee, box args) => {
-            Ok(Trampoline::Defer(args.clone(),
-                                 env.clone(),
-                                 Continuation::Call(callee, args, env, box k)))
+            Ok(Lazy::Defer(args.clone(),
+                           env.clone(),
+                           Continuation::Call(callee, args, env, box k)))
         }
         AST::Verb(verb, box left, box right) => {
             match (left.clone(), right.clone()) {
                 (AST::Number(_), _) => {
-                    Ok(Trampoline::Defer(right,
-                                         env.clone(),
-                                         Continuation::Verb(verb, left, 0, env.clone(), box k)))
+                    Ok(Lazy::Defer(right,
+                                   env.clone(),
+                                   Continuation::Verb(verb, left, 0, env.clone(), box k)))
                 }
                 (_, AST::Number(_)) => {
-                    Ok(Trampoline::Defer(left,
-                                         env.clone(),
-                                         Continuation::Verb(verb, right, 1, env.clone(), box k)))
+                    Ok(Lazy::Defer(left,
+                                   env.clone(),
+                                   Continuation::Verb(verb, right, 1, env.clone(), box k)))
                 }
                 (x, y) => {
-                    Ok(Trampoline::Defer(x,
-                                         env.clone(),
-                                         Continuation::Verb(verb, y, 0, env, box k)))
+                    Ok(Lazy::Defer(x, env.clone(), Continuation::Verb(verb, y, 0, env, box k)))
                 }
             }
         }
         AST::Cond(box val, box left, box right) => {
             match val {
-                AST::Number(x) => {
-                    Ok(Trampoline::Force(val, Continuation::Cond(left, right, env, box k)))
-                }
-                x => {
-                    Ok(Trampoline::Defer(x,
-                                         env.clone(),
-                                         Continuation::Cond(left, right, env, box k)))
-                }
+                AST::Number(x) => Ok(Lazy::Force(val, Continuation::Cond(left, right, env, box k))),
+                x => Ok(Lazy::Defer(x, env.clone(), Continuation::Cond(left, right, env, box k))),
             }
         }
         AST::Name(name) => {
@@ -139,10 +127,10 @@ fn evaluate_function(fun: AST,
                      env: Rc<RefCell<Environment>>,
                      args: AST,
                      k: Continuation)
-                     -> Result<Trampoline, Error> {
+                     -> Result<Lazy, Error> {
     match fun {
         AST::Lambda(box names, box body) => {
-            Ok(Trampoline::Force(body, Continuation::Func(names, args, env, box k)))
+            Ok(Lazy::Force(body, Continuation::Func(names, args, env, box k)))
         }
         AST::Name(s) => {
             match env.borrow().find(&s) {
@@ -167,10 +155,10 @@ fn evaluate_function(fun: AST,
 fn evaluate_expressions(exprs: AST,
                         env: Rc<RefCell<Environment>>,
                         k: Box<Continuation>)
-                        -> Result<Trampoline, Error> {
+                        -> Result<Lazy, Error> {
     match exprs.shift() {
         Some((car, cdr)) => {
-            Ok(Trampoline::Defer(car, env.clone(), Continuation::Expressions(cdr, env, k)))
+            Ok(Lazy::Defer(car, env.clone(), Continuation::Expressions(cdr, env, k)))
         }
         None => {
             Err(Error::EvalError {
@@ -192,13 +180,13 @@ impl Interpreter {
 }
 
 impl Continuation {
-    pub fn run(self, val: AST) -> Result<Trampoline, Error> {
+    pub fn run(self, val: AST) -> Result<Lazy, Error> {
         match self {
             Continuation::Expressions(rest, env, k) => {
                 if rest.is_cons() || !rest.is_empty() {
                     evaluate_expressions(rest, env, k)
                 } else {
-                    Ok(Trampoline::Force(val, *k))
+                    Ok(Lazy::Force(val, *k))
                 }
             }
             Continuation::Call(callee, args, env, k) => {
@@ -217,12 +205,12 @@ impl Continuation {
             }
             Continuation::Cond(if_expr, else_expr, env, k) => {
                 match val {
-                    AST::Number(0) => Ok(Trampoline::Defer(else_expr, env, *k)),
-                    AST::Number(_) => Ok(Trampoline::Defer(if_expr, env, *k)),
+                    AST::Number(0) => Ok(Lazy::Defer(else_expr, env, *k)),
+                    AST::Number(_) => Ok(Lazy::Defer(if_expr, env, *k)),
                     x => {
-                        Ok(Trampoline::Defer(x,
-                                             env.clone(),
-                                             Continuation::Cond(if_expr, else_expr, env, k)))
+                        Ok(Lazy::Defer(x,
+                                       env.clone(),
+                                       Continuation::Cond(if_expr, else_expr, env, k)))
                     }
                 }
             }
@@ -230,14 +218,12 @@ impl Continuation {
                 match (right.clone(), val.clone()) {
                     (AST::Number(_), AST::Number(_)) => {
                         match swap {
-                            0 => Ok(Trampoline::Force(verb::eval(verb, right, val).unwrap(), *k)),
-                            _ => Ok(Trampoline::Force(verb::eval(verb, val, right).unwrap(), *k)),
+                            0 => Ok(Lazy::Force(verb::eval(verb, right, val).unwrap(), *k)),
+                            _ => Ok(Lazy::Force(verb::eval(verb, val, right).unwrap(), *k)),
                         }
                     }
                     (x, y) => {
-                        Ok(Trampoline::Defer(x,
-                                             env.clone(),
-                                             Continuation::Verb(verb, y, 0, env, k)))
+                        Ok(Lazy::Defer(x, env.clone(), Continuation::Verb(verb, y, 0, env, k)))
                     }
                 }
             }
@@ -256,7 +242,7 @@ impl Continuation {
 
                 }
             }
-            _ => Ok(Trampoline::Return(val)),
+            _ => Ok(Lazy::Return(val)),
         }
     }
 }
