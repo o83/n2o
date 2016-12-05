@@ -48,7 +48,7 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     let mut a = 0;
     let mut b = try!(evaluate_expressions(exprs, env.clone(), Box::new(Continuation::Return)));
     loop {
-        // println!("[Trampoline:{}]:{:?}\n", a, b);
+        debug!("[Trampoline:{}]:{:?}\n", a, b);
         match b {
             Trampoline::Defer(a, e, k) => b = try!(handle_defer(a, e, k)),
             Trampoline::Force(x, k) => {
