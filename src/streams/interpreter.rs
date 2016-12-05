@@ -34,6 +34,7 @@ pub enum Continuation {
     Assign(AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Cond(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Func(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
+    Call(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Verb(Verb, AST, u8, Rc<RefCell<Environment>>, Box<Continuation>),
     Adverb(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Return,
@@ -67,11 +68,10 @@ fn handle_defer(a: AST,
         AST::Assign(box name, box body) => {
             Ok(Trampoline::Defer(body, env.clone(), Continuation::Assign(name, env, Box::new(k))))
         }
+        AST::List(box x) => evaluate_expressions(x, env, box k),
         AST::Call(box callee, box args) => {
-            match args.clone() {
-                AST::Dict(box v) => evaluate_function(callee, env, v, k),
-                _ => evaluate_function(callee, env, args, k),
-            }
+            Ok(Trampoline::Defer(args.clone(), env.clone(),
+                                 Continuation::Call(callee, args, env, box k)))
         }
         AST::Verb(verb, box left, box right) => {
             println!("Left: {:?}", left);
@@ -103,9 +103,13 @@ fn handle_defer(a: AST,
             }
         }
         AST::Cond(box val, box left, box right) => {
-            Ok(Trampoline::Defer(val,
-                                 env.clone(),
+            match val {
+                AST::Number(x) => Ok(Trampoline::Force(val,
+                                 Continuation::Cond(left, right, env, Box::new(k.clone())))),
+                x => Ok(Trampoline::Defer(x, env.clone(),
                                  Continuation::Cond(left, right, env, Box::new(k.clone()))))
+            }
+            
         }
         AST::Name(name) => {
             match lookup(name, env) {
@@ -192,7 +196,15 @@ impl Continuation {
                 if rest.is_cons() || !rest.is_empty() {
                     evaluate_expressions(rest, env, k)
                 } else {
-                    Ok(Trampoline::Force(val, *k))
+                    Ok(Trampoline::Defer(val, env, *k))
+                }
+            }
+            Continuation::Call(callee, args, env, k) =>
+            {
+                println!("Args: {:?}", args.clone());
+                match args.clone() {
+                AST::Dict(box v) => evaluate_function(callee, env, v, *k),
+                _ => evaluate_function(callee, env, val, *k),
                 }
             }
             Continuation::Func(names, args, env, k) => {
@@ -205,26 +217,28 @@ impl Continuation {
             }
             Continuation::Cond(if_expr, else_expr, env, k) => {
                 match val {
-                    AST::Number(0) => Ok(Trampoline::Defer(else_expr, env,*k)),
+                    AST::Number(0) => Ok(Trampoline::Defer(else_expr, env, *k)),
                     AST::Number(_) => Ok(Trampoline::Defer(if_expr, env, *k)),
                     x => {
+                        //evaluate_expressions(x, env, k)
                         Ok(Trampoline::Defer(x,
-                                             Environment::new_child(env.clone()),
+                                         env.clone(),
                                              Continuation::Cond(if_expr, else_expr, env, k)))
                     }
                 }
+                
             }
             Continuation::Verb(verb, right, swap, env, k) => {
                 match (right.clone(), val.clone()) {
                     (AST::Number(x), AST::Number(y)) => {
                         match swap {
-                            1 => Ok(Trampoline::Defer(eval_verb(verb, val, right).unwrap(), env, *k)),
-                            _ => Ok(Trampoline::Defer(eval_verb(verb, right, val).unwrap(), env, *k))
+                            1 => Ok(Trampoline::Force(eval_verb(verb, val, right).unwrap(), *k)),
+                            _ => Ok(Trampoline::Force(eval_verb(verb, right, val).unwrap(), *k))
                         }
                         
                     }
                     (x, y) => {
-                        Ok(Trampoline::Defer(x,  Environment::new_child(env.clone()), Continuation::Verb(verb, y, 0, env, k)))
+                        Ok(Trampoline::Defer(x, env.clone(), Continuation::Verb(verb, y, 0, env, k)))
                     }
                 }
             }
@@ -232,7 +246,7 @@ impl Continuation {
                 match name {
                     AST::Name(ref s) => {
                         try!(env.borrow_mut().define(s.to_string(), val.clone()));
-                        evaluate_expressions(val, env, k)
+                        evaluate_expressions(val, env.clone(), k)
                     }
                     x => {
                         Err(Error::EvalError {

@@ -154,6 +154,9 @@ impl fmt::Display for Verb {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Verb::Plus => write!(f, "+"),
+            Verb::Minus => write!(f, "-"),
+            Verb::Times => write!(f, "*"),
+            Verb::Divide => write!(f, "%"),
             _ => write!(f, "{:?}", self),
         }
     }
@@ -387,7 +390,7 @@ pub fn verb(v: Verb, l: AST, r: AST) -> AST {
                         AST::Cons(box a, box b) => {
                             match b {
                                 AST::Cons(box t, box f) => {
-                                    AST::Cond(a.boxed(), t.boxed(), f.boxed())
+                                    AST::Cond(a.boxed(), t.boxed(), box AST::List(f.boxed()))
                                 }
                                 x => x,
                             }

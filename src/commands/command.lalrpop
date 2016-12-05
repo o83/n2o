@@ -14,7 +14,7 @@ Dict:      AST = { "[" "]" => AST::Nil, "[" <l:ExprList> "]" => dict(l), };
 
 Lambda:    AST = { "{" <m:ExprList> "}"                      => fun(AST::Nil,m),
                    "{[" <c:NameList> "]" <m:ExprList> "}"    => fun(c,m),
-                   "{" "}"                                   => fun(AST::Nil,AST::Nil)};
+                   "{" "}"                                   => fun(AST::Nil,AST::Nil) };
 
 Call:      AST = { <c:Noun> <a:CallCont>                     => call(c,a), };
 NameList:  AST = { Name, <o:Name> <m:NameCont>               => cons(o,m), };
