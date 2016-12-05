@@ -47,7 +47,6 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     let mut a = 0;
     let mut b = try!(evaluate_expressions(exprs, env.clone(), Box::new(Continuation::Return)));
     loop {
-        // a = a + 1; // we should charge CPS ticks only on forcing of evaluations
         // println!("[Trampoline:{}]:{:?}\n", a, b);
         match b {
             Trampoline::Defer(a, e, k) => b = try!(handle_defer(a, e, k)),
@@ -107,7 +106,6 @@ fn handle_defer(a: AST,
                 x => Ok(Trampoline::Defer(x, env.clone(),
                                  Continuation::Cond(left, right, env, Box::new(k.clone()))))
             }
-            
         }
         AST::Name(name) => {
             match lookup(name, env) {
@@ -223,16 +221,14 @@ impl Continuation {
                                              Continuation::Cond(if_expr, else_expr, env, k)))
                     }
                 }
-                
             }
             Continuation::Verb(verb, right, swap, env, k) => {
                 match (right.clone(), val.clone()) {
                     (AST::Number(x), AST::Number(y)) => {
                         match swap {
-                            1 => Ok(Trampoline::Force(eval_verb(verb, val, right).unwrap(), *k)),
-                            _ => Ok(Trampoline::Force(eval_verb(verb, right, val).unwrap(), *k))
+                            0 => Ok(Trampoline::Force(eval_verb(verb, right, val).unwrap(), *k)),
+                            _ => Ok(Trampoline::Force(eval_verb(verb, val, right).unwrap(), *k)),
                         }
-                        
                     }
                     (x, y) => {
                         Ok(Trampoline::Defer(x, env.clone(), Continuation::Verb(verb, y, 0, env, k)))

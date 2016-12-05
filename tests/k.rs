@@ -1,3 +1,5 @@
+#![feature(test)]
+extern crate test;
 extern crate kernel;
 
 use kernel::commands::*;
@@ -52,11 +54,14 @@ pub fn k_assign() {
                                   .boxed())));
 }
 
-// #[test]
-// pub fn k_plus() {
-//     assert_eq!(ast::eval(AST::Verb(Verb::Plus, AST::Number(2), AST::Number(3))),
-//                Ok(Value::Integer(5)));
-// }
+#[test]
+pub fn k_plus() {
+    let mut i = Interpreter::new().unwrap();
+    assert_eq!(format!("{}",
+                       i.run(command::parse_Mex("2+5").unwrap())
+                           .unwrap()),
+               "7");
+}
 
 #[test]
 pub fn k_func() {
@@ -110,9 +115,9 @@ pub fn k_repl2() {
 pub fn k_factorial() {
     let mut i = Interpreter::new().unwrap();
     assert_eq!(format!("{}",
-                       i.run(command::parse_Mex("fac:{$[x=0;1;x*fac[x-1]]};fac 5").unwrap())
+                       i.run(command::parse_Mex("fac:{$[x=0;1;x*fac[x-1]]};fac 20").unwrap())
                            .unwrap()),
-               "120");
+               "2432902008176640000");
 }
 
 #[test]
