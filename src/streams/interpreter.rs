@@ -84,23 +84,15 @@ fn handle_defer(a: AST,
         }
         AST::Verb(verb, box left, box right) => {
             match (left.clone(), right.clone()) {
-                (AST::Number(x), _) => {
+                (AST::Number(_), _) => {
                     Ok(Trampoline::Defer(right,
                                          env.clone(),
-                                         Continuation::Verb(verb,
-                                                            AST::Number(x),
-                                                            0,
-                                                            env.clone(),
-                                                            box k)))
+                                         Continuation::Verb(verb, left, 0, env.clone(), box k)))
                 }
-                (_, AST::Number(y)) => {
+                (_, AST::Number(_)) => {
                     Ok(Trampoline::Defer(left,
                                          env.clone(),
-                                         Continuation::Verb(verb,
-                                                            AST::Number(y),
-                                                            1,
-                                                            env.clone(),
-                                                            box k)))
+                                         Continuation::Verb(verb, right, 1, env.clone(), box k)))
                 }
                 (x, y) => {
                     Ok(Trampoline::Defer(x,
