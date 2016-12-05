@@ -44,13 +44,16 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
         return Ok(AST::Nil);
     }
     let mut a = 0;
-    let mut b = try!(evaluate_expressions(exprs, env, Box::new(Continuation::Return)));
+    let mut b = try!(evaluate_expressions(exprs, env.clone(), Box::new(Continuation::Return)));
     loop {
         // a = a + 1; // we should charge CPS ticks only on forcing of evaluations
         println!("[Trampoline:{}]:{:?}\n", a, b);
         match b {
             Trampoline::Defer(a, e, k) => b = try!(handle_defer(a, e, k)),
-            Trampoline::Force(x, k) => { a = a + 1; b = try!(k.run(x)) },
+            Trampoline::Force(x, k) => {
+                a = a + 1;
+                b = try!(k.run(x))
+            }
             Trampoline::Return(a) => return Ok(a),
         }
     }
@@ -64,7 +67,17 @@ fn handle_defer(a: AST,
         AST::Assign(box name, box body) => {
             Ok(Trampoline::Force(body, Continuation::Assign(name, env, Box::new(k))))
         }
-        AST::Call(box callee, box args) => evaluate_function(callee, env, args, k),
+        AST::Call(box callee, box args) => {
+            match args.clone() {
+                AST::Dict(box v) => evaluate_function(callee, env, v, k),
+                _ => evaluate_function(callee, env, args, k),
+            }
+        }
+        AST::Cond(box val, box left, box right) => {
+            Ok(Trampoline::Defer(val,
+                                 env.clone(),
+                                 Continuation::Cond(left, right, env, Box::new(k.clone()))))
+        }
         AST::Name(name) => {
             match lookup(name, env) {
                 Ok(v) => k.run(v),
@@ -98,7 +111,7 @@ fn evaluate_function(fun: AST,
         }
         AST::Name(s) => {
             match env.borrow().find(&s) {
-                Some((v, x)) => evaluate_function(v, x, args, k),
+                Some((v, x)) => evaluate_function(v, x, args, k), 
                 None => {
                     Err(Error::EvalError {
                         desc: "Function Name in all Contexts".to_string(),
@@ -159,11 +172,17 @@ impl Continuation {
                     try!(local_env.borrow_mut().define(name.to_string(), value));
                 }
                 evaluate_expressions(val, local_env, k)
+
             }
             Continuation::Cond(if_expr, else_expr, env, k) => {
                 match val {
-                    AST::Bool(false) => Ok(Trampoline::Defer(else_expr, env, *k)),
-                    _ => Ok(Trampoline::Defer(if_expr, env, *k)),
+                    AST::Number(0) => Ok(Trampoline::Defer(else_expr, env, *k)),
+                    AST::Number(_) => Ok(Trampoline::Defer(if_expr, env, *k)),
+                    x => {
+                        Ok(Trampoline::Defer(x,
+                                             env.clone(),
+                                             Continuation::Cond(if_expr, else_expr, env, k)))
+                    }
                 }
             }
             Continuation::Assign(name, env, k) => {
