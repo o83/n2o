@@ -224,9 +224,9 @@ pub enum AST {
     // 9
     Name(String),
     // A
-    Number(u64),
+    Number(i64),
     // B
-    Hexlit(u64),
+    Hexlit(i64),
     // C
     Bool(bool),
     // D

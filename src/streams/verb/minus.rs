@@ -4,23 +4,23 @@ use streams::interpreter::*;
 use commands::ast::AST;
 use streams::stream::{self, Error, Poll, Async};
 
-pub struct Plus {
+pub struct Minus {
     lvalue: AST,
     rvalue: AST,
 }
 
-pub fn new(lvalue: AST, rvalue: AST) -> Plus {
-    Plus {
+pub fn new(lvalue: AST, rvalue: AST) -> Minus {
+    Minus {
         lvalue: lvalue,
         rvalue: rvalue,
     }
 }
 
-impl Plus {
+impl Minus {
     // Now just returning simple int
     fn a_a(l: i64, r: i64) -> AST {
         // Need to figure out what integers we have (signed or unsigned)
-        AST::Number(l as i64 + r as i64)
+        AST::Number(l as i64 - r as i64)
     }
     fn l_a(l: AST, r: AST) -> AST {
         AST::Number(1)
@@ -33,7 +33,7 @@ impl Plus {
     }
 }
 
-impl Iterator for Plus {
+impl Iterator for Minus {
     type Item = AST;
     fn next(&mut self) -> Option<Self::Item> {
         match (&mut self.lvalue, &mut self.rvalue) {
@@ -43,7 +43,7 @@ impl Iterator for Plus {
     }
 }
 
-impl<'a> Iterator for &'a Plus {
+impl<'a> Iterator for &'a Minus {
     type Item = AST;
 
     fn next(&mut self) -> Option<Self::Item> {

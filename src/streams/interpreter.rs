@@ -34,7 +34,7 @@ pub enum Continuation {
     Assign(AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Cond(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Func(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
-    Verb(Verb, AST, Rc<RefCell<Environment>>, Box<Continuation>),
+    Verb(Verb, AST, u8, Rc<RefCell<Environment>>, Box<Continuation>),
     Adverb(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Return,
 }
@@ -65,7 +65,7 @@ fn handle_defer(a: AST,
                 -> Result<Trampoline, Error> {
     match a {
         AST::Assign(box name, box body) => {
-            Ok(Trampoline::Force(body, Continuation::Assign(name, env, Box::new(k))))
+            Ok(Trampoline::Defer(body, env.clone(), Continuation::Assign(name, env, Box::new(k))))
         }
         AST::Call(box callee, box args) => {
             match args.clone() {
@@ -82,6 +82,7 @@ fn handle_defer(a: AST,
                                          env.clone(),
                                          Continuation::Verb(verb,
                                                             AST::Number(x),
+                                                            0,
                                                             env.clone(),
                                                             box k)))
                 }
@@ -90,13 +91,14 @@ fn handle_defer(a: AST,
                                          env.clone(),
                                          Continuation::Verb(verb,
                                                             AST::Number(y),
+                                                            1,
                                                             env.clone(),
                                                             box k)))
                 }
                 (x, y) => {
                     Ok(Trampoline::Defer(x,
                                          env.clone(),
-                                         Continuation::Verb(verb, y, env.clone(), box k)))
+                                         Continuation::Verb(verb, y, 0, env.clone(), box k)))
                 }
             }
         }
@@ -203,22 +205,26 @@ impl Continuation {
             }
             Continuation::Cond(if_expr, else_expr, env, k) => {
                 match val {
-                    AST::Number(0) => Ok(Trampoline::Force(else_expr, *k)),
-                    AST::Number(_) => Ok(Trampoline::Force(if_expr, *k)),
+                    AST::Number(0) => Ok(Trampoline::Defer(else_expr, env,*k)),
+                    AST::Number(_) => Ok(Trampoline::Defer(if_expr, env, *k)),
                     x => {
                         Ok(Trampoline::Defer(x,
-                                             env.clone(),
+                                             Environment::new_child(env.clone()),
                                              Continuation::Cond(if_expr, else_expr, env, k)))
                     }
                 }
             }
-            Continuation::Verb(verb, right, env, k) => {
+            Continuation::Verb(verb, right, swap, env, k) => {
                 match (right.clone(), val.clone()) {
                     (AST::Number(x), AST::Number(y)) => {
-                        Ok(Trampoline::Return(eval_verb(verb, right, val).unwrap()))
+                        match swap {
+                            1 => Ok(Trampoline::Defer(eval_verb(verb, val, right).unwrap(), env, *k)),
+                            _ => Ok(Trampoline::Defer(eval_verb(verb, right, val).unwrap(), env, *k))
+                        }
+                        
                     }
                     (x, y) => {
-                        Ok(Trampoline::Defer(x, env.clone(), Continuation::Verb(verb, y, env, k)))
+                        Ok(Trampoline::Defer(x,  Environment::new_child(env.clone()), Continuation::Verb(verb, y, 0, env, k)))
                     }
                 }
             }
@@ -246,6 +252,22 @@ fn eval_verb(verb: Verb, left: AST, right:AST) -> Result<AST,Error> {
     match verb {
         Verb::Plus => {
            let mut a = plus::new(left, right);
+           Ok(a.next().unwrap())
+        }
+        Verb::Minus => {
+           let mut a = minus::new(left, right);
+           Ok(a.next().unwrap())
+        }
+        Verb::Times => {
+           let mut a = mul::new(left, right);
+           Ok(a.next().unwrap())
+        }
+        Verb::Divide => {
+           let mut a = div::new(left, right);
+           Ok(a.next().unwrap())
+        }
+        Verb::Equal => {
+           let mut a = eq::new(left, right);
            Ok(a.next().unwrap())
         }
        x => { Err(Error::EvalError {
