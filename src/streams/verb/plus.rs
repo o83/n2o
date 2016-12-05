@@ -34,26 +34,17 @@ impl Plus {
 }
 
 impl Iterator for Plus {
-    type Item = Poll<AST>;
-
+    type Item = AST;
     fn next(&mut self) -> Option<Self::Item> {
         match (&mut self.lvalue, &mut self.rvalue) {
-            (&mut AST::Number(ref l), &mut AST::Number(ref r)) => {
-                Some(Ok(Async::Ready(Self::a_a(*l, *r))))
-            }
-            (&mut AST::List(ref l), &mut AST::List(ref r)) => {
-                // Here we need to get Vec from Box and pass to l_l()
-                // Some(Ok(Async::Ready(Self::l_l(l.borrow(), r.borrow()))))
-                Some(Err(Error::NotImplemented))
-
-            }
-            _ => Some(Err(Error::NotImplemented)),
+            (&mut AST::Number(ref l), &mut AST::Number(ref r)) => Some(Self::a_a(*l, *r)),
+            _ => None,
         }
     }
 }
 
 impl<'a> Iterator for &'a Plus {
-    type Item = Poll<AST>;
+    type Item = AST;
 
     fn next(&mut self) -> Option<Self::Item> {
         // not implemented yet

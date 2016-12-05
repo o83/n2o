@@ -34,7 +34,7 @@ pub enum Continuation {
     Assign(AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Cond(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Func(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
-    Verb(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
+    Verb(Verb, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Adverb(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Return,
 }
@@ -71,6 +71,33 @@ fn handle_defer(a: AST,
             match args.clone() {
                 AST::Dict(box v) => evaluate_function(callee, env, v, k),
                 _ => evaluate_function(callee, env, args, k),
+            }
+        }
+        AST::Verb(verb, box left, box right) => {
+            println!("Left: {:?}", left);
+            println!("Right: {:?}", right);
+            match (left.clone(), right.clone()) {
+                (AST::Number(x), _) => {
+                    Ok(Trampoline::Defer(right,
+                                         env.clone(),
+                                         Continuation::Verb(verb,
+                                                            AST::Number(x),
+                                                            env.clone(),
+                                                            box k)))
+                }
+                (_, AST::Number(y)) => {
+                    Ok(Trampoline::Defer(left,
+                                         env.clone(),
+                                         Continuation::Verb(verb,
+                                                            AST::Number(y),
+                                                            env.clone(),
+                                                            box k)))
+                }
+                (x, y) => {
+                    Ok(Trampoline::Defer(x,
+                                         env.clone(),
+                                         Continuation::Verb(verb, y, env.clone(), box k)))
+                }
             }
         }
         AST::Cond(box val, box left, box right) => {
@@ -176,8 +203,8 @@ impl Continuation {
             }
             Continuation::Cond(if_expr, else_expr, env, k) => {
                 match val {
-                    AST::Number(0) => Ok(Trampoline::Defer(else_expr, env, *k)),
-                    AST::Number(_) => Ok(Trampoline::Defer(if_expr, env, *k)),
+                    AST::Number(0) => Ok(Trampoline::Force(else_expr, *k)),
+                    AST::Number(_) => Ok(Trampoline::Force(if_expr, *k)),
                     x => {
                         Ok(Trampoline::Defer(x,
                                              env.clone(),
@@ -185,11 +212,21 @@ impl Continuation {
                     }
                 }
             }
+            Continuation::Verb(verb, right, env, k) => {
+                match (right.clone(), val.clone()) {
+                    (AST::Number(x), AST::Number(y)) => {
+                        Ok(Trampoline::Return(eval_verb(verb, right, val).unwrap()))
+                    }
+                    (x, y) => {
+                        Ok(Trampoline::Defer(x, env.clone(), Continuation::Verb(verb, y, env, k)))
+                    }
+                }
+            }
             Continuation::Assign(name, env, k) => {
                 match name {
                     AST::Name(ref s) => {
                         try!(env.borrow_mut().define(s.to_string(), val.clone()));
-                        Ok(Trampoline::Force(val, *k))
+                        evaluate_expressions(val, env, k)
                     }
                     x => {
                         Err(Error::EvalError {
@@ -205,27 +242,17 @@ impl Continuation {
     }
 }
 
-pub fn test(program: AST) -> Result<AST, Error> {
-    match program {
-        AST::Verb(vt, box lv, box rv) => {
-            match vt {
-                Verb::Plus => {
-                    let mut a = plus::new(lv, rv);
-                    Ok(a.next().unwrap().unwrap().unwrap())
-                }
-                x => {
-                    Err(Error::EvalError {
-                        desc: format!("Not implemented Verb: {:?}", &x).to_string(),
-                        ast: AST::Verb(x, box lv, box rv),
-                    })
-                }
-            }
+fn eval_verb(verb: Verb, left: AST, right:AST) -> Result<AST,Error> {
+    match verb {
+        Verb::Plus => {
+           let mut a = plus::new(left, right);
+           Ok(a.next().unwrap())
         }
-        x => {
-            Err(Error::EvalError {
-                desc: format!("Not implemented AST node: {:?}", &x).to_string(),
-                ast: x,
-            })
+       x => { Err(Error::EvalError {
+                        desc: format!("Not implemented Verb: {:?}", &x).to_string(),
+                        ast: AST::Verb(x, box left, box right)
+                 })
         }
     }
 }
+
