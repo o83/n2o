@@ -39,7 +39,7 @@ impl Environment {
     }
 
     pub fn define(&mut self, key: String, value: AST) -> Result<(), Error> {
-        println!("Set {:?}:{:?} in Level {:?}", key, value, self.index);
+        // println!("Set {:?}:{:?} in Level {:?}", key, value, self.index);
         self.values.insert(key, value);
         Ok(())
     }
