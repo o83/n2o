@@ -78,9 +78,9 @@ pub fn k_reduce() {
     assert_eq!(format!("{:?}",
                        command::parse_Mex("+/{x*y}[(1;3;4;5;6);(2;6;2;1;3)]")),
                "Ok(Adverb(Over, Verb(Plus, Nil, Nil), Call(Lambda(Name(\"x\"), Verb(Times, \
-                Name(\"x\"), Name(\"y\"))), Cons(List(Cons(Number(1), Cons(Number(3), \
+                Name(\"x\"), Name(\"y\"))), Dict(Cons(List(Cons(Number(1), Cons(Number(3), \
                 Cons(Number(4), Cons(Number(5), Number(6)))))), List(Cons(Number(2), \
-                Cons(Number(6), Cons(Number(2), Cons(Number(1), Number(3))))))))))");
+                Cons(Number(6), Cons(Number(2), Cons(Number(1), Number(3)))))))))))");
 }
 
 #[test]
@@ -107,15 +107,16 @@ pub fn k_repl2() {
 }
 
 #[test]
-pub fn k_repl3() {
+pub fn k_cond() {
     let mut i = Interpreter::new().unwrap();
-//    assert_eq!(format!("{}",
-//                       i.run(command::parse_Mex("x+/1 2 3").unwrap())
-//                           .unwrap()),
-//               "6");
-//    assert_eq!(format!("{}",
-//                       i.run(command::parse_Mex("+/{x*y}[(1;3;4;5;6);(2;6;2;1;3)]").unwrap())
-//                           .unwrap()),
-//               "51");
+
+    assert_eq!(format!("{}",
+                       i.run(command::parse_Mex("a:{[x;y]$[x y;20;10]};a[{x};10]").unwrap())
+                           .unwrap()),
+               "20");
+    assert_eq!(format!("{}",
+                       i.run(command::parse_Mex("a:{[x;y]$[x y;20;10]};a[{x};0]").unwrap())
+                           .unwrap()),
+               "10");
 
 }
