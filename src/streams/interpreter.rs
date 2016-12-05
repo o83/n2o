@@ -37,7 +37,7 @@ pub enum Continuation {
     Func(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Call(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Verb(Verb, AST, u8, Rc<RefCell<Environment>>, Box<Continuation>),
-    Adverb(AST, AST, Rc<RefCell<Environment>>, Box<Continuation>),
+    Adverb(Adverb, AST, Rc<RefCell<Environment>>, Box<Continuation>),
     Return,
 }
 
@@ -46,7 +46,9 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
         return Ok(AST::Nil);
     }
     let mut a = 0;
-    let mut b = try!(evaluate_expressions(exprs, env.clone(), Box::new(Continuation::Return)));
+    let mut b =
+        try!(evaluate_expressions(exprs.clone(), env.clone(), Box::new(Continuation::Return)));
+    //  while a < 5 {
     loop {
         debug!("[Trampoline:{}]:{:?}\n", a, b);
         match b {
@@ -58,6 +60,10 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
             Trampoline::Return(a) => return Ok(a),
         }
     }
+    Err(Error::EvalError {
+        desc: "".to_string(),
+        ast: exprs,
+    })
 }
 
 fn handle_defer(a: AST,
@@ -200,7 +206,7 @@ impl Continuation {
                 if rest.is_cons() || !rest.is_empty() {
                     evaluate_expressions(rest, env, k)
                 } else {
-                    Ok(Trampoline::Defer(val, env, *k))
+                    Ok(Trampoline::Force(val, *k))
                 }
             }
             Continuation::Call(callee, args, env, k) => {
