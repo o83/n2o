@@ -83,12 +83,12 @@ fn handle_defer(a: AST, env: Rc<RefCell<Environment>>, k: Continuation) -> Resul
                 (AST::Number(_), _) => {
                     Ok(Lazy::Defer(right,
                                    env.clone(),
-                                   Continuation::Verb(verb, left, 0, env.clone(), box k)))
+                                   Continuation::Verb(verb, left, 0, env, box k)))
                 }
                 (_, AST::Number(_)) => {
                     Ok(Lazy::Defer(left,
                                    env.clone(),
-                                   Continuation::Verb(verb, right, 1, env.clone(), box k)))
+                                   Continuation::Verb(verb, right, 1, env, box k)))
                 }
                 (x, y) => {
                     Ok(Lazy::Defer(x, env.clone(), Continuation::Verb(verb, y, 0, env, box k)))
@@ -190,7 +190,7 @@ impl Continuation {
                 }
             }
             Continuation::Call(callee, args, env, k) => {
-                match args.clone() {
+                match args {
                     AST::Dict(box v) => evaluate_function(callee, env, v, *k),
                     _ => evaluate_function(callee, env, val, *k),
                 }
