@@ -15,6 +15,9 @@
 #![feature(custom_derive)]
 #![feature(libc)]
 
+#![allow(unused_must_use)]
+#![allow(deprecated)]
+#![allow(unreachable_code)]
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 #![allow(unused_unsafe)]
