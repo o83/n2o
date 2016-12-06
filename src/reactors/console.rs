@@ -15,6 +15,9 @@ use commands::*;
 use commands::ast::AST;
 use streams::interpreter::Interpreter;
 
+
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
 pub struct Console {
     tele: Tele,
     running: bool,
@@ -42,7 +45,7 @@ impl Console {
 
     pub fn run(&mut self, poll: &mut Poll) -> io::Result<()> {
         try!(self.register(poll));
-        println!("Welcome to O-CPS Interpreter!");
+        println!("Welcome to O-CPS Interpreter v{}!", VERSION.to_string());
         while self.running {
             Console::prompt();
             let cnt = try!(poll.poll(&mut self.events, None));

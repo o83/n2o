@@ -39,6 +39,14 @@ fn parse4(b: &mut Bencher) {
     })
 }
 
+#[bench]
+fn fac_rust(b: &mut Bencher) {
+    let mut x: i64 = 0;
+    b.iter(|| { x = factorial(5); });
+}
+
+#[inline]
+fn factorial(value: i64) -> i64 { if value==1 { 1 } else { return value * factorial(value-1); } }
 
 #[bench]
 fn fac(b: &mut Bencher) {
@@ -46,7 +54,6 @@ fn fac(b: &mut Bencher) {
     let code = command::parse_Mex("fac:{$[x=1;1;x*fac[x-1]]}").unwrap();
     i.run(code).unwrap();
     let f = command::parse_Mex("fac[5]").unwrap();
-
     b.iter(|| {
         i.run(f.clone()).unwrap();
     })

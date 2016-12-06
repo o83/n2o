@@ -36,6 +36,7 @@ extern crate alloc;
 extern crate deque;
 extern crate num_cpus;
 extern crate rand;
+extern crate time;
 
 #[macro_use]
 pub mod session_types;
