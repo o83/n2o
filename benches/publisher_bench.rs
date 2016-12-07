@@ -15,7 +15,7 @@ fn bench_publisher_one2n(iterations: u64, consumers: usize, capacity: usize) {
     let (tx, rx) = channel::<u64>();
 
     for t in 0..consumers {
-        let cons = publisher.subscribe()();
+        let cons = publisher.subscribe();
         let tx_c = tx.clone();
         thread::spawn(move|| {
             let start = precise_time_ns();
@@ -41,6 +41,7 @@ fn bench_publisher_one2n(iterations: u64, consumers: usize, capacity: usize) {
             let stop = precise_time_ns();
             let ns = stop - start;
             println!("cons {} recved {} msgs in {}ns. {}ns/msg", t, iterations, ns, ns / iterations);
+            println!("{:?}", cons);
         });
     }
 
@@ -78,5 +79,5 @@ fn bench_publisher_one2n(iterations: u64, consumers: usize, capacity: usize) {
 }
 
 fn main() {
-    bench_publisher_one2n(10_000_000, 2, 1048 * 1024);
+    bench_publisher_one2n(10_000_000, 2, 10_000_000);
 }
