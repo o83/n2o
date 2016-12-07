@@ -2,7 +2,6 @@
 // O-CPS INTERPRETER by 5HT et all
 
 use std::fmt;
-use std::hash::BuildHasherDefault;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -13,8 +12,6 @@ use streams::verb::*;
 use streams::env::*;
 use commands::ast::*;
 use commands::ast;
-use fnv::*;
-type Linked<K, V> = FnvHashMap<K, V>;
 
 // Interpreter, Lazy and Cont
 
@@ -24,9 +21,9 @@ pub struct Interpreter {
     pub names_size: u16,
     pub symbols_size: u16,
     pub sequences_size: u16,
-    pub names: Linked<String, u16>,
-    pub symbols: Linked<String, u16>,
-    pub sequences: Linked<String, u16>,
+    pub names: HashMap<String, u16>,
+    pub symbols: HashMap<String, u16>,
+    pub sequences: HashMap<String, u16>,
 }
 
 #[derive(Clone, Debug)]
@@ -174,16 +171,15 @@ impl Interpreter {
             names_size: 0,
             symbols_size: 0,
             sequences_size: 0,
-            names: FnvHashMap::with_capacity_and_hasher(10, Default::default()),
-            symbols: FnvHashMap::with_capacity_and_hasher(10, Default::default()),
-            sequences: FnvHashMap::with_capacity_and_hasher(10, Default::default()),
+            names: HashMap::new(),
+            symbols: HashMap::new(),
+            sequences: HashMap::new(),
         })
     }
 
     pub fn run(&mut self, program: &mut AST) -> Result<AST, Error> {
         process(program, self.root.clone())
     }
-
 }
 
 
