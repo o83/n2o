@@ -50,7 +50,7 @@ pub enum Cont {
     Return,
 }
 
-fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
+fn process(exprs: &mut AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     if exprs.len() == 0 {
         return Ok(AST::Nil);
     }
@@ -70,7 +70,7 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     }
     Err(Error::EvalError {
         desc: "".to_string(),
-        ast: exprs,
+        ast: exprs.clone(),
     })
 }
 
@@ -180,7 +180,7 @@ impl Interpreter {
         })
     }
 
-    pub fn run(&mut self, program: AST) -> Result<AST, Error> {
+    pub fn run(&mut self, program: &mut AST) -> Result<AST, Error> {
         process(program, self.root.clone())
     }
 

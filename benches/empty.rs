@@ -60,10 +60,10 @@ fn factorial(value: i64) -> i64 {
 #[bench]
 fn fac(b: &mut Bencher) {
     let mut i = Interpreter::new().unwrap();
-    let code = ast::parse(&"fac:{$[x=1;1;x*fac[x-1]]}".to_string());
+    let ref mut code = ast::parse(&"fac:{$[x=1;1;x*fac[x-1]]}".to_string());
     i.run(code).unwrap();
-    let f = ast::parse(&"fac[5]".to_string());
+    let ref mut f = ast::parse(&"fac[5]".to_string());
     b.iter(|| {
-        i.run(f.clone());
+        i.run(f);
     })
 }
