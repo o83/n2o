@@ -5,9 +5,8 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::iter;
 use std::vec;
-use fnv::*;
 use commands::ast::*;
-
+use fnv::*;
 type Linked<K, V> = HashMap<K, V, BuildHasherDefault<FnvHasher>>;
 
 #[derive(PartialEq, Debug, Clone)]

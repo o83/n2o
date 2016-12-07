@@ -10,6 +10,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use commands::command;
 use streams::interpreter;
+use streams::atomize::*;
 
 #[derive(Debug)]
 pub enum Error {
@@ -252,7 +253,7 @@ pub enum AST {
 pub fn parse(s: &String) -> AST {
     let ref mut x = interpreter::Interpreter::new().unwrap();
     let a = command::parse_Mex(s).unwrap();
-    interpreter::atomize(a, x)
+    atomize(a, x)
 }
 
 impl AST {
