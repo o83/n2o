@@ -28,7 +28,7 @@ pub struct Interpreter {
 
 #[derive(Clone, Debug)]
 pub enum Lazy {
-    Defer(AST, Rc<RefCell<Environment>>, Cont),
+    Defer(AST, Cont),
     Force(AST, Cont),
     Return(AST),
 }
@@ -57,7 +57,7 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     loop {
         debug!("[Trampoline:{}]:{:?}\n", a, b);
         match b {
-            Lazy::Defer(a, e, k) => b = try!(handle_defer(a, e, k)),
+            Lazy::Defer(a, k) => b = try!(handle_defer(a, extract_env(k.clone(), env.clone()), k)),
             Lazy::Force(x, k) => {
                 a = a + 1;
                 b = try!(k.run(x))
@@ -74,29 +74,27 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
 fn handle_defer(a: AST, env: Rc<RefCell<Environment>>, k: Cont) -> Result<Lazy, Error> {
     match a {
         AST::Assign(box name, box body) => {
-            Ok(Lazy::Defer(body, env.clone(), Cont::Assign(name, env, Box::new(k))))
+            Ok(Lazy::Defer(body, Cont::Assign(name, env, Box::new(k))))
         }
         AST::List(box x) => evaluate_expressions(x, env, box k),
         AST::Call(box callee, box args) => {
-            Ok(Lazy::Defer(args.clone(),
-                           env.clone(),
-                           Cont::Call(callee, args, env, box k)))
+            Ok(Lazy::Defer(args.clone(), Cont::Call(callee, args, env, box k)))
         }
         AST::Verb(verb, box left, box right) => {
             match (left.clone(), right.clone()) {
                 (AST::Number(_), _) => {
-                    Ok(Lazy::Defer(right, env.clone(), Cont::Verb(verb, left, 0, env, box k)))
+                    Ok(Lazy::Defer(right, Cont::Verb(verb, left, 0, env, box k)))
                 }
                 (_, AST::Number(_)) => {
-                    Ok(Lazy::Defer(left, env.clone(), Cont::Verb(verb, right, 1, env, box k)))
+                    Ok(Lazy::Defer(left, Cont::Verb(verb, right, 1, env, box k)))
                 }
-                (x, y) => Ok(Lazy::Defer(x, env.clone(), Cont::Verb(verb, y, 0, env, box k))),
+                (x, y) => Ok(Lazy::Defer(x, Cont::Verb(verb, y, 0, env, box k))),
             }
         }
         AST::Cond(box val, box left, box right) => {
             match val {
                 AST::Number(x) => Ok(Lazy::Force(val, Cont::Cond(left, right, env, box k))),
-                x => Ok(Lazy::Defer(x, env.clone(), Cont::Cond(left, right, env, box k))),
+                x => Ok(Lazy::Defer(x, Cont::Cond(left, right, env.clone(), box k))),
             }
         }
         AST::NameInt(name) => {
@@ -155,7 +153,7 @@ fn evaluate_expressions(exprs: AST,
                         k: Box<Cont>)
                         -> Result<Lazy, Error> {
     match exprs.shift() {
-        Some((car, cdr)) => Ok(Lazy::Defer(car, env.clone(), Cont::Expressions(cdr, env, k))),
+        Some((car, cdr)) => Ok(Lazy::Defer(car, Cont::Expressions(cdr, env.clone(), k))),
         None => {
             Err(Error::EvalError {
                 desc: "Empty list".to_string(),
@@ -180,69 +178,95 @@ impl Interpreter {
     }
 
     pub fn run(&mut self, program: AST) -> Result<AST, Error> {
-        let (a, i) = atomize(program, self);
+        let a = atomize(program, self);
         println!("Atomized: {:?}", a);
-        process(a, i.root.clone())
+        process(a, self.root.clone())
     }
 }
 
-pub fn atomize(p: AST, i: &mut Interpreter) -> (AST, &mut Interpreter) {
+pub fn atomize(p: AST, i: &mut Interpreter) -> AST {
     match p {
         AST::Cons(box ax, box bx) => {
-            let (a, i1) = atomize(ax, i);
-            let (b, i2) = atomize(bx, i1);
-            (ast::cons(a, b), i2)
+            let a = atomize(ax, i);
+            let b = atomize(bx, i);
+            ast::cons(a, b)
         }
         AST::Assign(box ax, box bx) => {
-            let (a, i1) = atomize(ax, i);
-            let (b, i2) = atomize(bx, i1);
-            (AST::Assign(box a, box b), i2)
+            let a = atomize(ax, i);
+            let b = atomize(bx, i);
+            AST::Assign(box a, box b)
         }
         AST::Lambda(box ax, box bx) => {
-            let (a, i1) = atomize(ax, i);
-            let (b, i2) = atomize(bx, i1);
-            (AST::Lambda(box a, box b), i2)
+            let a = atomize(ax, i);
+            let b = atomize(bx, i);
+            AST::Lambda(box a, box b)
         }
         AST::Call(box ax, box bx) => {
-            let (a, i1) = atomize(ax, i);
-            let (b, i2) = atomize(bx, i1);
-            (AST::Call(box a, box b), i2)
+            let a = atomize(ax, i);
+            let b = atomize(bx, i);
+            AST::Call(box a, box b)
         }
         AST::Verb(verb, box ax, box bx) => {
-            let (a, i1) = atomize(ax, i);
-            let (b, i2) = atomize(bx, i1);
-            (AST::Verb(verb, box a, box b), i2)
+            let a = atomize(ax, i);
+            let b = atomize(bx, i);
+            AST::Verb(verb, box a, box b)
         }
         AST::Adverb(adverb, box ax, box bx) => {
-            let (a, i1) = atomize(ax, i);
-            let (b, i2) = atomize(bx, i1);
-            (AST::Adverb(adverb, box a, box b), i2)
+            let a = atomize(ax, i);
+            let b = atomize(bx, i);
+            AST::Adverb(adverb, box a, box b)
         }
         AST::Cond(box ax, box bx, box cx) => {
-            let (a, i1) = atomize(ax, i);
-            let (b, i2) = atomize(bx, i1);
-            let (c, i3) = atomize(cx, i2);
-            (AST::Cond(box a, box b, box c), i3)
+            let a = atomize(ax, i);
+            let b = atomize(bx, i);
+            let c = atomize(cx, i);
+            AST::Cond(box a, box b, box c)
         }
         AST::List(box ax) => {
-            let (a, i1) = atomize(ax, i);
-            (AST::List(box a), i1)
+            let a = atomize(ax, i);
+            AST::List(box a)
         }
         AST::Dict(box ax) => {
-            let (a, i1) = atomize(ax, i);
-            (AST::Dict(box a), i1)
+            let a = atomize(ax, i);
+            AST::Dict(box a)
         }
         AST::Name(s) => {
             if i.names.contains_key(&s) {
-                (AST::NameInt(i.names[&s]), i)
+                AST::NameInt(i.names[&s])
             } else {
                 let a = i.names_size;
                 i.names.insert(s.clone(), a);
                 i.names_size = a + 1;
-                (AST::NameInt(a), i)
+                AST::NameInt(a)
             }
         }
-        x => (x, i),
+        x => x,
+    }
+}
+
+pub fn replace_env(k: Cont, env: Rc<RefCell<Environment>>) -> Cont {
+    match k {
+        Cont::Expressions(a, e, c) => Cont::Expressions(a, env, c),
+        Cont::Assign(a, e, c) => Cont::Assign(a, env, c),
+        Cont::Cond(a, b, e, c) => Cont::Cond(a, b, env, c),
+        Cont::Func(a, b, e, c) => Cont::Func(a, b, env, c),
+        Cont::Call(a, b, e, c) => Cont::Call(a, b, env, c),
+        Cont::Verb(verb, a, u, e, c) => Cont::Verb(verb, a, u, env, c),
+        Cont::Adverb(adverb, a, e, c) => Cont::Adverb(adverb, a, env, c),
+        x => x,
+    }
+}
+
+pub fn extract_env(k: Cont, env: Rc<RefCell<Environment>>) -> Rc<RefCell<Environment>> {
+    match k {
+        Cont::Expressions(a, e, c) => e,
+        Cont::Assign(a, e, c) => e,
+        Cont::Cond(a, b, e, c) => e,
+        Cont::Func(a, b, e, c) => e,
+        Cont::Call(a, b, e, c) => e,
+        Cont::Verb(verb, a, u, e, c) => e,
+        Cont::Adverb(adverb, a, e, c) => e,
+        x => Environment::new_child(env),
     }
 }
 
@@ -272,20 +296,27 @@ impl Cont {
             }
             Cont::Cond(if_expr, else_expr, env, k) => {
                 match val {
-                    AST::Number(0) => Ok(Lazy::Defer(else_expr, env, *k)),
-                    AST::Number(_) => Ok(Lazy::Defer(if_expr, env, *k)),
-                    x => Ok(Lazy::Defer(x, env.clone(), Cont::Cond(if_expr, else_expr, env, k))),
+                    AST::Number(0) => Ok(Lazy::Defer(else_expr, replace_env(*k, env.clone()))),
+                    AST::Number(_) => Ok(Lazy::Defer(if_expr, replace_env(*k, env.clone()))),
+                    x => Ok(Lazy::Defer(x, Cont::Cond(if_expr, else_expr, env, k))),
                 }
             }
-            Cont::Verb(verb, right, swap, env, k) => {
+            Cont::Verb(verb, right, swap, env, box k) => {
                 match (right.clone(), val.clone()) {
                     (AST::Number(_), AST::Number(_)) => {
                         match swap {
-                            0 => Ok(Lazy::Force(verb::eval(verb, right, val).unwrap(), *k)),
-                            _ => Ok(Lazy::Force(verb::eval(verb, val, right).unwrap(), *k)),
+                            0 => Ok(Lazy::Force(verb::eval(verb, right, val).unwrap(), k)),
+                            _ => Ok(Lazy::Force(verb::eval(verb, val, right).unwrap(), k)),
                         }
                     }
-                    (x, y) => Ok(Lazy::Defer(x, env.clone(), Cont::Verb(verb, y, 0, env, k))),
+                    (x, y) => {
+                        Ok(Lazy::Defer(x,
+                                       Cont::Verb(verb,
+                                                  y,
+                                                  0,
+                                                  env.clone(),
+                                                  box replace_env(k, env.clone()))))
+                    }
                 }
             }
             Cont::Assign(name, env, k) => {
