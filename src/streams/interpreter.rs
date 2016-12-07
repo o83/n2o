@@ -28,7 +28,7 @@ pub struct Interpreter {
 
 #[derive(Clone, Debug)]
 pub enum Lazy {
-    Defer(AST, Cont),
+    Defer(AST, Rc<RefCell<Environment>>, Cont),
     Force(AST, Cont),
     Return(AST),
 }
@@ -57,7 +57,7 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     loop {
         debug!("[Trampoline:{}]:{:?}\n", a, b);
         match b {
-            Lazy::Defer(a, k) => b = try!(handle_defer(a, extract_env(k.clone(), env.clone()), k)),
+            Lazy::Defer(a, e, k) => b = try!(handle_defer(a, e, k)),
             Lazy::Force(x, k) => {
                 a = a + 1;
                 b = try!(k.run(x))
@@ -74,27 +74,27 @@ fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
 fn handle_defer(a: AST, env: Rc<RefCell<Environment>>, k: Cont) -> Result<Lazy, Error> {
     match a {
         AST::Assign(box name, box body) => {
-            Ok(Lazy::Defer(body, Cont::Assign(name, env, Box::new(k))))
+            Ok(Lazy::Defer(body, env.clone(), Cont::Assign(name, env, box k)))
         }
         AST::List(box x) => evaluate_expressions(x, env, box k),
-        AST::Call(box callee, box args) => {
-            Ok(Lazy::Defer(args.clone(), Cont::Call(callee, args, env, box k)))
+        AST::Call(box c, box a) => {
+            Ok(Lazy::Defer(a.clone(), env.clone(), Cont::Call(c, a, env, box k)))
         }
         AST::Verb(verb, box left, box right) => {
             match (left.clone(), right.clone()) {
                 (AST::Number(_), _) => {
-                    Ok(Lazy::Defer(right, Cont::Verb(verb, left, 0, env, box k)))
+                    Ok(Lazy::Defer(right, env.clone(), Cont::Verb(verb, left, 0, env, box k)))
                 }
                 (_, AST::Number(_)) => {
-                    Ok(Lazy::Defer(left, Cont::Verb(verb, right, 1, env, box k)))
+                    Ok(Lazy::Defer(left, env.clone(), Cont::Verb(verb, right, 1, env, box k)))
                 }
-                (x, y) => Ok(Lazy::Defer(x, Cont::Verb(verb, y, 0, env, box k))),
+                (x, y) => Ok(Lazy::Defer(x, env.clone(), Cont::Verb(verb, y, 0, env, box k))),
             }
         }
         AST::Cond(box val, box left, box right) => {
             match val {
                 AST::Number(x) => Ok(Lazy::Force(val, Cont::Cond(left, right, env, box k))),
-                x => Ok(Lazy::Defer(x, Cont::Cond(left, right, env.clone(), box k))),
+                x => Ok(Lazy::Defer(x, env.clone(), Cont::Cond(left, right, env.clone(), box k))),
             }
         }
         AST::NameInt(name) => {
@@ -153,7 +153,7 @@ fn evaluate_expressions(exprs: AST,
                         k: Box<Cont>)
                         -> Result<Lazy, Error> {
     match exprs.shift() {
-        Some((car, cdr)) => Ok(Lazy::Defer(car, Cont::Expressions(cdr, env.clone(), k))),
+        Some((car, cdr)) => Ok(Lazy::Defer(car, env.clone(), Cont::Expressions(cdr, env, k))),
         None => {
             Err(Error::EvalError {
                 desc: "Empty list".to_string(),
@@ -178,9 +178,7 @@ impl Interpreter {
     }
 
     pub fn run(&mut self, program: AST) -> Result<AST, Error> {
-        let a = atomize(program, self);
-        println!("Atomized: {:?}", a);
-        process(a, self.root.clone())
+        process(program, self.root.clone())
     }
 }
 
@@ -296,9 +294,9 @@ impl Cont {
             }
             Cont::Cond(if_expr, else_expr, env, k) => {
                 match val {
-                    AST::Number(0) => Ok(Lazy::Defer(else_expr, replace_env(*k, env.clone()))),
-                    AST::Number(_) => Ok(Lazy::Defer(if_expr, replace_env(*k, env.clone()))),
-                    x => Ok(Lazy::Defer(x, Cont::Cond(if_expr, else_expr, env, k))),
+                    AST::Number(0) => Ok(Lazy::Defer(else_expr, env.clone(), *k)),
+                    AST::Number(_) => Ok(Lazy::Defer(if_expr, env.clone(), *k)),
+                    x => Ok(Lazy::Defer(x, env.clone(), Cont::Cond(if_expr, else_expr, env, k))),
                 }
             }
             Cont::Verb(verb, right, swap, env, box k) => {
@@ -310,12 +308,7 @@ impl Cont {
                         }
                     }
                     (x, y) => {
-                        Ok(Lazy::Defer(x,
-                                       Cont::Verb(verb,
-                                                  y,
-                                                  0,
-                                                  env.clone(),
-                                                  box replace_env(k, env.clone()))))
+                        Ok(Lazy::Defer(x, env.clone(), Cont::Verb(verb, y, 0, env.clone(), box k)))
                     }
                 }
             }

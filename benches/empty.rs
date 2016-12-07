@@ -27,9 +27,9 @@ fn parse2(b: &mut Bencher) {
 }
 
 //#[bench]
-//fn k_plus(b: &mut Bencher) {
-//    b.iter(|| ast::eval(AST::Verb(Verb::Plus, AST::Number(2).boxed(), AST::Number(3).boxed())));
-//}
+//#fn k_plus(b: &mut Bencher) {
+//#b.iter(|| ast::eval(AST::Verb(Verb::Plus, AST::Number(2).boxed(), AST::Number(3).boxed())));
+//
 
 #[bench]
 fn parse4(b: &mut Bencher) {
@@ -43,19 +43,27 @@ fn parse4(b: &mut Bencher) {
 fn fac_rust(b: &mut Bencher) {
     let mut x: i64 = 0;
     let mut a: i64 = 5;
-    b.iter(|| { x = factorial(a); });
+    b.iter(|| {
+        x = factorial(a);
+    });
 }
 
 #[inline]
-fn factorial(value: i64) -> i64 { if value==1 { 1 } else { return value * factorial(value-1); } }
+fn factorial(value: i64) -> i64 {
+    if value == 1 {
+        1
+    } else {
+        return value * factorial(value - 1);
+    }
+}
 
 #[bench]
 fn fac(b: &mut Bencher) {
     let mut i = Interpreter::new().unwrap();
-    let code = command::parse_Mex("fac:{$[x=1;1;x*fac[x-1]]}").unwrap();
+    let code = ast::parse(&"fac:{$[x=1;1;x*fac[x-1]]}".to_string());
     i.run(code).unwrap();
-    let f = command::parse_Mex("fac[5]").unwrap();
+    let f = ast::parse(&"fac[5]".to_string());
     b.iter(|| {
-        i.run(f.clone()).unwrap();
+        i.run(f.clone());
     })
 }

@@ -8,6 +8,8 @@ use std::result::Result;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use commands::command;
+use streams::interpreter;
 
 #[derive(Debug)]
 pub enum Error {
@@ -245,6 +247,12 @@ pub enum AST {
     Assign(Box<AST>, Box<AST>),
     //
     Cond(Box<AST>, Box<AST>, Box<AST>),
+}
+
+pub fn parse(s: &String) -> AST {
+    let ref mut x = interpreter::Interpreter::new().unwrap();
+    let a = command::parse_Mex(s).unwrap();
+    interpreter::atomize(a, x)
 }
 
 impl AST {

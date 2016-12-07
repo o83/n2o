@@ -64,4 +64,5 @@ libc         = "0.2.14"
 lalrpop = "0.12.0"
 
 [profile.release]
-lto = true
+lto = false
+
