@@ -180,69 +180,69 @@ impl Interpreter {
     }
 
     pub fn run(&mut self, program: AST) -> Result<AST, Error> {
-        let (a, i) = atomize(program, self);
+        let a = atomize(program, self);
         println!("Atomized: {:?}", a);
-        process(a, i.root.clone())
+        process(a, self.root.clone())
     }
 }
 
-pub fn atomize(p: AST, i: &mut Interpreter) -> (AST, &mut Interpreter) {
+pub fn atomize(p: AST, i: &mut Interpreter) -> AST {
     match p {
         AST::Cons(box ax, box bx) => {
-            let (a, i1) = atomize(ax, i);
-            let (b, i2) = atomize(bx, i1);
-            (ast::cons(a, b), i2)
+            let a = atomize(ax, i);
+            let b = atomize(bx, i);
+            ast::cons(a, b)
         }
         AST::Assign(box ax, box bx) => {
-            let (a, i1) = atomize(ax, i);
-            let (b, i2) = atomize(bx, i1);
-            (AST::Assign(box a, box b), i2)
+            let a = atomize(ax, i);
+            let b = atomize(bx, i);
+            AST::Assign(box a, box b)
         }
         AST::Lambda(box ax, box bx) => {
-            let (a, i1) = atomize(ax, i);
-            let (b, i2) = atomize(bx, i1);
-            (AST::Lambda(box a, box b), i2)
+            let a = atomize(ax, i);
+            let b = atomize(bx, i);
+            AST::Lambda(box a, box b)
         }
         AST::Call(box ax, box bx) => {
-            let (a, i1) = atomize(ax, i);
-            let (b, i2) = atomize(bx, i1);
-            (AST::Call(box a, box b), i2)
+            let a = atomize(ax, i);
+            let b = atomize(bx, i);
+            AST::Call(box a, box b)
         }
         AST::Verb(verb, box ax, box bx) => {
-            let (a, i1) = atomize(ax, i);
-            let (b, i2) = atomize(bx, i1);
-            (AST::Verb(verb, box a, box b), i2)
+            let a = atomize(ax, i);
+            let b = atomize(bx, i);
+            AST::Verb(verb, box a, box b)
         }
         AST::Adverb(adverb, box ax, box bx) => {
-            let (a, i1) = atomize(ax, i);
-            let (b, i2) = atomize(bx, i1);
-            (AST::Adverb(adverb, box a, box b), i2)
+            let a = atomize(ax, i);
+            let b = atomize(bx, i);
+            AST::Adverb(adverb, box a, box b)
         }
         AST::Cond(box ax, box bx, box cx) => {
-            let (a, i1) = atomize(ax, i);
-            let (b, i2) = atomize(bx, i1);
-            let (c, i3) = atomize(cx, i2);
-            (AST::Cond(box a, box b, box c), i3)
+            let a = atomize(ax, i);
+            let b = atomize(bx, i);
+            let c = atomize(cx, i);
+            AST::Cond(box a, box b, box c)
         }
         AST::List(box ax) => {
-            let (a, i1) = atomize(ax, i);
-            (AST::List(box a), i1)
+            let a = atomize(ax, i);
+            AST::List(box a)
         }
         AST::Dict(box ax) => {
-            let (a, i1) = atomize(ax, i);
-            (AST::Dict(box a), i1)
+            let a = atomize(ax, i);
+            AST::Dict(box a)
         }
         AST::Name(s) => {
             if i.names.contains_key(&s) {
-                (AST::NameInt(i.names[&s]), i)
+                AST::NameInt(i.names[&s])
             } else {
                 let a = i.names_size;
                 i.names.insert(s.clone(), a);
                 i.names_size = a + 1;
-                (AST::NameInt(a), i)
+                AST::NameInt(a)
             }
         }
-        x => (x, i),
+        x => x,
     }
 }
 
