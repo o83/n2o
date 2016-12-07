@@ -42,7 +42,8 @@ fn parse4(b: &mut Bencher) {
 #[bench]
 fn fac_rust(b: &mut Bencher) {
     let mut x: i64 = 0;
-    b.iter(|| { x = factorial(5); });
+    let mut a: i64 = 5;
+    b.iter(|| { x = factorial(a); });
 }
 
 #[inline]
