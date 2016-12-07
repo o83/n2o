@@ -225,6 +225,9 @@ pub enum AST {
     // 8
     Ioverb(String),
     // 9
+    NameInt(u16),
+    SymbolInt(u16),
+    SequenceInt(u16),
     Name(String),
     // A
     Number(i64),
@@ -322,17 +325,27 @@ impl fmt::Display for AST {
             AST::Verb(ref v, box ref a, box ref b) => write!(f, "{}{}{}", a, v, b),
             AST::Adverb(ref v, box ref a, box ref b) => write!(f, "{}{}{}", a, v, b),
             AST::Ioverb(ref v) => write!(f, "{}", v),
-            AST::Name(ref n) => write!(f, "{}", n),
             AST::Number(n) => write!(f, "{}", n),
             AST::Hexlit(h) => write!(f, "0x{}", h),
             AST::Bool(b) => write!(f, "{:?}", b),
+            AST::Name(ref n) => write!(f, "{}", n),
             AST::Symbol(ref s) => write!(f, "{}", s),
             AST::Sequence(ref s) => write!(f, "{:?}", s),
+            AST::NameInt(ref n) => write!(f, "{}", n),
+            AST::SymbolInt(ref s) => write!(f, "{}", s),
+            AST::SequenceInt(ref s) => write!(f, "{:?}", s),
             AST::Cell(box ref c) => write!(f, "{}", c),
             AST::Assign(box ref a, box ref b) => write!(f, "{}:{}", a, b),
             AST::Cond(box ref c, box ref a, box ref b) => write!(f, "$[{};{};{}]", c, a, b),
         }
 
+    }
+}
+
+pub fn extract_name(a: AST) -> u16 {
+    match a {
+        AST::NameInt(s) => s,
+        x => 0,
     }
 }
 
