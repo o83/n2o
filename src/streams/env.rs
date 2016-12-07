@@ -10,7 +10,7 @@ use commands::ast::*;
 pub struct Environment {
     pub index: u64,
     pub parent: Option<Rc<RefCell<Environment>>>,
-    pub values: HashMap<String, AST>,
+    pub values: HashMap<u16, AST>,
 }
 
 impl Environment {
@@ -38,13 +38,12 @@ impl Environment {
         unsafe { (&*a).index }
     }
 
-    pub fn define(&mut self, key: String, value: AST) -> Result<(), Error> {
-        // println!("Set {:?}:{:?} in Level {:?}", key, value, self.index);
+    pub fn define(&mut self, key: u16, value: AST) -> Result<(), Error> {
         self.values.insert(key, value);
         Ok(())
     }
 
-    pub fn get(&self, key: &String) -> Option<AST> {
+    pub fn get(&self, key: &u16) -> Option<AST> {
         match self.values.get(key) {
             Some(val) => Some(val.clone()),
             None => {
@@ -56,7 +55,7 @@ impl Environment {
         }
     }
 
-    pub fn find(&self, key: &String) -> Option<(AST, Rc<RefCell<Environment>>)> {
+    pub fn find(&self, key: &u16) -> Option<(AST, Rc<RefCell<Environment>>)> {
         match self.values.get(key) {
             Some(val) => Some((val.clone(), Rc::new(RefCell::new(self.clone())))),
             None => {

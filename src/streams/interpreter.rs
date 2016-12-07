@@ -11,12 +11,19 @@ use streams::verb;
 use streams::verb::*;
 use streams::env::*;
 use commands::ast::*;
+use commands::ast;
 
 // Interpreter, Lazy and Cont
 
 #[derive(Clone)]
 pub struct Interpreter {
     root: Rc<RefCell<Environment>>,
+    names_size: u16,
+    symbols_size: u16,
+    sequences_size: u16,
+    names: HashMap<String, u16>,
+    symbols: HashMap<String, u16>,
+    sequences: HashMap<String, u16>,
 }
 
 #[derive(Clone, Debug)]
@@ -92,7 +99,7 @@ fn handle_defer(a: AST, env: Rc<RefCell<Environment>>, k: Cont) -> Result<Lazy, 
                 x => Ok(Lazy::Defer(x, env.clone(), Cont::Cond(left, right, env, box k))),
             }
         }
-        AST::Name(name) => {
+        AST::NameInt(name) => {
             match lookup(name, env) {
                 Ok(v) => k.run(v),
                 Err(x) => Err(x),
@@ -102,13 +109,13 @@ fn handle_defer(a: AST, env: Rc<RefCell<Environment>>, k: Cont) -> Result<Lazy, 
     }
 }
 
-fn lookup(name: String, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
+fn lookup(name: u16, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     match env.borrow().get(&name) {
         Some(v) => Ok(v),
         None => {
             Err(Error::EvalError {
                 desc: "Identifier not found".to_string(),
-                ast: AST::Name(name),
+                ast: AST::NameInt(name),
             })
         }
     }
@@ -123,13 +130,13 @@ fn evaluate_function(fun: AST,
         AST::Lambda(box names, box body) => {
             Ok(Lazy::Force(body, Cont::Func(names, args, env, box k)))
         }
-        AST::Name(s) => {
+        AST::NameInt(s) => {
             match env.borrow().find(&s) {
                 Some((v, x)) => evaluate_function(v, x, args, k),
                 None => {
                     Err(Error::EvalError {
                         desc: "Function Name in all Contexts".to_string(),
-                        ast: AST::Name(s),
+                        ast: AST::NameInt(s),
                     })
                 }
             }
@@ -161,10 +168,81 @@ fn evaluate_expressions(exprs: AST,
 impl Interpreter {
     pub fn new() -> Result<Interpreter, Error> {
         let env = try!(Environment::new_root());
-        Ok(Interpreter { root: env })
+        Ok(Interpreter {
+            root: env,
+            names_size: 0,
+            symbols_size: 0,
+            sequences_size: 0,
+            names: HashMap::new(),
+            symbols: HashMap::new(),
+            sequences: HashMap::new(),
+        })
     }
+
     pub fn run(&mut self, program: AST) -> Result<AST, Error> {
-        process(program, self.root.clone())
+        let (a, i) = atomize(program, self);
+        println!("Atomized: {:?}", a);
+        process(a, i.root.clone())
+    }
+}
+
+pub fn atomize(p: AST, i: &mut Interpreter) -> (AST, &mut Interpreter) {
+    match p {
+        AST::Cons(box ax, box bx) => {
+            let (a, i1) = atomize(ax, i);
+            let (b, i2) = atomize(bx, i1);
+            (ast::cons(a, b), i2)
+        }
+        AST::Assign(box ax, box bx) => {
+            let (a, i1) = atomize(ax, i);
+            let (b, i2) = atomize(bx, i1);
+            (AST::Assign(box a, box b), i2)
+        }
+        AST::Lambda(box ax, box bx) => {
+            let (a, i1) = atomize(ax, i);
+            let (b, i2) = atomize(bx, i1);
+            (AST::Lambda(box a, box b), i2)
+        }
+        AST::Call(box ax, box bx) => {
+            let (a, i1) = atomize(ax, i);
+            let (b, i2) = atomize(bx, i1);
+            (AST::Call(box a, box b), i2)
+        }
+        AST::Verb(verb, box ax, box bx) => {
+            let (a, i1) = atomize(ax, i);
+            let (b, i2) = atomize(bx, i1);
+            (AST::Verb(verb, box a, box b), i2)
+        }
+        AST::Adverb(adverb, box ax, box bx) => {
+            let (a, i1) = atomize(ax, i);
+            let (b, i2) = atomize(bx, i1);
+            (AST::Adverb(adverb, box a, box b), i2)
+        }
+        AST::Cond(box ax, box bx, box cx) => {
+            let (a, i1) = atomize(ax, i);
+            let (b, i2) = atomize(bx, i1);
+            let (c, i3) = atomize(cx, i2);
+            (AST::Cond(box a, box b, box c), i3)
+        }
+        AST::List(box ax) => {
+            let (a, i1) = atomize(ax, i);
+            (AST::List(box a), i1)
+        }
+        AST::Dict(box ax) => {
+            let (a, i1) = atomize(ax, i);
+            (AST::Dict(box a), i1)
+        }
+        AST::Name(s) => {
+            if i.names.contains_key(&s) {
+                (AST::NameInt(i.names[&s]), i)
+            } else {
+                let a = i.names_size;
+                i.names.insert(s.clone(), a);
+                i.names_size = a + 1;
+                (AST::NameInt(a), i)
+            }
+        }
+        x => (x, i),
     }
 }
 
@@ -187,7 +265,7 @@ impl Cont {
             Cont::Func(names, args, env, k) => {
                 let local_env = Environment::new_child(env);
                 for (name, value) in names.into_iter().zip(args.into_iter()) {
-                    try!(local_env.borrow_mut().define(name.to_string(), value));
+                    try!(local_env.borrow_mut().define(ast::extract_name(name), value));
                 }
                 evaluate_expressions(val, local_env, k)
 
@@ -212,8 +290,8 @@ impl Cont {
             }
             Cont::Assign(name, env, k) => {
                 match name {
-                    AST::Name(ref s) => {
-                        try!(env.borrow_mut().define(s.to_string(), val.clone()));
+                    AST::NameInt(s) => {
+                        try!(env.borrow_mut().define(s, val.clone()));
                         evaluate_expressions(val, env.clone(), k)
                     }
                     x => {

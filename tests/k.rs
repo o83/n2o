@@ -95,7 +95,11 @@ pub fn k_repl() {
                        i.run(command::parse_Mex("y:3;add:{[x]y};f:{[y]add y};f 1").unwrap())
                            .unwrap()),
                "3");
+}
 
+#[test]
+pub fn k_repl1() {
+    let mut i = Interpreter::new().unwrap();
     assert_eq!(format!("{}",
                        i.run(command::parse_Mex("y:3;addy:{[x]y};f:{[g;y]g y};f[addy;1]").unwrap())
                            .unwrap()),
@@ -123,11 +127,15 @@ pub fn k_factorial() {
 #[test]
 pub fn k_cond() {
     let mut i = Interpreter::new().unwrap();
-
     assert_eq!(format!("{}",
                        i.run(command::parse_Mex("a:{[x;y]$[x y;20;10]};a[{x};10]").unwrap())
                            .unwrap()),
                "20");
+}
+
+#[test]
+pub fn k_cond2() {
+    let mut i = Interpreter::new().unwrap();
     assert_eq!(format!("{}",
                        i.run(command::parse_Mex("a:{[x;y]$[x y;20;10]};a[{x};0]").unwrap())
                            .unwrap()),
