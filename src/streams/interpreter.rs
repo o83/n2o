@@ -47,30 +47,6 @@ pub enum Cont {
     Return,
 }
 
-fn process(exprs: AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
-    if exprs.len() == 0 {
-        return Ok(AST::Nil);
-    }
-    let mut a = 0;
-    let mut b = try!(evaluate_expressions(exprs.clone(), env.clone(), Box::new(Cont::Return)));
-    //  while a < 5 {
-    loop {
-        debug!("[Trampoline:{}]:{:?}\n", a, b);
-        match b {
-            Lazy::Defer(a, k) => b = try!(handle_defer(a, extract_env(k.clone(), env.clone()), k)),
-            Lazy::Force(x, k) => {
-                a = a + 1;
-                b = try!(k.run(x))
-            }
-            Lazy::Return(a) => return Ok(a),
-        }
-    }
-    Err(Error::EvalError {
-        desc: "".to_string(),
-        ast: exprs,
-    })
-}
-
 fn handle_defer(a: AST, env: Rc<RefCell<Environment>>, k: Cont) -> Result<Lazy, Error> {
     match a {
         AST::Assign(box name, box body) => {
@@ -180,7 +156,34 @@ impl Interpreter {
     pub fn run(&mut self, program: AST) -> Result<AST, Error> {
         let a = atomize(program, self);
         println!("Atomized: {:?}", a);
-        process(a, self.root.clone())
+        self.process(a)
+    }
+
+    fn process(&mut self, exprs: AST) -> Result<AST, Error> {
+        if exprs.len() == 0 {
+            return Ok(AST::Nil);
+        }
+        let mut a = 0;
+        let mut b =
+            try!(evaluate_expressions(exprs.clone(), self.root.clone(), Box::new(Cont::Return)));
+        //  while a < 5 {
+        loop {
+            debug!("[Trampoline:{}]:{:?}\n", a, b);
+            match b {
+                Lazy::Defer(a, k) => {
+                    b = try!(handle_defer(a, extract_env(k.clone(), self.root.clone()), k))
+                }
+                Lazy::Force(x, k) => {
+                    a = a + 1;
+                    b = try!(k.run(x))
+                }
+                Lazy::Return(a) => return Ok(a),
+            }
+        }
+        Err(Error::EvalError {
+            desc: "".to_string(),
+            ast: exprs,
+        })
     }
 }
 
