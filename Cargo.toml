@@ -59,6 +59,7 @@ lalrpop-util = "0.12.0"
 num_cpus     = "1.0"
 deque        = "0.3.1"
 time         = "0.1.35"
+fnv         = "1.0.5"
 
 [target.'cfg(unix)'.dependencies]
 nix          = "0.6.0"

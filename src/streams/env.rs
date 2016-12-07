@@ -1,16 +1,20 @@
 use std::fmt;
+use std::hash::BuildHasherDefault;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::iter;
 use std::vec;
+use fnv::*;
 use commands::ast::*;
+
+type Linked<K, V> = HashMap<K, V, BuildHasherDefault<FnvHasher>>;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Environment {
     pub index: u64,
     pub parent: Option<Rc<RefCell<Environment>>>,
-    pub values: HashMap<u16, AST>,
+    pub values: Linked<u16, AST>,
 }
 
 impl Environment {
@@ -18,7 +22,7 @@ impl Environment {
         let mut env = Environment {
             parent: None,
             index: 0,
-            values: HashMap::new(),
+            values: FnvHashMap::with_capacity_and_hasher(10, Default::default())
         };
         Ok(Rc::new(RefCell::new(env)))
     }
@@ -28,7 +32,7 @@ impl Environment {
         let env = Environment {
             parent: Some(parent),
             index: idx + 1,
-            values: HashMap::new(),
+            values: FnvHashMap::with_capacity_and_hasher(10, Default::default())
         };
         Rc::new(RefCell::new(env))
     }

@@ -33,6 +33,7 @@
 
 extern crate net2;
 extern crate nix;
+extern crate fnv;
 extern crate alloc;
 extern crate deque;
 extern crate num_cpus;

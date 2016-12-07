@@ -15,7 +15,6 @@ use commands::*;
 use commands::ast::AST;
 use streams::interpreter::Interpreter;
 
-
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 pub struct Console {
