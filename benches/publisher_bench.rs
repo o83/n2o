@@ -6,16 +6,16 @@ use std::thread;
 use std::u64;
 use std::sync::mpsc::channel;
 use time::precise_time_ns;
-use kernel::queues::enso::Enso;
+use kernel::queues::publisher::Publisher;
 use std::ffi::CString;
 
-fn bench_enso_one2n(iterations: u64, consumers: usize, capacity: usize) {
-    //let mut enso: Enso<u64> = Enso::with_capacity(capacity);
-    let mut enso: Enso<u64> = Enso::with_mirror(CString::new("/test").unwrap(), capacity);
+fn bench_publisher_one2n(iterations: u64, consumers: usize, capacity: usize) {
+    let mut publisher: Publisher<u64> = Publisher::with_capacity(capacity);
+    //let mut publisher: Publisher<u64> = Publisher::with_mirror(CString::new("/test").unwrap(), capacity);
     let (tx, rx) = channel::<u64>();
 
     for t in 0..consumers {
-        let cons = enso.new_consumer();
+        let cons = publisher.subscribe();
         let tx_c = tx.clone();
         thread::spawn(move|| {
             let start = precise_time_ns();
@@ -26,12 +26,12 @@ fn bench_enso_one2n(iterations: u64, consumers: usize, capacity: usize) {
                         Some(v) => {
                             if *v == u64::MAX {
                                 let _ = tx_c.send(*v);
-                                cons.release();
+                                cons.commit();
                                 break 'outer;
                             }
                             //assert!(*v == expected);
                             //expected += 1;
-                            cons.release();
+                            cons.commit();
                             break 'inner;
                         },
                         None => {}
@@ -41,16 +41,17 @@ fn bench_enso_one2n(iterations: u64, consumers: usize, capacity: usize) {
             let stop = precise_time_ns();
             let ns = stop - start;
             println!("cons {} recved {} msgs in {}ns. {}ns/msg", t, iterations, ns, ns / iterations);
+            println!("{:?}", cons);
         });
     }
 
     let start = precise_time_ns();
     for i in 0..iterations {
         loop {
-            match enso.next() {
+            match publisher.next() {
                 Some(v) => {
                     *v = i as u64;
-                    enso.flush();
+                    publisher.commit();
                     break;
                 },
                 None => {}
@@ -59,10 +60,10 @@ fn bench_enso_one2n(iterations: u64, consumers: usize, capacity: usize) {
     }
 
     loop {
-        match enso.next() {
+        match publisher.next() {
             Some(v) => {
                 *v = u64::MAX;
-                enso.flush();
+                publisher.commit();
                 break;
             },
             None => {}
@@ -78,5 +79,5 @@ fn bench_enso_one2n(iterations: u64, consumers: usize, capacity: usize) {
 }
 
 fn main() {
-    bench_enso_one2n(10_000_000, 4, 2048 * 1024);
+    bench_publisher_one2n(10_000_000, 2, 10_000_000);
 }

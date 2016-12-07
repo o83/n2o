@@ -8,6 +8,7 @@ use std::ffi::CString;
 use std::io;
 use std::io::{Result, Error};
 use libc;
+use std::mem;
 
 #[repr(C)]
 pub struct RingBuffer<T> {
@@ -85,6 +86,9 @@ impl<T> RingBuffer<T> {
         if unsafe { libc::shm_unlink(name.as_ptr()) < 0 } {
             return Err(io::Error::last_os_error());
         }
+        
+        mem::forget(ptr);
+
         Ok(RingBuffer {
             buffer: unsafe { RawVec::from_raw_parts(ptr as *mut T, adjusted) },
             mask: adjusted - 1,
