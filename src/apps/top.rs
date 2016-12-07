@@ -3,7 +3,7 @@ extern crate libc;
 
 use hwloc::{Topology, ObjectType, CPUBIND_THREAD, CpuSet};
 use std::thread;
-use std::sync::{Arc,Mutex};
+use std::sync::{Arc, Mutex};
 
 /// Example which spawns one thread per core and then assigns it to each.
 ///
@@ -27,7 +27,8 @@ fn main() {
     println!("Found {} cores.", num_cores);
 
     // Spawn one thread for each and pass the topology down into scope.
-    let handles: Vec<_> = (0..num_cores).map(|i| {
+    let handles: Vec<_> = (0..num_cores)
+        .map(|i| {
             let child_topo = topo.clone();
             thread::spawn(move || {
                 // Get the current thread id and lock the topology to use.
@@ -47,19 +48,20 @@ fn main() {
                 let after = locked_topo.get_cpubind_for_thread(tid, CPUBIND_THREAD);
                 println!("Thread {}: Before {:?}, After {:?}", i, before, after);
             })
-        }).collect();
+        })
+        .collect();
 
-        // Wait for all threads to complete before ending the program.
-        for h in handles {
-            h.join().unwrap();
-        }
+    // Wait for all threads to complete before ending the program.
+    for h in handles {
+        h.join().unwrap();
+    }
 }
 
 fn cpuset_for_core(topology: &Topology, idx: usize) -> CpuSet {
     let cores = (*topology).objects_with_type(&ObjectType::Core).unwrap();
     match cores.get(idx) {
         Some(val) => val.cpuset().unwrap(),
-        None => panic!("No Core found with id {}", idx)
+        None => panic!("No Core found with id {}", idx),
     }
 }
 

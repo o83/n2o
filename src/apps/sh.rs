@@ -19,7 +19,7 @@ pub fn prompt() {
 
 fn main() {
     let mut input_line = String::new();
-    println!("AST ByteCode size: {} bytes", mem::size_of::<ByteCode>());
+    // println!("AST ByteCode size: {} bytes", mem::size_of::<ByteCode>());
     loop {
         prompt();
         let res = io::stdin().read_line(&mut input_line);

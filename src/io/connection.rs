@@ -41,7 +41,9 @@ impl Connection {
     pub fn readable(&mut self) -> io::Result<Option<Vec<u8>>> {
 
         let msg_len = match try!(self.read_message_length()) {
-            None => { return Ok(None); },
+            None => {
+                return Ok(None);
+            }
             Some(n) => n,
         };
 
@@ -53,8 +55,10 @@ impl Connection {
         let msg_len = msg_len as usize;
 
         println!("Expected message length is {}", msg_len);
-        let mut recv_buf : Vec<u8> = Vec::with_capacity(msg_len);
-        unsafe { recv_buf.set_len(msg_len); }
+        let mut recv_buf: Vec<u8> = Vec::with_capacity(msg_len);
+        unsafe {
+            recv_buf.set_len(msg_len);
+        }
 
         // UFCS: resolve "multiple applicable items in scope [E0034]" error
         let sock_ref = <TcpStream as Read>::by_ref(&mut self.sock);
@@ -82,7 +86,9 @@ impl Connection {
                     self.read_continuation = Some(msg_len as u64);
                     Ok(None)
                 } else {
-                    println!("Failed to read buffer for token {:?}, error: {}", self.token, e);
+                    println!("Failed to read buffer for token {:?}, error: {}",
+                             self.token,
+                             e);
                     Err(e)
                 }
             }
@@ -112,21 +118,19 @@ impl Connection {
             return Err(Error::new(ErrorKind::InvalidData, "Invalid message length"));
         }
 
-                let mut data: u64 = 0;
+        let mut data: u64 = 0;
         unsafe {
-            copy_nonoverlapping(
-                buf.as_ptr(),
-                &mut data as *mut u64 as *mut u8,
-                8);
+            copy_nonoverlapping(buf.as_ptr(), &mut data as *mut u64 as *mut u8, 8);
         };
-                let msg_len = data.to_be();
-//        let msg_len = BigEndian::read_u64(buf.as_ref());
+        let msg_len = data.to_be();
+        //        let msg_len = BigEndian::read_u64(buf.as_ref());
         Ok(Some(msg_len))
     }
 
     pub fn writable(&mut self) -> io::Result<()> {
 
-        try!(self.send_queue.pop()
+        try!(self.send_queue
+            .pop()
             .ok_or(Error::new(ErrorKind::Other, "Could not pop send queue"))
             .and_then(|buf| {
                 match self.write_message_length(&buf) {
@@ -134,10 +138,10 @@ impl Connection {
                         // put message back into the queue so we can try again
                         self.send_queue.push(buf);
                         return Ok(());
-                    },
+                    }
                     Ok(Some(())) => {
                         ()
-                    },
+                    }
                     Err(e) => {
                         println!("Failed to send buffer for {:?}, error: {}", self.token, e);
                         return Err(e);
@@ -149,7 +153,7 @@ impl Connection {
                         println!("CONN : we wrote {} bytes", n);
                         self.write_continuation = false;
                         Ok(())
-                    },
+                    }
                     Err(e) => {
                         if e.kind() == ErrorKind::WouldBlock {
                             println!("client flushing buf; WouldBlock");
@@ -164,8 +168,7 @@ impl Connection {
                         }
                     }
                 }
-            })
-        );
+            }));
 
         if self.send_queue.is_empty() {
             self.interest.remove(Ready::writable());
@@ -182,12 +185,12 @@ impl Connection {
         let len = buf.len();
         let mut send_buf = [0u8; 8];
 
-                unsafe {
-                let bytes = transmute::<_, [u8; 8]>((len as u64).to_be());
-                copy_nonoverlapping((&bytes).as_ptr(), send_buf.as_mut_ptr(), 8);
-                }
+        unsafe {
+            let bytes = transmute::<_, [u8; 8]>((len as u64).to_be());
+            copy_nonoverlapping((&bytes).as_ptr(), send_buf.as_mut_ptr(), 8);
+        }
 
-//        BigEndian::write_u64(&mut send_buf, len as u64);
+        //        BigEndian::write_u64(&mut send_buf, len as u64);
 
         match self.sock.write(&send_buf) {
             Ok(n) => {

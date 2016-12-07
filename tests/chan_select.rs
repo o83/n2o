@@ -68,14 +68,14 @@ fn chan_select_simple() {
 fn chan_select_add_ret() {
     enum ChanToRead {
         Str,
-        Usize
+        Usize,
     }
 
     let (tcs, rcs) = session_channel();
     let (tcu, rcu) = session_channel();
 
     // Spawn threads
-    spawn(move|| send_str(tcs));
+    spawn(move || send_str(tcs));
 
     // The lifetime of `sel` is reduced to the point where we call
     // `wait()`. This ensures we don't hold on to Chan references, but still

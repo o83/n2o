@@ -40,10 +40,6 @@ name = "console"
 path = "src/apps/console.rs"
 
 [[bin]]
-name = "sched"
-path = "src/apps/sched.rs"
-
-[[bin]]
 name = "publisher_bench"
 path = "benches/publisher_bench.rs"
 
@@ -73,3 +69,4 @@ lalrpop = "0.12.0"
 
 [profile.release]
 debug = true
+lto = true

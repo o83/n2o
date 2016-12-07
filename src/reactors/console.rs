@@ -13,12 +13,17 @@ use io::options::*;
 use io::tele::*;
 use commands::*;
 use commands::ast::AST;
+use streams::interpreter::Interpreter;
+
+
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 pub struct Console {
     tele: Tele,
     running: bool,
     token: Token,
     events: Events,
+    interpreter: Interpreter,
 }
 
 impl Console {
@@ -29,6 +34,7 @@ impl Console {
             token: Token(tok),
             running: true,
             events: Events::with_capacity(1024),
+            interpreter: Interpreter::new().unwrap(),
         }
     }
 
@@ -39,7 +45,7 @@ impl Console {
 
     pub fn run(&mut self, poll: &mut Poll) -> io::Result<()> {
         try!(self.register(poll));
-        println!("Console is listening...");
+        println!("Welcome to O-CPS Interpreter v{}!", VERSION.to_string());
         while self.running {
             Console::prompt();
             let cnt = try!(poll.poll(&mut self.events, None));
@@ -112,11 +118,14 @@ impl Console {
                         match m.trim() {
                             "exit" => Ok(false),
                             "" => {
-                                println!("{:?}", AST::Nil);
+                                println!("{}", AST::Nil);
                                 Ok(true)
                             }
                             line => {
-                                println!("{:?}", command::parse_Mex(&line));
+                                match self.interpreter.run(command::parse_Mex(&line).unwrap()) {
+                                    Ok(r) => println!("{}", r),
+                                    Err(e) => print!("{}", e),
+                                };
                                 Ok(true)
                             }
                         }
@@ -134,11 +143,13 @@ impl Console {
         for line in config.lines() {
             match line.unwrap().trim() {
                 "" => {
-                    println!("{:?}", AST::Nil);
+                    println!("{}", AST::Nil);
                 }
                 line => {
-                    println!("PARSE TRIM: {:?}", &line);
-                    println!("{:?}", command::parse_Mex(&line));
+                    match self.interpreter.run(command::parse_Mex(&line).unwrap()) {
+                        Ok(r) => println!("{}", r),
+                        Err(e) => print!("{:?}", e),
+                    };
                 }
             }
         }
@@ -148,7 +159,10 @@ impl Console {
     pub fn read_all<R: Read>(&mut self, mut config: R) -> io::Result<()> {
         let mut text = String::new();
         try!(config.read_to_string(&mut text));
-        println!("{:?}", command::parse_Mex(&text));
+        match self.interpreter.run(command::parse_Mex(&text).unwrap()) {
+            Ok(r) => println!("{}", r),
+            Err(e) => print!("{:?}", e),
+        };
         Ok(())
     }
 }

@@ -10,7 +10,7 @@ use self::byteorder::{LittleEndian, WriteBytesExt};
 
 #[derive(Debug)]
 pub enum SequenceError {
-    ClockIsRunningBackwards
+    ClockIsRunningBackwards,
 }
 
 pub struct Sequence {
@@ -26,7 +26,6 @@ pub enum Endianness {
 }
 
 impl Sequence {
-
     pub fn new_from_identifier(identifier: Vec<u8>) -> Sequence {
         let mut a_identifier: [u8; 6] = [0 as u8; 6];
         a_identifier.clone_from_slice(&identifier);
@@ -42,10 +41,11 @@ impl Sequence {
             identifier.reverse();
         }
 
-        Sequence { identifier: identifier,
-                last_generated_time_ms: Sequence::current_time_in_ms(),
-                counter: 0
-                }
+        Sequence {
+            identifier: identifier,
+            last_generated_time_ms: Sequence::current_time_in_ms(),
+            counter: 0,
+        }
     }
 
     fn current_time_in_ms() -> u64 {
@@ -90,8 +90,7 @@ impl Sequence {
         }
         if self.last_generated_time_ms < current_time_in_ms {
             self.counter = 0;
-        }
-        else {
+        } else {
             self.counter += 1;
         }
 

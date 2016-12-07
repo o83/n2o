@@ -36,8 +36,7 @@ impl TcpStream {
         TcpStream::connect_stream(try!(sock.to_tcp_stream()), addr)
     }
 
-    pub fn connect_stream(stream: std::net::TcpStream,
-                          addr: &SocketAddr) -> io::Result<TcpStream> {
+    pub fn connect_stream(stream: std::net::TcpStream, addr: &SocketAddr) -> io::Result<TcpStream> {
         Ok(TcpStream {
             sys: try!(unix::tcp::TcpStream::connect(stream, addr)),
             selector_id: SelectorId::new(),
@@ -142,14 +141,22 @@ impl<'a> Write for &'a TcpStream {
 }
 
 impl Evented for TcpStream {
-    fn register(&self, poll: &Poll, token: Token,
-                interest: Ready, opts: PollOpt) -> io::Result<()> {
+    fn register(&self,
+                poll: &Poll,
+                token: Token,
+                interest: Ready,
+                opts: PollOpt)
+                -> io::Result<()> {
         try!(self.selector_id.associate_selector(poll));
         self.sys.register(poll, token, interest, opts)
     }
 
-    fn reregister(&self, poll: &Poll, token: Token,
-                  interest: Ready, opts: PollOpt) -> io::Result<()> {
+    fn reregister(&self,
+                  poll: &Poll,
+                  token: Token,
+                  interest: Ready,
+                  opts: PollOpt)
+                  -> io::Result<()> {
         self.sys.reregister(poll, token, interest, opts)
     }
 
@@ -184,8 +191,7 @@ impl TcpListener {
         })
     }
 
-    pub fn from_listener(listener: net::TcpListener, addr: &SocketAddr)
-                         -> io::Result<TcpListener> {
+    pub fn from_listener(listener: net::TcpListener, addr: &SocketAddr) -> io::Result<TcpListener> {
         unix::tcp::TcpListener::new(listener, addr).map(|s| {
             TcpListener {
                 sys: s,
@@ -240,14 +246,22 @@ impl TcpListener {
 }
 
 impl Evented for TcpListener {
-    fn register(&self, poll: &Poll, token: Token,
-                interest: Ready, opts: PollOpt) -> io::Result<()> {
+    fn register(&self,
+                poll: &Poll,
+                token: Token,
+                interest: Ready,
+                opts: PollOpt)
+                -> io::Result<()> {
         try!(self.selector_id.associate_selector(poll));
         self.sys.register(poll, token, interest, opts)
     }
 
-    fn reregister(&self, poll: &Poll, token: Token,
-                  interest: Ready, opts: PollOpt) -> io::Result<()> {
+    fn reregister(&self,
+                  poll: &Poll,
+                  token: Token,
+                  interest: Ready,
+                  opts: PollOpt)
+                  -> io::Result<()> {
         self.sys.reregister(poll, token, interest, opts)
     }
 
@@ -315,9 +329,7 @@ struct SelectorId {
 
 impl SelectorId {
     fn new() -> SelectorId {
-        SelectorId {
-            id: AtomicUsize::new(0),
-        }
+        SelectorId { id: AtomicUsize::new(0) }
     }
 
     fn associate_selector(&self, poll: &Poll) -> io::Result<()> {
@@ -334,8 +346,6 @@ impl SelectorId {
 
 impl Clone for SelectorId {
     fn clone(&self) -> SelectorId {
-        SelectorId {
-            id: AtomicUsize::new(self.id.load(Ordering::SeqCst)),
-        }
+        SelectorId { id: AtomicUsize::new(self.id.load(Ordering::SeqCst)) }
     }
 }

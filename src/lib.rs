@@ -1,7 +1,23 @@
 
-// TODO: remove unstable features
+#![feature(fnbox)]
+#![feature(static_in_const)]
+#![feature(as_unsafe_cell)]
+#![feature(heap_api)]
+#![feature(unboxed_closures)]
+#![feature(oom)]
+#![feature(alloc)]
+#![feature(box_syntax)]
+#![feature(optin_builtin_traits)]
+#![feature(const_fn)]
+#![feature(step_by)]
+#![feature(box_syntax)]
+#![feature(box_patterns)]
+#![feature(custom_derive)]
+#![feature(libc)]
 
-#![feature(fnbox, static_in_const, heap_api, unboxed_closures, oom, alloc, box_syntax, optin_builtin_traits, const_fn, step_by)]
+#![allow(unused_must_use)]
+#![allow(deprecated)]
+#![allow(unreachable_code)]
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 #![allow(unused_unsafe)]
@@ -21,6 +37,7 @@ extern crate alloc;
 extern crate deque;
 extern crate num_cpus;
 extern crate rand;
+extern crate time;
 
 #[macro_use]
 pub mod session_types;
@@ -30,7 +47,7 @@ pub mod io;
 pub mod slab;
 pub mod commands;
 pub mod args;
-pub mod iterators;
+pub mod streams;
 pub mod queues;
 
 #[macro_use]
