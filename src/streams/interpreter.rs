@@ -180,6 +180,7 @@ impl Interpreter {
     pub fn run(&mut self, program: AST) -> Result<AST, Error> {
         process(program, self.root.clone())
     }
+
 }
 
 pub fn atomize(p: AST, i: &mut Interpreter) -> AST {

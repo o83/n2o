@@ -40,6 +40,10 @@ name = "console"
 path = "src/apps/console.rs"
 
 [[bin]]
+name = "publisher_bench"
+path = "benches/publisher_bench.rs"
+
+[[bin]]
 name = "streams"
 path = "src/apps/iter_stream.rs"
 
@@ -65,4 +69,4 @@ lalrpop = "0.12.0"
 
 [profile.release]
 lto = false
-
+debug = true

@@ -27,7 +27,8 @@
 #![allow(unused_mut)]
 #![allow(non_camel_case_types)]
 #![allow(non_upper_case_globals)]
-
+#![feature(libc)]
+#![feature(core_intrinsics)]
 // TODO: remove these deps
 
 extern crate net2;
