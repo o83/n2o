@@ -28,6 +28,10 @@ name = "mio"
 path = "src/apps/mio.rs"
 
 [[bin]]
+name = "pb"
+path = "src/apps/publisher_bench.rs"
+
+[[bin]]
 name = "client"
 path = "src/apps/client.rs"
 

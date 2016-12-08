@@ -49,7 +49,7 @@ pub mod io;
 pub mod commands;
 pub mod args;
 pub mod streams;
-#[cfg(any(target_os = "linux"))]
+// #[cfg(any(target_os = "linux"))]
 pub mod queues;
 
 #[macro_use]
