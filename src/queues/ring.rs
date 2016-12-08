@@ -42,7 +42,7 @@ impl<T> RingBuffer<T> {
             libc::mmap(ptr::null_mut(),
                        2 * size as libc::size_t,
                        libc::PROT_NONE,
-                       libc::MAP_ANONYMOUS | libc::MAP_PRIVATE,
+                       libc::MAP_ANON | libc::MAP_PRIVATE,
                        -1,
                        0)
         };
