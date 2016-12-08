@@ -33,6 +33,7 @@
 
 extern crate net2;
 extern crate nix;
+extern crate fnv;
 extern crate alloc;
 extern crate deque;
 extern crate num_cpus;
@@ -43,11 +44,12 @@ extern crate time;
 pub mod session_types;
 pub mod reactors;
 pub mod timers;
-pub mod io;
 pub mod slab;
+pub mod io;
 pub mod commands;
 pub mod args;
 pub mod streams;
+#[cfg(any(target_os = "linux"))]
 pub mod queues;
 
 #[macro_use]

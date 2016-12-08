@@ -15,7 +15,6 @@ use commands::*;
 use commands::ast::AST;
 use streams::interpreter::Interpreter;
 
-
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 pub struct Console {
@@ -122,7 +121,8 @@ impl Console {
                                 Ok(true)
                             }
                             line => {
-                                match self.interpreter.run(command::parse_Mex(&line).unwrap()) {
+                    let ref mut x = ast::parse(&line.to_string());
+                                match self.interpreter.run(x) {
                                     Ok(r) => println!("{}", r),
                                     Err(e) => print!("{}", e),
                                 };
@@ -146,7 +146,8 @@ impl Console {
                     println!("{}", AST::Nil);
                 }
                 line => {
-                    match self.interpreter.run(command::parse_Mex(&line).unwrap()) {
+                    let ref mut x = ast::parse(&line.to_string());
+                    match self.interpreter.run(x) {
                         Ok(r) => println!("{}", r),
                         Err(e) => print!("{:?}", e),
                     };
@@ -159,7 +160,8 @@ impl Console {
     pub fn read_all<R: Read>(&mut self, mut config: R) -> io::Result<()> {
         let mut text = String::new();
         try!(config.read_to_string(&mut text));
-        match self.interpreter.run(command::parse_Mex(&text).unwrap()) {
+                    let ref mut x = ast::parse(&text.to_string());
+        match self.interpreter.run(x) {
             Ok(r) => println!("{}", r),
             Err(e) => print!("{:?}", e),
         };
