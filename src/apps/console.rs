@@ -61,7 +61,7 @@ fn setup_logger() {
     };
 
     let mut builder = LogBuilder::new();
-    //builder.format(format).filter(Some("console"), LogLevelFilter::Debug);
+    builder.format(format).filter(Some("kernel"), LogLevelFilter::Debug);
 
     if env::var("RUST_LOG").is_ok() {
         builder.parse(&env::var("RUST_LOG").unwrap());

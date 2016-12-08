@@ -69,7 +69,7 @@ fn handle_defer(a: AST, env: Rc<RefCell<Environment>>, k: Cont) -> Result<Lazy, 
         }
         AST::Cond(box val, box left, box right) => {
             match val {
-                AST::Number(x) => Ok(Lazy::Force(val, Cont::Cond(left, right, env, box k))),
+                AST::Number(x) => k.run(val), //Ok(Lazy::Force(val, Cont::Cond(left, right, env, box k))),
                 x => Ok(Lazy::Defer(x, env.clone(), Cont::Cond(left, right, env.clone(), box k))),
             }
         }
@@ -102,7 +102,8 @@ fn evaluate_fun(fun: AST,
                 -> Result<Lazy, Error> {
     match fun {
         AST::Lambda(box names, box body) => {
-            Ok(Lazy::Force(body, Cont::Func(names, args, env, box k)))
+            Cont::Func(names, args, env, box k).run(body)
+            // Ok(Lazy::Force(body, Cont::Func(names, args, env, box k)))
         }
         AST::NameInt(s) => {
             match env.borrow().find(&s) {
@@ -180,7 +181,8 @@ impl Cont {
                 if rest.is_cons() || !rest.is_empty() {
                     evaluate_expr(rest, env, k)
                 } else {
-                    Ok(Lazy::Force(val, *k))
+                    k.run(val)
+                    // Ok(Lazy::Force(val, *k))
                 }
             }
             Cont::Call(callee, args, env, k) => {
@@ -208,8 +210,8 @@ impl Cont {
                 match (right.clone(), val.clone()) {
                     (AST::Number(_), AST::Number(_)) => {
                         match swap {
-                            0 => Ok(Lazy::Force(verb::eval(verb, right, val).unwrap(), k)),
-                            _ => Ok(Lazy::Force(verb::eval(verb, val, right).unwrap(), k)),
+                            0 => k.run(verb::eval(verb, right, val).unwrap()), // Ok(Lazy::Force(verb::eval(verb, right, val).unwrap(), k)),
+                            _ => k.run(verb::eval(verb, val, right).unwrap()), // Ok(Lazy::Force(verb::eval(verb, val, right).unwrap(), k)),
                         }
                     }
                     (x, y) => {
