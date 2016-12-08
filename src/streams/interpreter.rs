@@ -47,36 +47,12 @@ pub enum Cont {
     Return,
 }
 
-fn process(exprs: &mut AST, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
-    if exprs.len() == 0 {
-        return Ok(AST::Nil);
-    }
-    let mut a = 0;
-    let mut b = try!(evaluate_expressions(exprs.clone(), env.clone(), Box::new(Cont::Return)));
-    //  while a < 5 {
-    loop {
-        debug!("[Trampoline:{}]:{:?}\n", a, b);
-        match b {
-            Lazy::Defer(a, e, k) => b = try!(handle_defer(a, e, k)),
-            Lazy::Force(x, k) => {
-                a = a + 1;
-                b = try!(k.run(x))
-            }
-            Lazy::Return(a) => return Ok(a),
-        }
-    }
-    Err(Error::EvalError {
-        desc: "".to_string(),
-        ast: exprs.clone(),
-    })
-}
-
 fn handle_defer(a: AST, env: Rc<RefCell<Environment>>, k: Cont) -> Result<Lazy, Error> {
     match a {
         AST::Assign(box name, box body) => {
             Ok(Lazy::Defer(body, env.clone(), Cont::Assign(name, env, box k)))
         }
-        AST::List(box x) => evaluate_expressions(x, env, box k),
+        AST::List(box x) => evaluate_expr(x, env, box k),
         AST::Call(box c, box a) => {
             Ok(Lazy::Defer(a.clone(), env.clone(), Cont::Call(c, a, env, box k)))
         }
@@ -119,21 +95,21 @@ fn lookup(name: u16, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     }
 }
 
-fn evaluate_function(fun: AST,
-                     env: Rc<RefCell<Environment>>,
-                     args: AST,
-                     k: Cont)
-                     -> Result<Lazy, Error> {
+fn evaluate_fun(fun: AST,
+                env: Rc<RefCell<Environment>>,
+                args: AST,
+                k: Cont)
+                -> Result<Lazy, Error> {
     match fun {
         AST::Lambda(box names, box body) => {
             Ok(Lazy::Force(body, Cont::Func(names, args, env, box k)))
         }
         AST::NameInt(s) => {
             match env.borrow().find(&s) {
-                Some((v, x)) => evaluate_function(v, x, args, k),
+                Some((v, x)) => evaluate_fun(v, x, args, k),
                 None => {
                     Err(Error::EvalError {
-                        desc: "Function Name in all Contexts".to_string(),
+                        desc: "Unknown variable".to_string(),
                         ast: AST::NameInt(s),
                     })
                 }
@@ -148,10 +124,7 @@ fn evaluate_function(fun: AST,
     }
 }
 
-fn evaluate_expressions(exprs: AST,
-                        env: Rc<RefCell<Environment>>,
-                        k: Box<Cont>)
-                        -> Result<Lazy, Error> {
+fn evaluate_expr(exprs: AST, env: Rc<RefCell<Environment>>, k: Box<Cont>) -> Result<Lazy, Error> {
     match exprs.shift() {
         Some((car, cdr)) => Ok(Lazy::Defer(car, env.clone(), Cont::Expressions(cdr, env, k))),
         None => {
@@ -177,8 +150,25 @@ impl Interpreter {
         })
     }
 
-    pub fn run(&mut self, program: &mut AST) -> Result<AST, Error> {
-        process(program, self.root.clone())
+    pub fn run(&mut self, ast: &mut AST) -> Result<AST, Error> {
+        let mut a = 0;
+        let mut b = try!(evaluate_expr(ast.clone(), self.root.clone(), box Cont::Return));
+        //  while a < 5 {
+        loop {
+            debug!("[Trampoline:{}]:{:?}\n", a, b);
+            match b {
+                Lazy::Defer(a, e, k) => b = try!(handle_defer(a, e, k)),
+                Lazy::Force(x, k) => {
+                    a = a + 1;
+                    b = try!(k.run(x))
+                }
+                Lazy::Return(a) => return Ok(a),
+            }
+        }
+        Err(Error::EvalError {
+            desc: "Program is terminated abnormally".to_string(),
+            ast: AST::Nil,
+        })
     }
 }
 
@@ -188,15 +178,15 @@ impl Cont {
         match self {
             Cont::Expressions(rest, env, k) => {
                 if rest.is_cons() || !rest.is_empty() {
-                    evaluate_expressions(rest, env, k)
+                    evaluate_expr(rest, env, k)
                 } else {
                     Ok(Lazy::Force(val, *k))
                 }
             }
             Cont::Call(callee, args, env, k) => {
                 match args {
-                    AST::Dict(box v) => evaluate_function(callee, env, v, *k),
-                    _ => evaluate_function(callee, env, val, *k),
+                    AST::Dict(box v) => evaluate_fun(callee, env, v, *k),
+                    _ => evaluate_fun(callee, env, val, *k),
                 }
             }
             Cont::Func(names, args, env, k) => {
@@ -204,7 +194,7 @@ impl Cont {
                 for (name, value) in names.into_iter().zip(args.into_iter()) {
                     try!(local_env.borrow_mut().define(ast::extract_name(name), value));
                 }
-                evaluate_expressions(val, local_env, k)
+                evaluate_expr(val, local_env, k)
 
             }
             Cont::Cond(if_expr, else_expr, env, k) => {
@@ -231,7 +221,7 @@ impl Cont {
                 match name {
                     AST::NameInt(s) => {
                         try!(env.borrow_mut().define(s, val.clone()));
-                        evaluate_expressions(val, env.clone(), k)
+                        evaluate_expr(val, env.clone(), k)
                     }
                     x => {
                         Err(Error::EvalError {
