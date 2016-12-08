@@ -60,6 +60,7 @@ num_cpus     = "1.0"
 deque        = "0.3.1"
 time         = "0.1.35"
 fnv          = "1.0.5"
+env_logger   = "*"
 
 [target.'cfg(unix)'.dependencies]
 nix          = "0.6.0"
