@@ -11,9 +11,11 @@ pub struct Stack<T> {
 }
 
 impl<T> Stack<T> {
-    pub fn with_capacity(cap: usize, max_frames: usize) -> Stack<T> {
+    // Use one variable for both: capacity and frames size
+    // because we can't have more frames then stack capacity.
+    pub fn with_capacity(cap: usize) -> Stack<T> {
         Stack {
-            frames: Vec::with_capacity(max_frames),
+            frames: Vec::with_capacity(cap),
             items: Vec::with_capacity(cap),
         }
     }
@@ -60,7 +62,7 @@ impl<T> Stack<T> {
         }
     }
 
-    pub fn add_item(&mut self, item: T) -> Result<(), Error> {
+    pub fn insert(&mut self, item: T) -> Result<(), Error> {
         if self.is_full() {
             Err(Error::Capacity)
         } else {
@@ -69,55 +71,14 @@ impl<T> Stack<T> {
         }
     }
 
-    // find_item(|item| (*item).key == 14)
-    pub fn find_item<'a, F>(&'a self, mut f: F) -> Option<&T>
-        where F: FnMut(&'a T) -> bool
-    {
-        for i in self.items.iter().rev() {
-            if f(i) {
-                return Some(i);
-            }
-        }
-        None
+    pub fn insert_range(&mut self, items: &[T]) -> Result<(), Error> {
+        Err(Error::InvalidOperation)
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_frames_stack() {
-        let mut stack: Stack<u64> = Stack::with_capacity(128, 4);
-
-        assert!(stack.capacity() == 128);
-        assert!(stack.len() == 0);
-        assert!(stack.num_frames() == 0);
-
-        stack.push_frame();
-        assert!(stack.capacity() == 128);
-        assert!(stack.len() == 0);
-
-        stack.add_item(41);
-        assert!(stack.len() == 1);
-        assert!(stack.num_frames() == 1);
-
-        stack.push_frame();
-        stack.add_item(42);
-        stack.add_item(43);
-        stack.add_item(44);
-        assert!(stack.capacity() == 128);
-        assert!(stack.len() == 4);
-        assert!(stack.num_frames() == 2);
-        assert_eq!(stack.find_item(|it| *it == 43), Some(&43));
-
-        stack.pop_frame();
-        assert_eq!(stack.find_item(|it| *it == 43), None);
-        assert_eq!(stack.find_item(|it| *it == 41), Some(&41));
-        assert!(stack.num_frames() == 1);
-        assert!(stack.len() == 1);
-
-        assert_eq!(stack.pop_frame(), Ok(()));
-        assert_eq!(stack.pop_frame(), Err(Error::InvalidOperation));
+    // get(|item| (*item).key == 14)
+    pub fn get<'a, F>(&'a self, f: F) -> Option<&T>
+        where for<'r> F: FnMut(&'r &T) -> bool
+    {
+        self.items.iter().rev().find(f)
     }
 }
