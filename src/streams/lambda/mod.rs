@@ -18,7 +18,7 @@ pub fn eval(code: Code,
             -> Result<Lazy, Error> {
     match code {
         Code::Call => {
-            let mut a = call::new(val, left, env, cont);
+            let mut a = call::new(left, val, env, cont);
             a.next().unwrap()
         }
         Code::Func => {
@@ -26,7 +26,7 @@ pub fn eval(code: Code,
             a.next().unwrap()
         }
         Code::Cond => {
-            let mut a = cond::new(left, right, env, val, cont);
+            let mut a = cond::new(right, left, env, val, cont);
             a.next().unwrap()
         }
         Code::Assign => {

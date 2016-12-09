@@ -47,10 +47,10 @@ pub enum Code {
 pub enum Cont {
     Expressions(AST, Rc<RefCell<Environment>>, Box<Cont>),
     Lambda(Code, AST, AST, Rc<RefCell<Environment>>, Box<Cont>),
-    Func(AST, AST, Rc<RefCell<Environment>>, Box<Cont>),
-    Cond(AST, AST, Rc<RefCell<Environment>>, Box<Cont>),
-    Call(AST, Rc<RefCell<Environment>>, Box<Cont>),
     Assign(AST, Rc<RefCell<Environment>>, Box<Cont>),
+    Cond(AST, AST, Rc<RefCell<Environment>>, Box<Cont>),
+    Func(AST, AST, Rc<RefCell<Environment>>, Box<Cont>),
+    Call(AST, Rc<RefCell<Environment>>, Box<Cont>),
     Verb(Verb, AST, u8, Rc<RefCell<Environment>>, Box<Cont>),
     Adverb(Adverb, AST, Rc<RefCell<Environment>>, Box<Cont>),
     Return,
@@ -111,7 +111,7 @@ pub fn evaluate_fun(fun: AST,
                     -> Result<Lazy, Error> {
     match fun {
         AST::Lambda(box names, box body) => {
-            Cont::Func(names, args, env, box k).run(body)
+            Ok(Lazy::Force(body, Cont::Func(names, args, env, box k)))
             // Ok(Lazy::Force(body, Cont::Func(names, args, env, box k)))
         }
         AST::NameInt(s) => {
@@ -126,6 +126,7 @@ pub fn evaluate_fun(fun: AST,
             }
         }
         x => {
+            println!("{:?}", x);
             Err(Error::EvalError {
                 desc: "Call Error".to_string(),
                 ast: x,
@@ -243,6 +244,7 @@ impl Cont {
                     }
                 }
             }
+
             Cont::Expressions(rest, env, k) => {
                 if rest.is_cons() || !rest.is_empty() {
                     evaluate_expr(rest, env, k)
