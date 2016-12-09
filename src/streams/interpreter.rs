@@ -29,8 +29,8 @@ pub struct Interpreter<'ast> {
 
 #[derive(Clone, Debug)]
 pub enum Lazy<'ast> {
-    Defer(AST<'ast>, Tape<'ast>),
-    Return(AST<'ast>),
+    Defer(&'ast AST<'ast>, Tape<'ast>),
+    Return(&'ast AST<'ast>),
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -45,14 +45,14 @@ pub enum Code {
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Cont<'ast> {
-    Expressions(AST<'ast>, Tape<'ast>),
-    Lambda(Code, AST<'ast>, AST<'ast>, Tape<'ast>),
-    Assign(AST<'ast>, Tape<'ast>),
-    Cond(AST<'ast>, AST<'ast>, Tape<'ast>),
-    Func(AST<'ast>, AST<'ast>, Tape<'ast>),
-    Call(AST<'ast>, Tape<'ast>),
-    Verb(Verb, AST<'ast>, u8, Tape<'ast>),
-    Adverb(Adverb, AST<'ast>, Tape<'ast>),
+    Expressions(&'ast AST<'ast>, Tape<'ast>),
+    Lambda(Code, &'ast AST<'ast>, &'ast AST<'ast>, Tape<'ast>),
+    Assign(&'ast AST<'ast>, Tape<'ast>),
+    Cond(&'ast AST<'ast>, &'ast AST<'ast>, Tape<'ast>),
+    Func(&'ast AST<'ast>, &'ast AST<'ast>, Tape<'ast>),
+    Call(&'ast AST<'ast>, Tape<'ast>),
+    Verb(Verb, &'ast AST<'ast>, u8, Tape<'ast>),
+    Adverb(Adverb, &'ast AST<'ast>, Tape<'ast>),
     Return,
 }
 
@@ -62,8 +62,8 @@ pub struct Tape<'ast> {
     cont: Box<Cont<'ast>>,
 }
 
-fn handle_defer<'ast>(a: AST<'ast>, mut tape: Tape<'ast>) -> Result<Lazy<'ast>, Error<'ast>> {
-    match a {
+fn handle_defer<'ast>(a: &'ast AST<'ast>, mut tape: Tape<'ast>) -> Result<Lazy<'ast>, Error<'ast>> {
+    match *a {
         AST::Assign(name, body) => {
             Ok(Lazy::Defer(body,
                            Tape {
@@ -72,10 +72,10 @@ fn handle_defer<'ast>(a: AST<'ast>, mut tape: Tape<'ast>) -> Result<Lazy<'ast>, 
                            }))
         }
         AST::Cond(val, left, right) => {
-            match val {
+            match *val {
                 AST::Number(x) => tape.run(val), 
                 x => {
-                    Ok(Lazy::Defer(x,
+                    Ok(Lazy::Defer(&x,
                                    Tape {
                                        env: tape.env.clone(),
                                        cont: Cont::Cond(left, right, tape),
@@ -85,14 +85,14 @@ fn handle_defer<'ast>(a: AST<'ast>, mut tape: Tape<'ast>) -> Result<Lazy<'ast>, 
         }
         AST::List(x) => evaluate_expr(x, tape),
         AST::Call(c, a) => {
-            Ok(Lazy::Defer(a.clone(),
+            Ok(Lazy::Defer(a,
                            Tape {
                                env: tape.env.clone(),
                                cont: Cont::Call(c, tape),
                            }))
         }
         AST::Verb(verb, left, right) => {
-            match (left.clone(), right.clone()) {
+            match (*left, *right) {
                 (AST::Number(_), _) => {
                     Ok(Lazy::Defer(right,
                                    Tape {
@@ -138,11 +138,11 @@ fn lookup<'ast>(name: u16, env: Rc<RefCell<Environment<'ast>>>) -> Result<AST<'a
     }
 }
 
-pub fn evaluate_fun<'ast>(fun: AST<'ast>,
-                          args: AST<'ast>,
+pub fn evaluate_fun<'ast>(fun: &'ast AST<'ast>,
+                          args: &'ast AST<'ast>,
                           tape: Tape<'ast>)
                           -> Result<Lazy<'ast>, Error<'ast>> {
-    match fun {
+    match *fun {
         AST::Lambda(names, body) => {
             Tape {
                     env: tape.env.clone(),
@@ -180,21 +180,24 @@ pub fn evaluate_fun<'ast>(fun: AST<'ast>,
     }
 }
 
-pub fn evaluate_expr<'ast>(exprs: AST<'ast>, tape: Tape<'ast>) -> Result<Lazy<'ast>, Error<'ast>> {
-    match exprs.shift() {
-        Some((car, cdr)) => {
+pub fn evaluate_expr<'ast>(exprs: &'ast AST<'ast>,
+                           tape: Tape<'ast>)
+                           -> Result<Lazy<'ast>, Error<'ast>> {
+    match *exprs {
+        AST::Cons(car, cdr) => {
             Ok(Lazy::Defer(car,
                            Tape {
                                env: tape.env.clone(),
                                cont: Cont::Expressions(cdr, tape),
                            }))
         }
-        None => {
+        AST::Nil => {
             Err(Error::EvalError {
                 desc: "Empty list".to_string(),
                 ast: AST::Nil,
             })
         }
+        x => Ok(Lazy::Defer(x, tape)),
     }
 }
 

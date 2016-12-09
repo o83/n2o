@@ -296,13 +296,6 @@ impl<'ast> AST<'ast> {
             _ => false,
         }
     }
-    pub fn shift(&self) -> Option<(&'ast AST<'ast>, &'ast AST<'ast>)> {
-        match *self {
-            AST::Cons(car, cdr) => Some((car, cdr)),
-            AST::Nil => None,
-            x => Some((x, AST::Nil)),
-        }
-    }
     // pub fn to_vec(&self) -> Vec<AST<'ast>> {
     //     let mut out = vec![];
     //     loop {
