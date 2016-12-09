@@ -7,4 +7,4 @@ pub mod interpreter;
 pub mod atomize;
 pub mod env;
 pub mod bc;
-// pub mod stack;
+pub mod stack;
