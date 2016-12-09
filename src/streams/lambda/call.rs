@@ -7,13 +7,13 @@ use std::cell::RefCell;
 use streams::env::*;
 
 pub struct Call {
-    callee: AST,
-    args: AST,
+    callee: AST<'ast>,
+    args: AST<'ast>,
     env: Rc<RefCell<Environment>>,
     cont: Cont,
 }
 
-pub fn new(callee: AST, args: AST, env: Rc<RefCell<Environment>>, cont: Cont) -> Call {
+pub fn new(callee: AST<'ast>, args: AST<'ast>, env: Rc<RefCell<Environment>>, cont: Cont) -> Call {
     Call {
         callee: callee,
         args: args,

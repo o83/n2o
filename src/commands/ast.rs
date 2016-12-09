@@ -13,12 +13,12 @@ use streams::interpreter;
 use streams::atomize::*;
 
 #[derive(Debug)]
-pub enum Error {
+pub enum Error<'ast> {
     ParseError,
-    EvalError { desc: String, ast: AST },
+    EvalError { desc: String, ast: AST<'ast> },
 }
 
-impl fmt::Display for Error {
+impl<'ast> fmt::Display for Error<'ast> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::ParseError => write!(f, "Parse error!\n"),
@@ -208,23 +208,23 @@ impl fmt::Display for Adverb {
 }
 
 #[derive(PartialEq,Debug,Clone)]
-pub enum AST {
+pub enum AST<'ast> {
     // 0
     Nil,
     // 1
-    Cons(Box<AST>, Box<AST>),
+    Cons(&'ast AST<'ast>, &'ast AST<'ast>),
     // 2
-    List(Box<AST>),
+    List(&'ast AST<'ast>),
     // 3
-    Dict(Box<AST>),
+    Dict(&'ast AST<'ast>),
     // 4
-    Call(Box<AST>, Box<AST>),
+    Call(&'ast AST<'ast>, &'ast AST<'ast>),
     // 5
-    Lambda(Box<AST>, Box<AST>),
+    Lambda(&'ast AST<'ast>, &'ast AST<'ast>),
     // 6
-    Verb(Verb, Box<AST>, Box<AST>),
+    Verb(Verb, &'ast AST<'ast>, &'ast AST<'ast>),
     // 7
-    Adverb(Adverb, Box<AST>, Box<AST>),
+    Adverb(Adverb, &'ast AST<'ast>, &'ast AST<'ast>),
     // 8
     Ioverb(String),
     // 9
@@ -243,23 +243,37 @@ pub enum AST {
     // E
     Sequence(String),
     // F
-    Cell(Box<Cell>),
+    Cell(Box<Cell<'ast>>),
     // Syntactic sugar
-    Assign(Box<AST>, Box<AST>),
+    Assign(&'ast AST<'ast>, &'ast AST<'ast>),
     //
-    Cond(Box<AST>, Box<AST>, Box<AST>),
+    Cond(&'ast AST<'ast>, &'ast AST<'ast>, &'ast AST<'ast>),
 }
 
-pub fn parse(s: &String) -> AST {
+pub struct Arena<'ast> {
+    data: RefCell<Vec<Box<AST<'ast>>>>,
+}
+
+impl<'ast> Arena<'ast> {
+    pub fn new() -> Arena<'ast> {
+        Arena { data: RefCell::new(vec![]) }
+    }
+
+    pub fn alloc(&'ast self, n: AST<'ast>) -> &'ast AST<'ast> {
+        let b = Box::new(n);
+        let p: *const AST<'ast> = &*b;
+        self.data.borrow_mut().push(b);
+        unsafe { &*p }
+    }
+}
+
+pub fn parse<'ast>(s: &String) -> AST<'ast> {
     let ref mut x = interpreter::Interpreter::new().unwrap();
     let a = command::parse_Mex(s).unwrap();
     atomize(a, x)
 }
 
-impl AST {
-    pub fn boxed(self) -> Box<Self> {
-        Box::new(self)
-    }
+impl<'ast> AST<'ast> {
     pub fn len(&self) -> usize {
         match self {
             &AST::List(ref car) => car.len(),
@@ -277,19 +291,19 @@ impl AST {
             _ => false,
         }
     }
-    pub fn shift(self) -> Option<(AST, AST)> {
+    pub fn shift(self) -> Option<(AST<'ast>, AST<'ast>)> {
         match self {
-            AST::Cons(car, cdr) => Some((*car, *cdr)),
+            AST::Cons(car, cdr) => Some((car, cdr)),
             AST::Nil => None,
             x => Some((x, AST::Nil)),
         }
     }
-    pub fn to_vec(self) -> Vec<AST> {
+    pub fn to_vec(self) -> Vec<AST<'ast>> {
         let mut out = vec![];
         let mut l = self;
         loop {
             match l.clone() {
-                AST::Cons(box car, box cdr) => {
+                AST::Cons(car, cdr) => {
                     out.push(car);
                     l = cdr;
                 }
@@ -304,9 +318,9 @@ impl AST {
     }
 }
 
-impl iter::IntoIterator for AST {
-    type Item = AST;
-    type IntoIter = vec::IntoIter<AST>;
+impl<'ast> iter::IntoIterator for AST<'ast> {
+    type Item = AST<'ast>;
+    type IntoIter = vec::IntoIter<AST<'ast>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.to_vec().into_iter()
@@ -314,15 +328,15 @@ impl iter::IntoIterator for AST {
 }
 
 
-impl fmt::Display for AST {
+impl<'ast> fmt::Display for AST<'ast> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             AST::Nil => write!(f, ""),
-            AST::Cons(box ref a, box ref b) => write!(f, "{} {}", a, b),
-            AST::List(box ref a) => write!(f, "{}", a),
-            AST::Dict(box ref d) => write!(f, "[{};]", d),
-            AST::Call(box ref a, box ref b) => write!(f, "{} {}", a, b),
-            AST::Lambda(box ref a, box ref b) => {
+            AST::Cons(ref a, ref b) => write!(f, "{} {}", a, b),
+            AST::List(ref a) => write!(f, "{}", a),
+            AST::Dict(ref d) => write!(f, "[{};]", d),
+            AST::Call(ref a, ref b) => write!(f, "{} {}", a, b),
+            AST::Lambda(ref a, ref b) => {
                 match a {
                     &AST::Nil => write!(f, "{{[x]{}}}", b),
                     _ => {
@@ -331,8 +345,8 @@ impl fmt::Display for AST {
                     }
                 }
             }
-            AST::Verb(ref v, box ref a, box ref b) => write!(f, "{}{}{}", a, v, b),
-            AST::Adverb(ref v, box ref a, box ref b) => write!(f, "{}{}{}", a, v, b),
+            AST::Verb(ref v, ref a, ref b) => write!(f, "{}{}{}", a, v, b),
+            AST::Adverb(ref v, ref a, ref b) => write!(f, "{}{}{}", a, v, b),
             AST::Ioverb(ref v) => write!(f, "{}", v),
             AST::Number(n) => write!(f, "{}", n),
             AST::Hexlit(h) => write!(f, "0x{}", h),
@@ -343,15 +357,15 @@ impl fmt::Display for AST {
             AST::NameInt(ref n) => write!(f, "{}", n),
             AST::SymbolInt(ref s) => write!(f, "{}", s),
             AST::SequenceInt(ref s) => write!(f, "{:?}", s),
-            AST::Cell(box ref c) => write!(f, "{}", c),
-            AST::Assign(box ref a, box ref b) => write!(f, "{}:{}", a, b),
-            AST::Cond(box ref c, box ref a, box ref b) => write!(f, "$[{};{};{}]", c, a, b),
+            AST::Cell(ref c) => write!(f, "{}", c),
+            AST::Assign(ref a, ref b) => write!(f, "{}:{}", a, b),
+            AST::Cond(ref c, ref a, ref b) => write!(f, "$[{};{};{}]", c, a, b),
         }
 
     }
 }
 
-pub fn extract_name(a: AST) -> u16 {
+pub fn extract_name<'ast>(a: AST<'ast>) -> u16 {
     match a {
         AST::NameInt(s) => s,
         x => 0,
@@ -359,12 +373,12 @@ pub fn extract_name(a: AST) -> u16 {
 }
 
 #[derive(PartialEq, Debug, Clone)]
-pub struct Cell {
+pub struct Cell<'ast> {
     t: Type,
-    v: Vec<AST>,
+    v: Vec<AST<'ast>>,
 }
 
-impl fmt::Display for Cell {
+impl<'ast> fmt::Display for Cell<'ast> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "(");
         for i in &self.v {
@@ -374,45 +388,60 @@ impl fmt::Display for Cell {
     }
 }
 
-pub fn call(l: AST, r: AST) -> AST {
-    AST::Call(l.boxed(), r.boxed())
+pub fn nil<'ast>(arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
+    arena.alloc(AST::Nil)
 }
 
-pub fn cons(l: AST, r: AST) -> AST {
-    AST::Cons(l.boxed(), r.boxed())
+pub fn alloc<'ast>(n: AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
+    arena.alloc(n)
 }
 
-pub fn fun(l: AST, r: AST) -> AST {
+
+pub fn call<'ast>(l: AST<'ast>, r: AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
+    alloc(AST::Call(arena.alloc(l), arena.alloc(r)))
+}
+
+pub fn cons<'ast>(l: AST<'ast>, r: AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
+    alloc(AST::Cons(arena.alloc(l), arena.alloc(r)))
+}
+
+pub fn fun<'ast>(l: AST<'ast>, r: AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
     match l {
-        AST::Nil => AST::Lambda(AST::Name("x".to_string()).boxed(), r.boxed()),
-        _ => AST::Lambda(l.boxed(), r.boxed()),
+        AST::Nil => alloc(AST::Lambda(arena.alloc(AST::Name("x".to_string())), arena.alloc(r))),
+        _ => alloc(AST::Lambda(arena.alloc(l), arena.alloc(r))),
     }
 }
 
-pub fn dict(l: AST) -> AST {
+pub fn dict<'ast>(l: AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
     match l {
-        AST::Cons(a, b) => AST::Dict(AST::Cons(a, b).boxed()),
+        AST::Cons(a, b) => AST::Dict(arena.alloc(AST::Cons(a, b))),
         x => x,
     }
 }
 
-pub fn list(l: AST) -> AST {
+pub fn list<'ast>(l: AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
     match l {
-        AST::Cons(a, b) => AST::List(AST::Cons(a, b).boxed()),
+        AST::Cons(a, b) => AST::List(arena.alloc(AST::Cons(a, b))),
         x => x,
     }
 }
 
-pub fn verb(v: Verb, l: AST, r: AST) -> AST {
+pub fn verb<'ast>(v: Verb,
+                  l: AST<'ast>,
+                  r: AST<'ast>,
+                  arena: &'ast Arena<'ast>)
+                  -> &'ast AST<'ast> {
     match v {
         Verb::Cast => {
             let rexpr = match r {
-                AST::Dict(box d) => {
+                AST::Dict(d) => {
                     match d {
-                        AST::Cons(box a, box b) => {
+                        AST::Cons(a, b) => {
                             match b {
-                                AST::Cons(box t, box f) => {
-                                    AST::Cond(a.boxed(), t.boxed(), box AST::List(f.boxed()))
+                                AST::Cons(t, f) => {
+                                    AST::Cond(arena.alloc(a),
+                                              arena.alloc(t),
+                                              arena.alloc(AST::List(arena.alloc(f))))
                                 }
                                 x => x,
                             }
@@ -424,26 +453,36 @@ pub fn verb(v: Verb, l: AST, r: AST) -> AST {
             };
             match l {
                 AST::Nil => rexpr,
-                _ => AST::Call(l.boxed(), rexpr.boxed()), 
+                _ => AST::Call(arena.alloc(l), arena.alloc(rexpr)), 
             }
         }
         _ => {
             match r { // optional AST transformations could be done during parsing
                 AST::Adverb(a, al, ar) => {
                     match a {
-                        Adverb::Assign => AST::Assign(al.boxed(), ar.boxed()),
-                        _ => AST::Adverb(a, AST::Verb(v, l.boxed(), AST::Nil.boxed()).boxed(), ar),
+                        Adverb::Assign => AST::Assign(arena.alloc(al), arena.alloc(ar)),
+                        _ => {
+                            AST::Adverb(a,
+                                        arena.alloc(AST::Verb(v,
+                                                              arena.alloc(l),
+                                                              arena.alloc(AST::Nil))),
+                                        ar)
+                        }
                     }
                 }
-                _ => AST::Verb(v, l.boxed(), r.boxed()),
+                _ => AST::Verb(v, arena.alloc(l), arena.alloc(r)),
             }
         }
     }
 }
 
-pub fn adverb(a: Adverb, l: AST, r: AST) -> AST {
+pub fn adverb<'ast>(a: Adverb,
+                    l: AST<'ast>,
+                    r: AST<'ast>,
+                    arena: &'ast Arena<'ast>)
+                    -> &'ast AST<'ast> {
     match a {
-        Adverb::Assign => AST::Assign(l.boxed(), r.boxed()),
-        _ => AST::Adverb(a, l.boxed(), r.boxed()),
+        Adverb::Assign => AST::Assign(arena.alloc(l), arena.alloc(r)),
+        _ => AST::Adverb(a, arena.alloc(l), arena.alloc(r)),
     }
 }

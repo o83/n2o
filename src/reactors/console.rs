@@ -17,15 +17,15 @@ use streams::interpreter::Interpreter;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-pub struct Console {
+pub struct Console<'ast> {
     tele: Tele,
     running: bool,
     token: Token,
     events: Events,
-    interpreter: Interpreter,
+    interpreter: Interpreter<'ast>,
 }
 
-impl Console {
+impl<'ast> Console<'ast> {
     pub fn new() -> Self {
         let tok = 10_000_000;
         Console {
@@ -121,7 +121,7 @@ impl Console {
                                 Ok(true)
                             }
                             line => {
-                    let ref mut x = ast::parse(&line.to_string());
+                                let ref mut x = ast::parse(&line.to_string());
                                 match self.interpreter.run(x) {
                                     Ok(r) => println!("{}", r),
                                     Err(e) => print!("{}", e),
@@ -160,7 +160,7 @@ impl Console {
     pub fn read_all<R: Read>(&mut self, mut config: R) -> io::Result<()> {
         let mut text = String::new();
         try!(config.read_to_string(&mut text));
-                    let ref mut x = ast::parse(&text.to_string());
+        let ref mut x = ast::parse(&text.to_string());
         match self.interpreter.run(x) {
             Ok(r) => println!("{}", r),
             Err(e) => print!("{:?}", e),

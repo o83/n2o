@@ -7,14 +7,19 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 pub struct Lambda {
-    names: AST,
-    args: AST,
+    names: AST<'ast>,
+    args: AST<'ast>,
     cont: Cont,
-    val: AST,
+    val: AST<'ast>,
     env: Rc<RefCell<Environment>>,
 }
 
-pub fn new(names: AST, args: AST, env: Rc<RefCell<Environment>>, val: AST, cont: Cont) -> Lambda {
+pub fn new(names: AST<'ast>,
+           args: AST<'ast>,
+           env: Rc<RefCell<Environment>>,
+           val: AST<'ast>,
+           cont: Cont)
+           -> Lambda {
     Lambda {
         names: names,
         args: args,

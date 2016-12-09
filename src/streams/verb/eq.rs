@@ -4,35 +4,35 @@ use streams::interpreter::*;
 use commands::ast::AST;
 use streams::stream::{self, Error, Poll, Async};
 
-pub struct Eq {
-    lvalue: AST,
-    rvalue: AST,
+pub struct Eq<'ast> {
+    lvalue: AST<'ast>,
+    rvalue: AST<'ast>,
 }
 
-pub fn new(lvalue: AST, rvalue: AST) -> Eq {
+pub fn new<'ast>(lvalue: AST<'ast>, rvalue: AST<'ast>) -> Eq<'ast> {
     Eq {
         lvalue: lvalue,
         rvalue: rvalue,
     }
 }
 
-impl Eq {
-    fn a_a(l: i64, r: i64) -> AST {
+impl<'ast> Eq<'ast> {
+    fn a_a(l: i64, r: i64) -> AST<'ast> {
         AST::Number(if r == l { 1 } else { 0 })
     }
-    fn l_a(l: AST, r: AST) -> AST {
+    fn l_a(l: AST<'ast>, r: AST<'ast>) -> AST<'ast> {
         AST::Number(1)
     }
-    fn a_l(l: AST, r: AST) -> AST {
+    fn a_l(l: AST<'ast>, r: AST<'ast>) -> AST<'ast> {
         AST::Number(1)
     }
-    fn l_l(l: &[i64], r: &[i64]) -> AST {
+    fn l_l(l: &[i64], r: &[i64]) -> AST<'ast> {
         AST::Number(1)
     }
 }
 
-impl Iterator for Eq {
-    type Item = AST;
+impl<'ast> Iterator for Eq<'ast> {
+    type Item = AST<'ast>;
     fn next(&mut self) -> Option<Self::Item> {
         match (&mut self.lvalue, &mut self.rvalue) {
             (&mut AST::Number(ref l), &mut AST::Number(ref r)) => Some(Self::a_a(*l, *r)),
@@ -42,7 +42,7 @@ impl Iterator for Eq {
 }
 
 impl<'a> Iterator for &'a Eq {
-    type Item = AST;
+    type Item = AST<'ast>;
 
     fn next(&mut self) -> Option<Self::Item> {
         None

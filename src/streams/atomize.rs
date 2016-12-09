@@ -6,51 +6,51 @@ use streams::env::*;
 use commands::ast::*;
 use commands::ast;
 
-pub fn atomize(p: AST, i: &mut Interpreter) -> AST {
+pub fn atomize<'ast>(p: &'ast AST<'ast>, i: &'ast mut Interpreter<'ast>) -> AST<'ast> {
     match p {
-        AST::Cons(box ax, box bx) => {
+        AST::Cons(ax, bx) => {
             let a = atomize(ax, i);
             let b = atomize(bx, i);
             ast::cons(a, b)
         }
-        AST::Assign(box ax, box bx) => {
+        AST::Assign(ax, bx) => {
             let a = atomize(ax, i);
             let b = atomize(bx, i);
-            AST::Assign(box a, box b)
+            AST::Assign(a, b)
         }
-        AST::Lambda(box ax, box bx) => {
+        AST::Lambda(ax, bx) => {
             let a = atomize(ax, i);
             let b = atomize(bx, i);
-            AST::Lambda(box a, box b)
+            AST::Lambda(a, b)
         }
-        AST::Call(box ax, box bx) => {
+        AST::Call(ax, bx) => {
             let a = atomize(ax, i);
             let b = atomize(bx, i);
-            AST::Call(box a, box b)
+            AST::Call(a, b)
         }
-        AST::Verb(verb, box ax, box bx) => {
+        AST::Verb(verb, ax, bx) => {
             let a = atomize(ax, i);
             let b = atomize(bx, i);
-            AST::Verb(verb, box a, box b)
+            AST::Verb(verb, a, b)
         }
-        AST::Adverb(adverb, box ax, box bx) => {
+        AST::Adverb(adverb, ax, bx) => {
             let a = atomize(ax, i);
             let b = atomize(bx, i);
-            AST::Adverb(adverb, box a, box b)
+            AST::Adverb(adverb, a, b)
         }
-        AST::Cond(box ax, box bx, box cx) => {
+        AST::Cond(ax, bx, cx) => {
             let a = atomize(ax, i);
             let b = atomize(bx, i);
             let c = atomize(cx, i);
-            AST::Cond(box a, box b, box c)
+            AST::Cond(a, b, c)
         }
-        AST::List(box ax) => {
+        AST::List(ax) => {
             let a = atomize(ax, i);
-            AST::List(box a)
+            AST::List(a)
         }
-        AST::Dict(box ax) => {
+        AST::Dict(ax) => {
             let a = atomize(ax, i);
-            AST::Dict(box a)
+            AST::Dict(a)
         }
         AST::Name(s) => {
             if i.names.contains_key(&s) {

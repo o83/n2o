@@ -10,10 +10,10 @@ use commands::ast::*;
 use commands::ast;
 
 pub fn eval(code: Code,
-            left: AST,
-            right: AST,
+            left: AST<'ast>,
+            right: AST<'ast>,
             env: Rc<RefCell<Environment>>,
-            val: AST,
+            val: AST<'ast>,
             cont: Cont)
             -> Result<Lazy, Error> {
     match code {
