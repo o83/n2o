@@ -7,8 +7,8 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::iter;
 use std::vec;
-use streams::verb;
-use streams::verb::*;
+use streams::lambda::{self, call, func};
+use streams::verb::{self, plus, minus, div, mul};
 use streams::env::*;
 use commands::ast::*;
 use commands::ast;
@@ -33,11 +33,20 @@ pub enum Lazy {
     Return(AST),
 }
 
+#[derive(PartialEq, Clone, Debug)]
+pub enum Code {
+    Assign,
+    Cond,
+    Func,
+    Call,
+}
+
 // Plug Any Combinators here
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum Cont {
     Expressions(AST, Rc<RefCell<Environment>>, Box<Cont>),
+    Lambda(Code, AST, AST, Rc<RefCell<Environment>>, Box<Cont>),
     Assign(AST, Rc<RefCell<Environment>>, Box<Cont>),
     Cond(AST, AST, Rc<RefCell<Environment>>, Box<Cont>),
     Func(AST, AST, Rc<RefCell<Environment>>, Box<Cont>),
@@ -95,14 +104,14 @@ fn lookup(name: u16, env: Rc<RefCell<Environment>>) -> Result<AST, Error> {
     }
 }
 
-fn evaluate_fun(fun: AST,
-                env: Rc<RefCell<Environment>>,
-                args: AST,
-                k: Cont)
-                -> Result<Lazy, Error> {
+pub fn evaluate_fun(fun: AST,
+                    env: Rc<RefCell<Environment>>,
+                    args: AST,
+                    k: Cont)
+                    -> Result<Lazy, Error> {
     match fun {
         AST::Lambda(box names, box body) => {
-            Cont::Func(names, args, env, box k).run(body)
+            Ok(Lazy::Force(body, Cont::Func(names, args, env, box k)))
             // Ok(Lazy::Force(body, Cont::Func(names, args, env, box k)))
         }
         AST::NameInt(s) => {
@@ -117,6 +126,7 @@ fn evaluate_fun(fun: AST,
             }
         }
         x => {
+            println!("{:?}", x);
             Err(Error::EvalError {
                 desc: "Call Error".to_string(),
                 ast: x,
@@ -125,7 +135,10 @@ fn evaluate_fun(fun: AST,
     }
 }
 
-fn evaluate_expr(exprs: AST, env: Rc<RefCell<Environment>>, k: Box<Cont>) -> Result<Lazy, Error> {
+pub fn evaluate_expr(exprs: AST,
+                     env: Rc<RefCell<Environment>>,
+                     k: Box<Cont>)
+                     -> Result<Lazy, Error> {
     match exprs.shift() {
         Some((car, cdr)) => Ok(Lazy::Defer(car, env.clone(), Cont::Expressions(cdr, env, k))),
         None => {
@@ -177,6 +190,11 @@ impl Interpreter {
 impl Cont {
     pub fn run(self, val: AST) -> Result<Lazy, Error> {
         match self {
+            // Cont::Lambda(code, left, right, env, box k) =>
+            // {
+            // lambda::eval(code, left, right, env, val, k)
+            // }
+            //
             Cont::Call(callee, env, k) => {
                 match val {
                     AST::Dict(box v) => evaluate_fun(callee, env, v, *k),
@@ -198,19 +216,6 @@ impl Cont {
                     x => Ok(Lazy::Defer(x, env.clone(), Cont::Cond(if_expr, else_expr, env, k))),
                 }
             }
-            Cont::Verb(verb, right, swap, env, k) => {
-                match (right.clone(), val.clone()) {
-                    (AST::Number(_), AST::Number(_)) => {
-                        match swap {
-                            0 => k.run(verb::eval(verb, right, val).unwrap()), // Ok(Lazy::Force(verb::eval(verb, right, val).unwrap(), k)),
-                            _ => k.run(verb::eval(verb, val, right).unwrap()), // Ok(Lazy::Force(verb::eval(verb, val, right).unwrap(), k)),
-                        }
-                    }
-                    (x, y) => {
-                        Ok(Lazy::Defer(x, env.clone(), Cont::Verb(verb, y, 0, env.clone(), k)))
-                    }
-                }
-            }
             Cont::Assign(name, env, k) => {
                 match name {
                     AST::NameInt(s) => {
@@ -226,6 +231,20 @@ impl Cont {
 
                 }
             }
+            Cont::Verb(verb, right, swap, env, k) => {
+                match (right.clone(), val.clone()) {
+                    (AST::Number(_), AST::Number(_)) => {
+                        match swap {
+                            0 => k.run(verb::eval(verb, right, val).unwrap()), // Ok(Lazy::Force(verb::eval(verb, right, val).unwrap(), k)),
+                            _ => k.run(verb::eval(verb, val, right).unwrap()), // Ok(Lazy::Force(verb::eval(verb, val, right).unwrap(), k)),
+                        }
+                    }
+                    (x, y) => {
+                        Ok(Lazy::Defer(x, env.clone(), Cont::Verb(verb, y, 0, env.clone(), k)))
+                    }
+                }
+            }
+
             Cont::Expressions(rest, env, k) => {
                 if rest.is_cons() || !rest.is_empty() {
                     evaluate_expr(rest, env, k)

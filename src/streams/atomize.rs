@@ -65,29 +65,14 @@ pub fn atomize(p: AST, i: &mut Interpreter) -> AST {
         x => x,
     }
 }
-
-pub fn replace_env(k: Cont, env: Rc<RefCell<Environment>>) -> Cont {
-    match k {
-        Cont::Expressions(a, e, c) => Cont::Expressions(a, env, c),
-        Cont::Assign(a, e, c) => Cont::Assign(a, env, c),
-        Cont::Cond(a, b, e, c) => Cont::Cond(a, b, env, c),
-        Cont::Func(a, b, e, c) => Cont::Func(a, b, env, c),
-        Cont::Call(a, e, c) => Cont::Call(a, env, c),
-        Cont::Verb(verb, a, u, e, c) => Cont::Verb(verb, a, u, env, c),
-        Cont::Adverb(adverb, a, e, c) => Cont::Adverb(adverb, a, env, c),
-        x => x,
-    }
-}
-
-pub fn extract_env(k: Cont, env: Rc<RefCell<Environment>>) -> Rc<RefCell<Environment>> {
-    match k {
-        Cont::Expressions(a, e, c) => e,
-        Cont::Assign(a, e, c) => e,
-        Cont::Cond(a, b, e, c) => e,
-        Cont::Func(a, b, e, c) => e,
-        Cont::Call(a, e, c) => e,
-        Cont::Verb(verb, a, u, e, c) => e,
-        Cont::Adverb(adverb, a, e, c) => e,
-        x => Environment::new_child(env),
-    }
-}
+// pub fn replace_env(tape: Tape, env: Rc<RefCell<Environment>>) -> Tape {
+// Tape {
+// env: env,
+// cont: tape.cont,
+// }
+// }
+//
+// pub fn extract_env(tape: Tape) -> Rc<RefCell<Environment>> {
+// tape.env
+// }
+//
