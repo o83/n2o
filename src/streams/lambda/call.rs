@@ -1,31 +1,63 @@
-use streams::stream::*;
-use streams::lambda::lambda::Lambda;
-use commands::ast::{self, AST};
+
+use commands::ast::{self, AST, Error};
 use streams::interpreter::*;
+use streams::interpreter;
+use std::rc::Rc;
+use std::cell::RefCell;
+use streams::env::*;
 
 pub struct Call {
-    callee: Lambda,
+    callee: AST,
     args: AST,
+    env: Rc<RefCell<Environment>>,
+    cont: Cont,
 }
 
-pub fn new(callee: Lambda, args: AST) -> Call {
+pub fn new(callee: AST, args: AST, env: Rc<RefCell<Environment>>, cont: Cont) -> Call {
     Call {
         callee: callee,
         args: args,
+        env: env,
+        cont: cont,
     }
 }
 
 impl Iterator for Call {
-    type Item = Poll<AST>;
+    type Item = Result<Lazy, Error>;
     fn next(&mut self) -> Option<Self::Item> {
-        Some(Ok(Async::Ready(AST::Number(123))))
+        match self.args.clone() {
+            AST::Dict(box v) => {
+                Some(interpreter::evaluate_fun(self.callee.clone(),
+                                               self.env.clone(),
+                                               v,
+                                               self.cont.clone()))
+            }
+            x => {
+                Some(interpreter::evaluate_fun(self.callee.clone(),
+                                               self.env.clone(),
+                                               x,
+                                               self.cont.clone()))
+            }
+        }
     }
 }
 
 impl<'a> Iterator for &'a Call {
-    type Item = Poll<AST>;
+    type Item = Result<Lazy, Error>;
     fn next(&mut self) -> Option<Self::Item> {
-        let res = AST::Number(123);
-        Some(Ok(Async::Ready(res)))
+        match self.args.clone() {
+            AST::Dict(box v) => {
+                Some(interpreter::evaluate_fun(self.callee.clone(),
+                                               self.env.clone(),
+                                               v,
+                                               self.cont.clone()))
+            }
+            x => {
+                Some(interpreter::evaluate_fun(self.callee.clone(),
+                                               self.env.clone(),
+                                               x,
+                                               self.cont.clone()))
+            }
+        }
     }
 }
