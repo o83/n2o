@@ -1,5 +1,3 @@
-// An add verb combinator.
-
 use streams::interpreter::*;
 use commands::ast::AST;
 use streams::stream::{self, Error, Poll, Async};
@@ -41,7 +39,7 @@ impl<'ast> Iterator for Eq<'ast> {
     }
 }
 
-impl<'a> Iterator for &'a Eq {
+impl<'a, 'ast> Iterator for &'a Eq<'ast> {
     type Item = AST<'ast>;
 
     fn next(&mut self) -> Option<Self::Item> {

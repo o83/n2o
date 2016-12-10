@@ -259,7 +259,7 @@ pub struct Arena<'ast> {
 impl<'ast> Arena<'ast> {
     pub fn new() -> Arena<'ast> {
         Arena {
-            name_size: 0,
+            names_size: 0,
             names: HashMap::new(),
             data: RefCell::new(vec![]),
         }
@@ -275,7 +275,8 @@ impl<'ast> Arena<'ast> {
 
 pub fn parse<'ast>(s: &String) -> &'ast AST<'ast> {
     let ref mut x = interpreter::Interpreter::new().unwrap();
-    command::parse_Mex(s).unwrap()
+    let ref mut a = Arena::new();
+    command::parse_Mex(a, s).unwrap()
 }
 
 impl<'ast> AST<'ast> {
@@ -333,7 +334,7 @@ impl<'ast> fmt::Display for AST<'ast> {
             AST::List(ref a) => write!(f, "{}", a),
             AST::Dict(ref d) => write!(f, "[{};]", d),
             AST::Call(ref a, ref b) => write!(f, "{} {}", a, b),
-            AST::Lambda(ref a, ref b) => {
+            AST::Lambda(a, b) => {
                 match *a {
                     AST::Nil => write!(f, "{{[x]{}}}", b),
                     _ => {

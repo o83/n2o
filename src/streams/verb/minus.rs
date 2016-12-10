@@ -1,5 +1,3 @@
-// An add verb combinator.
-
 use streams::interpreter::*;
 use commands::ast::AST;
 use streams::stream::{self, Error, Poll, Async};
@@ -9,7 +7,7 @@ pub struct Minus<'ast> {
     rvalue: AST<'ast>,
 }
 
-pub fn new(lvalue: AST<'ast>, rvalue: AST<'ast>) -> Minus<'ast> {
+pub fn new<'ast>(lvalue: AST<'ast>, rvalue: AST<'ast>) -> Minus<'ast> {
     Minus {
         lvalue: lvalue,
         rvalue: rvalue,

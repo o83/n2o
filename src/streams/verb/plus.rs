@@ -1,5 +1,3 @@
-// An add verb combinator.
-
 use streams::interpreter::*;
 use commands::ast::AST;
 use streams::stream::{self, Error, Poll, Async};

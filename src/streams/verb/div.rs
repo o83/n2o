@@ -1,5 +1,3 @@
-// An add verb combinator.
-
 use streams::interpreter::*;
 use commands::ast::AST;
 use streams::stream::{self, Error, Poll, Async};
@@ -9,7 +7,7 @@ pub struct Div<'ast> {
     rvalue: AST<'ast>,
 }
 
-pub fn new<'ast>(lvalue: AST<'ast>, rvalue: AST<'ast>) -> Div {
+pub fn new<'ast>(lvalue: AST<'ast>, rvalue: AST<'ast>) -> Div<'ast> {
     Div {
         lvalue: lvalue,
         rvalue: rvalue,
@@ -41,7 +39,7 @@ impl<'ast> Iterator for Div<'ast> {
     }
 }
 
-impl<'a> Iterator for &'a Div {
+impl<'a, 'ast> Iterator for &'a Div<'ast> {
     type Item = AST<'ast>;
 
     fn next(&mut self) -> Option<Self::Item> {
