@@ -1,3 +1,4 @@
+use std::{mem, ptr, isize};
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
@@ -36,6 +37,11 @@ impl<T> Stack<T> {
     }
 
     #[inline]
+    pub fn free_len(&self) -> usize {
+        self.capacity() - self.items.len()
+    }
+
+    #[inline]
     pub fn num_frames(&self) -> usize {
         self.frames.len()
     }
@@ -71,8 +77,20 @@ impl<T> Stack<T> {
         }
     }
 
-    pub fn insert_range(&mut self, items: &[T]) -> Result<(), Error> {
-        Err(Error::InvalidOperation)
+    pub fn insert_many(&mut self, items: &[T]) -> Result<(), Error> {
+        let ln_from = items.len();
+        let ln_to = self.len();
+        let cap = self.capacity();
+        if (ln_from >= isize::MAX as usize) || (ln_from > self.free_len()) {
+            return Err(Error::Capacity);
+        }
+        let to = self.items.as_mut_ptr();
+        let from = items.as_ptr();
+        unsafe {
+            ptr::copy(from, to.offset(ln_to as isize), ln_from);
+            self.items = Vec::from_raw_parts(to, ln_from + ln_to, cap);
+        };
+        Ok(())
     }
 
     // get(|item| (*item).key == 14)
