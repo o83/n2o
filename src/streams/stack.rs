@@ -87,7 +87,7 @@ impl<T> Stack<T> {
         let to = self.items.as_mut_ptr();
         let from = items.as_ptr();
         unsafe {
-            ptr::copy(from, to.offset(ln_to as isize), ln_from);
+            ptr::copy_nonoverlapping(from, to.offset(ln_to as isize), ln_from);
             self.items = Vec::from_raw_parts(to, ln_from + ln_to, cap);
         };
         Ok(())
