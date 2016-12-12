@@ -471,16 +471,16 @@ pub fn fun<'ast>(l: &'ast AST<'ast>,
 }
 
 pub fn dict<'ast>(l: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
-    match *l {
-        AST::Cons(a, b) => arena.ast(AST::Dict(l)),
-        x => &x,
+    match l {
+        &AST::Cons(a, b) => arena.ast(AST::Dict(l)),
+        x => x,
     }
 }
 
 pub fn list<'ast>(l: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
-    match *l {
-        AST::Cons(a, b) => arena.ast(AST::List(l)),
-        x => &x,
+    match l {
+        &AST::Cons(a, b) => arena.ast(AST::List(l)),
+        x => x,
     }
 }
 
@@ -491,21 +491,21 @@ pub fn verb<'ast>(v: Verb,
                   -> &'ast AST<'ast> {
     match v {
         Verb::Cast => {
-            let rexpr = match *r {
-                AST::Dict(d) => {
-                    match *d {
-                        AST::Cons(a, b) => {
-                            match *b {
-                                AST::Cons(t, f) => {
+            let rexpr = match r {
+                &AST::Dict(d) => {
+                    match d {
+                        &AST::Cons(a, b) => {
+                            match b {
+                                &AST::Cons(t, f) => {
                                     arena.ast(AST::Cond(a, t, arena.ast(AST::List(f))))
                                 }
-                                x => &x,
+                                x => x,
                             }
                         }
-                        x => &x,
+                        x => x,
                     }
                 }
-                x => &x, 
+                x => x, 
             };
             match *l {
                 AST::Nil => rexpr,
@@ -513,12 +513,12 @@ pub fn verb<'ast>(v: Verb,
             }
         }
         _ => {
-            match *r { // optional AST transformations could be done during parsing
-                AST::Adverb(a, al, ar) => {
+            match r { // optional AST transformations could be done during parsing
+                &AST::Adverb(ref a, al, ar) => {
                     match a {
-                        Adverb::Assign => arena.ast(AST::Assign(al, ar)),
-                        _ => {
-                            arena.ast(AST::Adverb(a,
+                        &Adverb::Assign => arena.ast(AST::Assign(al, ar)),
+                        x => {
+                            arena.ast(AST::Adverb(x.clone(),
                                                   arena.ast(AST::Verb(v, l, arena.ast(AST::Nil))),
                                                   ar))
                         }

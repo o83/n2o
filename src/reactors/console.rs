@@ -12,7 +12,6 @@ use io::poll::*;
 use io::options::*;
 use io::tele::*;
 use commands::*;
-use commands::ast::AST;
 use commands::ast::*;
 use streams::interpreter::Interpreter;
 
