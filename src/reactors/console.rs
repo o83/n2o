@@ -43,7 +43,7 @@ impl<'ast> Console<'ast> {
         let _ = io::stdout().flush();
     }
 
-    pub fn run(&'ast mut self, poll: &'ast mut Poll) -> io::Result<()> {
+    pub fn run(&mut self, poll: &mut Poll) -> io::Result<()> {
         try!(self.register(poll));
         println!("Welcome to O-CPS Interpreter v{}!", VERSION.to_string());
         while self.running {
@@ -73,7 +73,7 @@ impl<'ast> Console<'ast> {
             })
     }
 
-    fn ready(&'ast mut self, poll: &'ast mut Poll, token: Token, event: Ready) {
+    fn ready(&mut self, poll: &mut Poll, token: Token, event: Ready) {
         trace!("{:?} event = {:?}", token, event);
 
         if event.is_error() {
@@ -112,7 +112,7 @@ impl<'ast> Console<'ast> {
         }
     }
 
-    fn readable(&'ast mut self, token: Token) -> io::Result<bool> {
+    fn readable(&mut self, token: Token) -> io::Result<bool> {
         trace!("console is readable; token={:?}", token);
         let mut msg = [0u8; 128];
         let size = self.tele.read(&mut msg);
@@ -130,7 +130,13 @@ impl<'ast> Console<'ast> {
                                 Ok(true)
                             }
                             line => {
-                                let _ = self.interpreter_run(line.to_string());
+                                let i = Interpreter::new().unwrap();
+                                let x = i.parse(&line.to_string());
+                                match i.run(x) {
+                                    Ok(r) => println!("{}", r),
+                                    Err(e) => print!("{}", e),
+                                }
+                                // let _ = self.interpreter_run(line.to_string());
                                 Ok(true)
                             }
                         }
@@ -150,16 +156,17 @@ impl<'ast> Console<'ast> {
                 "" => {
                     println!("{}", AST::Nil);
                 }
-                line => self.interpreter_run(line.to_string()),
+                line => (),
+                // line => self.interpreter_run(line.to_string()),
             }
         }
         Ok(())
     }
 
-    pub fn read_all<R: Read>(&'ast mut self, mut config: R) -> io::Result<()> {
+    pub fn read_all<R: Read>(&mut self, mut config: R) -> io::Result<()> {
         let mut text = String::new();
         try!(config.read_to_string(&mut text));
-        let _ = self.interpreter_run(text.to_string());
+        // let _ = self.interpreter_run(text.to_string());
         Ok(())
     }
 }
