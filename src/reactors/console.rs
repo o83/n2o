@@ -28,13 +28,12 @@ pub struct Console<'ast> {
 impl<'ast> Console<'ast> {
     pub fn new() -> Self {
         let tok = 10_000_000;
-        let ref mut arena = Arena::new();
         Console {
             tele: Tele::new(Token(tok)),
             token: Token(tok),
             running: true,
             events: Events::with_capacity(1024),
-            interpreter: Interpreter::new(arena).unwrap(),
+            interpreter: Interpreter::new().unwrap(),
         }
     }
 
