@@ -95,7 +95,7 @@ impl<'ast> Interpreter<'ast> {
             }
             &AST::List(x) => self.evaluate_expr(x, cont),
             &AST::Call(c, a) => Ok(self.arena.lazy(Lazy::Defer(a, self.arena.cont(Cont::Call(c, cont))))),
-            &AST::Verb(verb, left, right) => {
+            &AST::Verb(ref verb, left, right) => {
                 match (left, right) {
                     (&AST::Number(_), _) => {
                         Ok(self.arena.lazy(Lazy::Defer(right,
@@ -140,9 +140,9 @@ impl<'ast> Interpreter<'ast> {
                         args: &'ast AST<'ast>,
                         cont: &'ast Cont<'ast>)
                         -> Result<&'ast Lazy<'ast>, Error> {
-        match *fun {
-            AST::Lambda(names, body) => self.run_cont(&body, self.arena.cont(Cont::Func(names, args, cont))),
-            AST::NameInt(s) => {
+        match fun {
+            &AST::Lambda(names, body) => self.run_cont(&body, self.arena.cont(Cont::Func(names, args, cont))),
+            &AST::NameInt(s) => {
                 match self.env.get(s, None) {
                     Some(v) => self.evaluate_fun(v, args, cont),
                     None => {
@@ -221,23 +221,23 @@ impl<'ast> Interpreter<'ast> {
 
                 }
             }
-            &Cont::Verb(verb, right, swap, cont) => {
+            &Cont::Verb(ref verb, right, swap, cont) => {
                 match (right, val) {
                     (&AST::Number(_), &AST::Number(_)) => {
                         match swap {
                             0 => {
-                                let a = verb::eval(verb, right, val).unwrap();
+                                let a = verb::eval(verb.clone(), right, val).unwrap();
                                 self.run_cont(self.arena.ast(a), cont)
                             }
                             _ => {
-                                let a = verb::eval(verb, right, val).unwrap();
+                                let a = verb::eval(verb.clone(), right, val).unwrap();
                                 self.run_cont(self.arena.ast(a), cont)
                             }
                         }
                     }
                     (x, y) => {
                         Ok(self.arena
-                            .lazy(Lazy::Defer(x, self.arena.cont(Cont::Verb(verb, y, 0, cont)))))
+                            .lazy(Lazy::Defer(x, self.arena.cont(Cont::Verb(verb.clone(), y, 0, cont)))))
                     }
                 }
             }
