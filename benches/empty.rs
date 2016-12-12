@@ -80,7 +80,6 @@ fn stack_batch(b: &mut Bencher) {
     b.iter(|| {
         stack.insert_many(&items);
     });
-    stack.finalize();
 }
 
 #[bench]

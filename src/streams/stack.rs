@@ -11,6 +11,12 @@ pub struct Stack<T> {
     items: Vec<T>,
 }
 
+// impl<T> Drop for Stack<T> {
+//     fn drop(&mut self) {
+        
+//     }
+// }
+
 impl<T: Clone> Stack<T> {
     // Use one variable for both: capacity and frames size
     // because we can't have more frames then stack capacity.
@@ -88,7 +94,8 @@ impl<T: Clone> Stack<T> {
         let from = items.as_ptr();
         unsafe {
             ptr::copy_nonoverlapping(from, to.offset(ln_to as isize), ln_from);
-            self.items = Vec::from_raw_parts(to, ln_from + ln_to, cap);
+            let i = mem::replace(&mut self.items, Vec::from_raw_parts(to, ln_from + ln_to, cap));
+            mem::forget(i); 
         };
         Ok(())
     }
@@ -108,9 +115,5 @@ impl<T: Clone> Stack<T> {
         where for<'r> F: FnMut(&'r &T) -> bool
     {
         self.items.iter().rev().find(f)
-    }
-
-    pub fn finalize(self) {
-        mem::forget(self.items);
     }
 } 

@@ -54,5 +54,4 @@ pub fn stack() {
     assert!(stack.num_frames() == 3);
     assert_eq!(stack.get(|it| (*it).0 == 1).unwrap(), &Entry(1, 1));
     println!("STACK: {:?}", stack);
-    stack.finalize();
 }
