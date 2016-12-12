@@ -14,6 +14,7 @@ use io::tele::*;
 use commands::*;
 use commands::ast::*;
 use streams::interpreter::Interpreter;
+use std::cell::UnsafeCell;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -22,7 +23,7 @@ pub struct Console<'ast> {
     running: bool,
     token: Token,
     events: Events,
-    interpreter: Interpreter<'ast>,
+    interpreter: UnsafeCell<Interpreter<'ast>>,
 }
 
 impl<'ast> Console<'ast> {
@@ -121,8 +122,8 @@ impl<'ast> Console<'ast> {
                                 Ok(true)
                             }
                             line => {
-                                let x = self.interpreter.parse(&line.to_string());
-                                // match self.interpreter.run(x) {
+                                // let x = self.interpreter.parse(&line.to_string());
+                                // match Interpreter::run(self.interpreter, x) {
                                 //     Ok(r) => println!("{}", r),
                                 //     Err(e) => print!("{}", e),
                                 // };
@@ -146,8 +147,8 @@ impl<'ast> Console<'ast> {
                     println!("{}", AST::Nil);
                 }
                 line => {
-                    let ref mut x = self.interpreter.parse(&line.to_string());
-                    // match self.interpreter.run(x) {
+                    // let ref mut x = self.interpreter.parse(&line.to_string());
+                    // match Interpreter::run(self.interpreter, x) {
                     //     Ok(r) => println!("{}", r),
                     //     Err(e) => print!("{:?}", e),
                     // };
@@ -160,8 +161,8 @@ impl<'ast> Console<'ast> {
     pub fn read_all<R: Read>(&'ast mut self, mut config: R) -> io::Result<()> {
         let mut text = String::new();
         try!(config.read_to_string(&mut text));
-        let ref mut x = self.interpreter.parse(&text.to_string());
-        // match self.interpreter.run(x) {
+        // let ref mut x = self.interpreter.parse(&text.to_string());
+        // match Interpreter::run(self.interpreter, x) {
         //     Ok(r) => println!("{}", r),
         //     Err(e) => print!("{:?}", e),
         // };
