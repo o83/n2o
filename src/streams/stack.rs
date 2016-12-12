@@ -11,12 +11,6 @@ pub struct Stack<T> {
     items: Vec<T>,
 }
 
-// impl<T> Drop for Stack<T> {
-//     fn drop(&mut self) {
-        
-//     }
-// }
-
 impl<T: Clone> Stack<T> {
     // Use one variable for both: capacity and frames size
     // because we can't have more frames then stack capacity.
@@ -52,12 +46,17 @@ impl<T: Clone> Stack<T> {
         self.frames.len()
     }
 
-    pub fn push_frame(&mut self) -> Result<(), Error> {
+    #[inline]
+    pub fn last_frame_id(&self) -> usize {
+        self.frames.len() - 1
+    }
+
+    pub fn push_frame(&mut self) -> Result<usize, Error> {
         if self.is_full() {
             Err(Error::Capacity)
         } else {
             self.frames.push(self.items.len());
-            Ok(())
+            Ok(self.last_frame_id())
         }
     }
 
@@ -94,8 +93,9 @@ impl<T: Clone> Stack<T> {
         let from = items.as_ptr();
         unsafe {
             ptr::copy_nonoverlapping(from, to.offset(ln_to as isize), ln_from);
-            let i = mem::replace(&mut self.items, Vec::from_raw_parts(to, ln_from + ln_to, cap));
-            mem::forget(i); 
+            let i = mem::replace(&mut self.items,
+                                 Vec::from_raw_parts(to, ln_from + ln_to, cap));
+            mem::forget(i);
         };
         Ok(())
     }
@@ -110,10 +110,13 @@ impl<T: Clone> Stack<T> {
         Ok(())
     }
 
-    // get(|item| (*item).key == 14)
-    pub fn get<'a, F>(&'a self, f: F) -> Option<&T>
+    // get(|item| (*item).key == 14, None)
+    pub fn get<'a, F>(&'a self, f: F, from: Option<usize>) -> Option<&T>
         where for<'r> F: FnMut(&'r &T) -> bool
     {
-        self.items.iter().rev().find(f)
+        match from {
+            Some(x) => self.items[..x + 1].iter().rev().find(f),
+            None => self.items.iter().rev().find(f),
+        }
     }
-} 
+}

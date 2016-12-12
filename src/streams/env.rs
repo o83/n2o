@@ -35,9 +35,9 @@ impl<'ast> Environment<'ast> {
         (uf, us)
     }
 
-    pub fn new_child(&'ast mut self) -> Result<(), Error> {
+    pub fn new_child(&'ast mut self) -> Result<usize, Error> {
         match self.values.push_frame() {
-            Ok(()) => Ok(()),
+            Ok(id) => Ok(id),
             Err(_) => Err(Error::InternalError),
         }
     }
@@ -48,8 +48,8 @@ impl<'ast> Environment<'ast> {
         Ok(())
     }
 
-    pub fn get(&'ast self, key: u16) -> Option<&'ast AST> {
-        match self.values.get(|x| (*x).0 == key) {
+    pub fn get(&'ast self, key: u16, from: Option<usize>) -> Option<&'ast AST> {
+        match self.values.get(|x| (*x).0 == key, from) {
             Some(x) => Some(&x.1),
             None => None,
         }
