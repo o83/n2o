@@ -49,12 +49,12 @@ pub struct Interpreter<'ast> {
 }
 
 impl<'ast> Interpreter<'ast> {
-    pub fn new(arena: &'ast Arena<'ast>) -> Result<Interpreter<'ast>, Error> {
+    pub fn new(arena: &'ast Arena<'ast>) -> Result<UnsafeCell<Interpreter<'ast>>, Error> {
         let env = try!(Environment::new_root());
-        Ok(Interpreter {
+        Ok(UnsafeCell::new(Interpreter {
             arena: arena,
             env: env,
-        })
+        }))
     }
 
     #[inline]
