@@ -212,9 +212,9 @@ impl<'ast> Interpreter<'ast> {
             }
             &Cont::Func(names, args, cont) => {
                 self.env.new_child();
-                // for (name, value) in *names.into_iter().zip(*args.into_iter()) {
-                //    try!(local_env.borrow_mut().define(ast::extract_name(name), value));
-                // }
+                for (name, value) in *names.into_iter().zip(*args.into_iter()) {
+                    try!(self.env.define(ast::extract_name(name), value));
+                }
                 self.evaluate_expr(val, cont)
 
             }
