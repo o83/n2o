@@ -237,7 +237,7 @@ impl<'ast> Interpreter<'ast> {
 
 
 impl<'ast> Tape<'ast> {
-    pub fn run(mut self, val: mut AST<'ast>) -> Result<Lazy<'ast>, Error<'ast>> {
+    pub fn run(mut self, val: &'ast mut AST<'ast>) -> Result<Lazy<'ast>, Error<'ast>> {
         let x = self.cont;
         match *x {
             // Cont::Lambda(code, left, right, env, k) =>
