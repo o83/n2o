@@ -3,8 +3,9 @@ extern crate test;
 extern crate kernel;
 
 use kernel::streams::stack::*;
+use std::mem;
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug,PartialEq,Clone)]
 struct Entry(u16, i64);
 
 #[test]
@@ -48,10 +49,10 @@ pub fn stack() {
 
     assert_eq!(stack.get(|it| (*it).0 == 6).unwrap(), &Entry(6, 6));
     assert_eq!(stack.get(|it| (*it).0 == 1).unwrap(), &Entry(1, 1));
-    println!("STACK2: {:?}", stack);
     stack.push_frame();
     stack.insert(Entry(2, 2));
     assert!(stack.num_frames() == 3);
     assert_eq!(stack.get(|it| (*it).0 == 1).unwrap(), &Entry(1, 1));
-
+    println!("STACK: {:?}", stack);
+    stack.finalize();
 }

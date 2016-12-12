@@ -11,7 +11,7 @@ pub struct Stack<T> {
     items: Vec<T>,
 }
 
-impl<T> Stack<T> {
+impl<T: Clone> Stack<T> {
     // Use one variable for both: capacity and frames size
     // because we can't have more frames then stack capacity.
     pub fn with_capacity(cap: usize) -> Stack<T> {
@@ -93,10 +93,24 @@ impl<T> Stack<T> {
         Ok(())
     }
 
+    pub fn insert_many_v2(&mut self, items: &[T]) -> Result<(), Error> {
+        self.items.extend_from_slice(items);
+        Ok(())
+    }
+
+    pub fn insert_many_v3(&mut self, items: &[T]) -> Result<(), Error> {
+        self.items.extend(items.iter().cloned());
+        Ok(())
+    }
+
     // get(|item| (*item).key == 14)
     pub fn get<'a, F>(&'a self, f: F) -> Option<&T>
         where for<'r> F: FnMut(&'r &T) -> bool
     {
         self.items.iter().rev().find(f)
     }
-}
+
+    pub fn finalize(self) {
+        mem::forget(self.items);
+    }
+} 

@@ -6,6 +6,7 @@ use test::Bencher;
 use kernel::commands::*;
 use kernel::commands::ast::*;
 use kernel::streams::interpreter::*;
+use kernel::streams::stack::*;
 
 #[bench]
 fn empty(b: &mut Bencher) {
@@ -66,4 +67,38 @@ fn fac(b: &mut Bencher) {
     b.iter(|| {
         i.run(f);
     })
+}
+
+#[derive(Debug,PartialEq,Clone)]
+struct Entry(u16, i64);
+
+#[bench]
+fn stack_batch(b: &mut Bencher) {
+    let capacity = (!0 as u16) as usize;
+    let mut stack: Stack<Entry> = Stack::with_capacity(capacity);
+    let items = [Entry(9, 9), Entry(6, 6), Entry(7, 7)];
+    b.iter(|| {
+        stack.insert_many(&items);
+    });
+    stack.finalize();
+}
+
+#[bench]
+fn stack_iter(b: &mut Bencher) {
+    let capacity = (!0 as u16) as usize;
+    let mut stack: Stack<Entry> = Stack::with_capacity(capacity);
+    let items = [Entry(9, 9), Entry(6, 6), Entry(7, 7)];
+    b.iter(|| {
+        stack.insert_many_v2(&items);
+    });
+}
+
+#[bench]
+fn stack_iter_cloned(b: &mut Bencher) {
+    let capacity = (!0 as u16) as usize;
+    let mut stack: Stack<Entry> = Stack::with_capacity(capacity);
+    let items = [Entry(9, 9), Entry(6, 6), Entry(7, 7)];
+    b.iter(|| {
+        stack.insert_many_v3(&items);
+    });
 }
