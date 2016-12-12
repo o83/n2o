@@ -280,25 +280,41 @@ impl<'ast> Arena<'ast> {
         }
     }
 
-    pub fn ast(&'ast self, n: AST<'ast>) -> &'ast AST<'ast> {
+    pub fn ast(&self, n: AST<'ast>) -> &'ast AST<'ast> {
         let b = Box::new(n);
         let p: *const AST<'ast> = &*b;
         self.asts.borrow_mut().push(b);
         unsafe { &*p }
     }
 
-    pub fn lazy(&'ast self, n: Lazy<'ast>) -> &'ast Lazy<'ast> {
+    pub fn lazy(&self, n: Lazy<'ast>) -> &'ast Lazy<'ast> {
         let b = Box::new(n);
         let p: *const Lazy<'ast> = &*b;
         self.lazys.borrow_mut().push(b);
         unsafe { &*p }
     }
 
-    pub fn cont(&'ast self, n: Cont<'ast>) -> &'ast Cont<'ast> {
+    pub fn cont(&self, n: Cont<'ast>) -> &'ast Cont<'ast> {
         let b = Box::new(n);
         let p: *const Cont<'ast> = &*b;
         self.conts.borrow_mut().push(b);
         unsafe { &*p }
+    }
+
+    pub fn intern(&self, n: AST<'ast>) -> &'ast AST<'ast> {
+        self.ast(n)
+        // match n {
+        //     AST::Name(s) => {
+        //     if arena.names.contains_key(&s) {
+        //         arena.ast(AST::NameInt(arena.names[&s]))
+        //     } else {
+        //         let a = arena.names_size;
+        //         arena.names.insert(s.clone(), a);
+        //         arena.names_size = a + 1;
+        //         arena.ast(AST::NameInt(a))
+        //     }
+        // }
+        // _ => panic!("parse error"),
     }
 }
 
@@ -428,19 +444,7 @@ pub fn lazy<'ast>(n: Lazy<'ast>, arena: &'ast Arena<'ast>) -> &'ast Lazy<'ast> {
 }
 
 pub fn name_atomize<'ast>(n: AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
-    match n {
-        AST::Name(s) => {
-            if arena.names.contains_key(&s) {
-                arena.ast(AST::NameInt(arena.names[&s]))
-            } else {
-                let a = arena.names_size;
-                arena.names.insert(s.clone(), a);
-                arena.names_size = a + 1;
-                arena.ast(AST::NameInt(a))
-            }
-        }
-        _ => panic!("parse error"),
-    }
+    arena.intern(n)
 }
 
 pub fn call<'ast>(l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
