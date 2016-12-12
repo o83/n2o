@@ -76,7 +76,10 @@ impl<'ast> Interpreter<'ast> {
         })
     }
 
-    fn handle_defer(&'ast self, a: &'ast AST<'ast>, cont: &'ast Cont<'ast>) -> Result<&'ast Lazy<'ast>, Error> {
+    fn handle_defer(&'ast self,
+                    a: &'ast AST<'ast>,
+                    cont: &'ast Cont<'ast>)
+                    -> Result<&'ast Lazy<'ast>, Error> {
         match a {
             &AST::Assign(name, body) => {
                 Ok(self.arena.lazy(Lazy::Defer(body, self.arena.cont(Cont::Assign(name, cont)))))
@@ -91,22 +94,33 @@ impl<'ast> Interpreter<'ast> {
                 }
             }
             &AST::List(x) => self.evaluate_expr(x, cont),
-            &AST::Call(c, a) => Ok(self.arena.lazy(Lazy::Defer(a, self.arena.cont(Cont::Call(c, cont))))),
+            &AST::Call(c, a) => {
+                Ok(self.arena.lazy(Lazy::Defer(a, self.arena.cont(Cont::Call(c, cont)))))
+            }
             &AST::Verb(ref verb, left, right) => {
                 match (left, right) {
                     (&AST::Number(_), _) => {
                         Ok(self.arena.lazy(Lazy::Defer(right,
-                                                       self.arena.cont(Cont::Verb(verb.clone(), left, 0, cont)))))
+                                                       self.arena.cont(Cont::Verb(verb.clone(),
+                                                                                  left,
+                                                                                  0,
+                                                                                  cont)))))
                     }
                     (_, &AST::Number(_)) => {
                         Ok(self.arena.lazy(Lazy::Defer(left,
                                                        self.arena
-                                                           .cont(Cont::Verb(verb.clone(), right, 1, cont)))))
+                                                           .cont(Cont::Verb(verb.clone(),
+                                                                            right,
+                                                                            1,
+                                                                            cont)))))
                     }
                     (x, y) => {
                         Ok(self.arena.lazy(Lazy::Defer(x,
                                                        self.arena
-                                                           .cont(Cont::Verb(verb.clone(), y, 0, cont)))))
+                                                           .cont(Cont::Verb(verb.clone(),
+                                                                            y,
+                                                                            0,
+                                                                            cont)))))
                     }
                 }
             }
@@ -120,7 +134,10 @@ impl<'ast> Interpreter<'ast> {
         }
     }
 
-    fn lookup(&'ast self, name: u16, env: &'ast Environment<'ast>) -> Result<&'ast AST<'ast>, Error> {
+    fn lookup(&'ast self,
+              name: u16,
+              env: &'ast Environment<'ast>)
+              -> Result<&'ast AST<'ast>, Error> {
         match env.get(name, None) {
             Some(v) => Ok(v),
             None => {
@@ -138,7 +155,9 @@ impl<'ast> Interpreter<'ast> {
                         cont: &'ast Cont<'ast>)
                         -> Result<&'ast Lazy<'ast>, Error> {
         match fun {
-            &AST::Lambda(names, body) => self.run_cont(&body, self.arena.cont(Cont::Func(names, args, cont))),
+            &AST::Lambda(names, body) => {
+                self.run_cont(&body, self.arena.cont(Cont::Func(names, args, cont)))
+            }
             &AST::NameInt(s) => {
                 match self.env.get(s, None) {
                     Some(v) => self.evaluate_fun(v, args, cont),
@@ -180,7 +199,10 @@ impl<'ast> Interpreter<'ast> {
         }
     }
 
-    pub fn run_cont(&'ast self, val: &'ast AST<'ast>, cont: &'ast Cont<'ast>) -> Result<&'ast Lazy<'ast>, Error> {
+    pub fn run_cont(&'ast self,
+                    val: &'ast AST<'ast>,
+                    cont: &'ast Cont<'ast>)
+                    -> Result<&'ast Lazy<'ast>, Error> {
         match cont {
             &Cont::Call(callee, cont) => {
                 match val {
@@ -200,7 +222,12 @@ impl<'ast> Interpreter<'ast> {
                 match val {
                     &AST::Number(0) => Ok(self.arena.lazy(Lazy::Defer(else_expr, cont))),
                     &AST::Number(_) => Ok(self.arena.lazy(Lazy::Defer(if_expr, cont))),
-                    x => Ok(self.arena.lazy(Lazy::Defer(x, self.arena.cont(Cont::Cond(if_expr, else_expr, cont))))),
+                    x => {
+                        Ok(self.arena.lazy(Lazy::Defer(x,
+                                                       self.arena.cont(Cont::Cond(if_expr,
+                                                                                  else_expr,
+                                                                                  cont)))))
+                    }
                 }
             }
             &Cont::Assign(name, cont) => {
