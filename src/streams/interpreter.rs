@@ -63,77 +63,90 @@ pub struct Tape<'ast> {
     cont: &'ast Cont<'ast>,
 }
 
-fn handle_defer<'ast>(a: &'ast AST<'ast>, tape: Tape<'ast>) -> Result<Lazy<'ast>, Error<'ast>> {
-    match *a {
-        AST::Assign(name, body) => {
-            Ok(*tape.arena.lazy(Lazy::Defer(body,
-                                            Tape {
-                                                env: tape.env.clone(),
-                                                arena: tape.arena,
-                                                cont: &Cont::Assign(name, tape),
-                                            })))
+fn handle_defer<'ast>(a: &'ast AST<'ast>,
+                      tape: Tape<'ast>)
+                      -> Result<&'ast Lazy<'ast>, Error<'ast>> {
+    match a {
+        &AST::Assign(name, body) => {
+            Ok(tape.arena.lazy(Lazy::Defer(body,
+                                           Tape {
+                                               env: tape.env.clone(),
+                                               arena: tape.arena,
+                                               cont: tape.arena.cont(Cont::Assign(name, tape)),
+                                           })))
         }
-        AST::Cond(val, left, right) => {
-            match *val {
-                AST::Number(x) => tape.run(val), 
+        &AST::Cond(val, left, right) => {
+            match val {
+                &AST::Number(x) => tape.run(val), 
                 x => {
-                    Ok(*tape.arena.lazy(Lazy::Defer(&x,
-                                                    Tape {
-                                                        env: tape.env.clone(),
-                                                        arena: tape.arena,
-                                                        cont: &Cont::Cond(left, right, tape),
-                                                    })))
+                    Ok(tape.arena
+                        .lazy(Lazy::Defer(x,
+                                          Tape {
+                                              env: tape.env.clone(),
+                                              arena: tape.arena,
+                                              cont: tape.arena.cont(Cont::Cond(left, right, tape)),
+                                          })))
                 }
             }
         }
-        AST::List(x) => evaluate_expr(x, tape),
-        AST::Call(c, a) => {
-            Ok(*tape.arena.lazy(Lazy::Defer(a,
-                                            Tape {
-                                                env: tape.env.clone(),
-                                                arena: tape.arena,
-                                                cont: &Cont::Call(c, tape),
-                                            })))
+        &AST::List(x) => evaluate_expr(x, tape),
+        &AST::Call(c, a) => {
+            Ok(tape.arena.lazy(Lazy::Defer(a,
+                                           Tape {
+                                               env: tape.env.clone(),
+                                               arena: tape.arena,
+                                               cont: tape.arena.cont(Cont::Call(c, tape)),
+                                           })))
         }
-        AST::Verb(verb, left, right) => {
-            match (*left, *right) {
-                (AST::Number(_), _) => {
-                    Ok(*tape.arena.lazy(Lazy::Defer(right,
-                                                    Tape {
-                                                        env: tape.env.clone(),
-                                                        arena: tape.arena,
-                                                        cont: &Cont::Verb(verb, left, 0, tape),
-                                                    })))
+        &AST::Verb(verb, left, right) => {
+            match (left, right) {
+                (&AST::Number(_), _) => {
+                    Ok(tape.arena
+                        .lazy(Lazy::Defer(right,
+                                          Tape {
+                                              env: tape.env.clone(),
+                                              arena: tape.arena,
+                                              cont: tape.arena
+                                                  .cont(Cont::Verb(verb.clone(), left, 0, tape)),
+                                          })))
                 }
-                (_, AST::Number(_)) => {
-                    Ok(*tape.arena.lazy(Lazy::Defer(left,
-                                                    Tape {
-                                                        env: tape.env.clone(),
-                                                        arena: tape.arena,
-                                                        cont: &Cont::Verb(verb, right, 1, tape),
-                                                    })))
+                (_, &AST::Number(_)) => {
+                    Ok(tape.arena.lazy(Lazy::Defer(left,
+                                                   Tape {
+                                                       env: tape.env.clone(),
+                                                       arena: tape.arena,
+                                                       cont: tape.arena
+                                                           .cont(Cont::Verb(verb.clone(),
+                                                                            right,
+                                                                            1,
+                                                                            tape)),
+                                                   })))
                 }
                 (x, y) => {
-                    Ok(*tape.arena.lazy(Lazy::Defer(&x,
-                                                    Tape {
-                                                        env: tape.env.clone(),
-                                                        arena: tape.arena,
-                                                        cont: &Cont::Verb(verb, &y, 0, tape),
-                                                    })))
+                    Ok(tape.arena
+                        .lazy(Lazy::Defer(x,
+                                          Tape {
+                                              env: tape.env.clone(),
+                                              arena: tape.arena,
+                                              cont: tape.arena
+                                                  .cont(Cont::Verb(verb.clone(), y, 0, tape)),
+                                          })))
                 }
             }
         }
-        AST::NameInt(name) => {
+        &AST::NameInt(name) => {
             match lookup(name, tape.env.clone()) {
-                Ok(v) => tape.run(&v),
+                Ok(v) => tape.run(v),
                 Err(x) => Err(x),
             }
         }
-        x => tape.run(&x),
+        x => tape.run(x),
     }
 }
 
-fn lookup<'ast>(name: u16, env: Rc<RefCell<Environment<'ast>>>) -> Result<AST<'ast>, Error<'ast>> {
+fn lookup<'ast>(name: u16,
+                env: Rc<RefCell<Environment<'ast>>>)
+                -> Result<&'ast AST<'ast>, Error<'ast>> {
     match env.borrow().get(&name) {
         Some(v) => Ok(v),
         None => {
@@ -148,7 +161,7 @@ fn lookup<'ast>(name: u16, env: Rc<RefCell<Environment<'ast>>>) -> Result<AST<'a
 pub fn evaluate_fun<'ast>(fun: &'ast AST<'ast>,
                           args: &'ast AST<'ast>,
                           tape: Tape<'ast>)
-                          -> Result<Lazy<'ast>, Error<'ast>> {
+                          -> Result<&'ast Lazy<'ast>, Error<'ast>> {
     match *fun {
         AST::Lambda(names, body) => {
             Tape {
@@ -189,15 +202,15 @@ pub fn evaluate_fun<'ast>(fun: &'ast AST<'ast>,
 
 pub fn evaluate_expr<'ast>(exprs: &'ast AST<'ast>,
                            tape: Tape<'ast>)
-                           -> Result<Lazy<'ast>, Error<'ast>> {
+                           -> Result<&'ast Lazy<'ast>, Error<'ast>> {
     match *exprs {
         AST::Cons(car, cdr) => {
-            Ok(*tape.arena.lazy(Lazy::Defer(car,
-                                            Tape {
-                                                env: tape.env.clone(),
-                                                arena: tape.arena,
-                                                cont: &Cont::Expressions(cdr, tape),
-                                            })))
+            Ok(tape.arena.lazy(Lazy::Defer(car,
+                                           Tape {
+                                               env: tape.env.clone(),
+                                               arena: tape.arena,
+                                               cont: tape.arena.cont(Cont::Expressions(cdr, tape)),
+                                           })))
         }
         AST::Nil => {
             Err(Error::EvalError {
@@ -205,7 +218,7 @@ pub fn evaluate_expr<'ast>(exprs: &'ast AST<'ast>,
                 ast: AST::Nil,
             })
         }
-        x => Ok(*tape.arena.lazy(Lazy::Defer(&x, tape))),
+        x => Ok(tape.arena.lazy(Lazy::Defer(&x, tape))),
     }
 }
 
@@ -226,20 +239,20 @@ impl<'ast> Interpreter<'ast> {
     pub fn run(&mut self,
                ast: &'ast AST<'ast>,
                arena: &'ast Arena<'ast>)
-               -> Result<AST<'ast>, Error<'ast>> {
+               -> Result<&'ast AST<'ast>, Error<'ast>> {
         let mut a = 0;
         let mut b = try!(evaluate_expr(ast,
                                        Tape {
                                            env: self.root,
                                            arena: arena,
-                                           cont: &Cont::Return,
+                                           cont: arena.cont(Cont::Return),
                                        }));
         //  while a < 5 {
         loop {
             debug!("[Trampoline:{}]:{:?}\n", a, b);
             match b {
-                Lazy::Defer(a, t) => b = try!(handle_defer(a, t)),
-                Lazy::Return(a) => return Ok(*a),
+                &Lazy::Defer(a, t) => b = try!(handle_defer(a, t)),
+                &Lazy::Return(a) => return Ok(a),
             }
         }
         Err(Error::EvalError {
@@ -251,26 +264,25 @@ impl<'ast> Interpreter<'ast> {
 
 
 impl<'ast> Tape<'ast> {
-    pub fn run(self, val: &'ast AST<'ast>) -> Result<Lazy<'ast>, Error<'ast>> {
-        let x = self.cont;
-        match *x {
+    pub fn run(self, val: &'ast AST<'ast>) -> Result<&'ast Lazy<'ast>, Error<'ast>> {
+        match self.cont {
             // Cont::Lambda(code, left, right, env, k) =>
             // {
             // lambda::eval(code, left, right, env, val, k)
             // }
             //
-            Cont::Call(callee, tape) => {
-                match *val {
-                    AST::Dict(v) => evaluate_fun(callee, &v, tape),
-                    _ => evaluate_fun(callee, &val, tape),
+            &Cont::Call(callee, tape) => {
+                match val {
+                    &AST::Dict(v) => evaluate_fun(callee, v, tape),
+                    x => evaluate_fun(callee, x, tape),
                 }
             }
-            Cont::Func(names, args, tape) => {
+            &Cont::Func(names, args, tape) => {
                 let local_env = Environment::new_child(tape.env);
                 // for (name, value) in *names.into_iter().zip(*args.into_iter()) {
                 //    try!(local_env.borrow_mut().define(ast::extract_name(name), value));
                 // }
-                evaluate_expr(&val,
+                evaluate_expr(val,
                               Tape {
                                   env: local_env,
                                   arena: tape.arena,
@@ -278,61 +290,65 @@ impl<'ast> Tape<'ast> {
                               })
 
             }
-            Cont::Cond(if_expr, else_expr, tape) => {
-                match *val {
-                    AST::Number(0) => Ok(*tape.arena.lazy(Lazy::Defer(else_expr, tape))),
-                    AST::Number(_) => Ok(*tape.arena.lazy(Lazy::Defer(if_expr, tape))),
+            &Cont::Cond(if_expr, else_expr, tape) => {
+                match val {
+                    &AST::Number(0) => Ok(tape.arena.lazy(Lazy::Defer(else_expr, tape))),
+                    &AST::Number(_) => Ok(tape.arena.lazy(Lazy::Defer(if_expr, tape))),
                     x => {
-                        Ok(Lazy::Defer(&x,
-                                       Tape {
-                                           env: tape.env.clone(),
-                                           arena: tape.arena,
-                                           cont: &Cont::Cond(if_expr, else_expr, tape),
-                                       }))
+                        Ok(tape.arena.lazy(Lazy::Defer(x,
+                                                       Tape {
+                                                           env: tape.env.clone(),
+                                                           arena: tape.arena,
+                                                           cont: tape.arena
+                                                               .cont(Cont::Cond(if_expr,
+                                                                                else_expr,
+                                                                                tape)),
+                                                       })))
                     }
                 }
             }
-            Cont::Assign(name, tape) => {
-                match *name {
-                    AST::NameInt(s) => {
+            &Cont::Assign(name, tape) => {
+                match name {
+                    &AST::NameInt(s) => {
                         try!(tape.env.borrow_mut().define(s, val.clone()));
-                        evaluate_expr(&val, tape)
+                        evaluate_expr(val, tape)
                     }
                     x => {
                         Err(Error::EvalError {
                             desc: "Can assign only to var".to_string(),
-                            ast: x,
+                            ast: *x,
                         })
                     }
 
                 }
             }
-            Cont::Verb(verb, right, swap, mut tape) => {
-                match (*right, *val) {
-                    (AST::Number(_), AST::Number(_)) => {
+            &Cont::Verb(verb, right, swap, tape) => {
+                match (right, val) {
+                    (&AST::Number(_), &AST::Number(_)) => {
                         match swap {
-                            0 => tape.run(&verb::eval(verb, *right, *val).unwrap()),
-                            _ => tape.run(&verb::eval(verb, *val, *right).unwrap()),
+                            0 => tape.run(&verb::eval(verb, right, val).unwrap()),
+                            _ => tape.run(&verb::eval(verb, val, right).unwrap()),
                         }
                     }
                     (x, y) => {
-                        Ok(*tape.arena.lazy(Lazy::Defer(&x,
-                                                        Tape {
-                                                            env: tape.env.clone(),
-                                                            arena: tape.arena,
-                                                            cont: &Cont::Verb(verb, &y, 0, tape),
-                                                        })))
+                        Ok(tape.arena.lazy(Lazy::Defer(&x,
+                                                       Tape {
+                                                           env: tape.env.clone(),
+                                                           arena: tape.arena,
+                                                           cont: tape.arena
+                                                               .cont(Cont::Verb(verb, &y, 0, tape)),
+                                                       })))
                     }
                 }
             }
-            Cont::Expressions(rest, mut tape) => {
+            &Cont::Expressions(rest, tape) => {
                 if rest.is_cons() || !rest.is_empty() {
                     evaluate_expr(rest, tape)
                 } else {
                     tape.run(val)
                 }
             }
-            _ => Ok(*self.arena.lazy(Lazy::Return(&val))),
+            x => Ok(self.arena.lazy(Lazy::Return(val))),
         }
     }
 }

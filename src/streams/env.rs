@@ -46,9 +46,9 @@ impl<'ast> Environment<'ast> {
         Ok(())
     }
 
-    pub fn get(&self, key: &u16) -> Option<AST<'ast>> {
+    pub fn get(&self, key: &u16) -> Option<&'ast AST<'ast>> {
         match self.values.get(key) {
-            Some(val) => Some(val.clone()),
+            Some(val) => Some(val),
             None => {
                 match self.parent {
                     Some(ref parent) => parent.borrow().get(key),
