@@ -341,15 +341,16 @@ impl<'ast> AST<'ast> {
     }
     pub fn to_vec(&self) -> Vec<AST<'ast>> {
         let mut out = vec![];
+        let mut l = self;
         loop {
-            match self {
+            match l {
                 &AST::Cons(car, cdr) => {
-                    out.push(car);
-                    *l = cdr;
+                    out.push((*car).clone());
+                    l = cdr;
                 }
                 &AST::Nil => break,
                 x => {
-                    out.push(x);
+                    out.push((*x).clone());
                     break;
                 }
             }
@@ -361,7 +362,6 @@ impl<'ast> AST<'ast> {
 impl<'ast> iter::IntoIterator for AST<'ast> {
     type Item = AST<'ast>;
     type IntoIter = vec::IntoIter<AST<'ast>>;
-
     fn into_iter(self) -> Self::IntoIter {
         self.to_vec().into_iter()
     }
