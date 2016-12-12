@@ -23,7 +23,7 @@ pub struct Console<'ast> {
     running: bool,
     token: Token,
     events: Events,
-    interpreter: UnsafeCell<Interpreter<'ast>>,
+    interpreter: Interpreter<'ast>,
 }
 
 impl<'ast> Console<'ast> {

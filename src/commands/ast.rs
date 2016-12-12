@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use commands::command;
 use streams::interpreter;
 use streams::interpreter::*;
+use std::cell::UnsafeCell;
 // use streams::atomize::*;
 
 #[derive(Debug)]
@@ -252,10 +253,9 @@ pub enum AST<'ast> {
 }
 
 
-#[derive(Debug,Clone)]
+#[derive(Debug)]
 pub struct Arena<'ast> {
-    pub names_size: u16,
-    pub names: HashMap<String, u16>,
+    pub names: UnsafeCell<HashMap<String, u16>>,
     pub symbols_size: u16,
     pub symbols: HashMap<String, u16>,
     pub sequences_size: u16,
@@ -268,8 +268,7 @@ pub struct Arena<'ast> {
 impl<'ast> Arena<'ast> {
     pub fn new() -> Arena<'ast> {
         Arena {
-            names_size: 0,
-            names: HashMap::new(),
+            names: UnsafeCell::new(HashMap::new()),
             symbols_size: 0,
             symbols: HashMap::new(),
             sequences_size: 0,
@@ -302,19 +301,19 @@ impl<'ast> Arena<'ast> {
     }
 
     pub fn intern(&self, n: AST<'ast>) -> &'ast AST<'ast> {
-        self.ast(n)
-        // match n {
-        //     AST::Name(s) => {
-        //     if arena.names.contains_key(&s) {
-        //         arena.ast(AST::NameInt(arena.names[&s]))
-        //     } else {
-        //         let a = arena.names_size;
-        //         arena.names.insert(s.clone(), a);
-        //         arena.names_size = a + 1;
-        //         arena.ast(AST::NameInt(a))
-        //     }
-        // }
-        // _ => panic!("parse error"),
+        match n {
+            AST::Name(s) => {
+                let names = unsafe { &mut *self.names.get() };
+                if names.contains_key(&s) {
+                    self.ast(AST::NameInt(names[&s]))
+                } else {
+                    let id = names.len() as u16;
+                    names.insert(s.clone(), id);
+                    self.ast(AST::NameInt(id))
+                }
+            }
+            _ => panic!("parse error"),
+        }
     }
 }
 
