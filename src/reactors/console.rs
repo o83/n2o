@@ -42,7 +42,7 @@ impl<'ast> Console<'ast> {
         let _ = io::stdout().flush();
     }
 
-    pub fn run(&mut self, poll: &mut Poll) -> io::Result<()> {
+    pub fn run(&'ast mut self, poll: &'ast mut Poll) -> io::Result<()> {
         try!(self.register(poll));
         println!("Welcome to O-CPS Interpreter v{}!", VERSION.to_string());
         while self.running {
@@ -72,7 +72,7 @@ impl<'ast> Console<'ast> {
             })
     }
 
-    fn ready(&mut self, poll: &mut Poll, token: Token, event: Ready) {
+    fn ready(&'ast mut self, poll: &'ast mut Poll, token: Token, event: Ready) {
         trace!("{:?} event = {:?}", token, event);
 
         if event.is_error() {
@@ -103,7 +103,7 @@ impl<'ast> Console<'ast> {
         }
     }
 
-    fn readable(&mut self, token: Token) -> io::Result<bool> {
+    fn readable(&'ast mut self, token: Token) -> io::Result<bool> {
         trace!("console is readable; token={:?}", token);
         let mut msg = [0u8; 128];
         let size = self.tele.read(&mut msg);
@@ -122,7 +122,7 @@ impl<'ast> Console<'ast> {
                             }
                             line => {
                                 let ref mut a = Arena::new();
-                                let ref mut x = ast::parse(&line.to_string(), a);
+                                let x = ast::parse(&line.to_string(), a);
                                 match self.interpreter.run(x, a) {
                                     Ok(r) => println!("{}", r),
                                     Err(e) => print!("{}", e),
@@ -140,7 +140,7 @@ impl<'ast> Console<'ast> {
         }
     }
 
-    pub fn read_lines<R: BufRead>(&mut self, config: R) -> io::Result<()> {
+    pub fn read_lines<R: BufRead>(&'ast mut self, config: R) -> io::Result<()> {
         for line in config.lines() {
             match line.unwrap().trim() {
                 "" => {
@@ -159,7 +159,7 @@ impl<'ast> Console<'ast> {
         Ok(())
     }
 
-    pub fn read_all<R: Read>(&mut self, mut config: R) -> io::Result<()> {
+    pub fn read_all<R: Read>(&'ast mut self, mut config: R) -> io::Result<()> {
         let mut text = String::new();
         try!(config.read_to_string(&mut text));
         let ref mut a = Arena::new();

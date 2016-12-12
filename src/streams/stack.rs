@@ -1,3 +1,4 @@
+use std::{mem, ptr, isize};
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
@@ -10,10 +11,18 @@ pub struct Stack<T> {
     items: Vec<T>,
 }
 
-impl<T> Stack<T> {
-    pub fn with_capacity(cap: usize, max_frames: usize) -> Stack<T> {
+// impl<T> Drop for Stack<T> {
+//     fn drop(&mut self) {
+        
+//     }
+// }
+
+impl<T: Clone> Stack<T> {
+    // Use one variable for both: capacity and frames size
+    // because we can't have more frames then stack capacity.
+    pub fn with_capacity(cap: usize) -> Stack<T> {
         Stack {
-            frames: Vec::with_capacity(max_frames),
+            frames: Vec::with_capacity(cap),
             items: Vec::with_capacity(cap),
         }
     }
@@ -31,6 +40,11 @@ impl<T> Stack<T> {
     #[inline]
     pub fn len(&self) -> usize {
         self.items.len()
+    }
+
+    #[inline]
+    pub fn free_len(&self) -> usize {
+        self.capacity() - self.items.len()
     }
 
     #[inline]
@@ -60,7 +74,7 @@ impl<T> Stack<T> {
         }
     }
 
-    pub fn add_item(&mut self, item: T) -> Result<(), Error> {
+    pub fn insert(&mut self, item: T) -> Result<(), Error> {
         if self.is_full() {
             Err(Error::Capacity)
         } else {
@@ -69,55 +83,37 @@ impl<T> Stack<T> {
         }
     }
 
-    // find_item(|item| (*item).key == 14)
-    pub fn find_item<'a, F>(&'a self, mut f: F) -> Option<&T>
-        where F: FnMut(&'a T) -> bool
-    {
-        for i in self.items.iter().rev() {
-            if f(i) {
-                return Some(i);
-            }
+    pub fn insert_many(&mut self, items: &[T]) -> Result<(), Error> {
+        let ln_from = items.len();
+        let ln_to = self.len();
+        let cap = self.capacity();
+        if (ln_from >= isize::MAX as usize) || (ln_from > self.free_len()) {
+            return Err(Error::Capacity);
         }
-        None
+        let to = self.items.as_mut_ptr();
+        let from = items.as_ptr();
+        unsafe {
+            ptr::copy_nonoverlapping(from, to.offset(ln_to as isize), ln_from);
+            let i = mem::replace(&mut self.items, Vec::from_raw_parts(to, ln_from + ln_to, cap));
+            mem::forget(i); 
+        };
+        Ok(())
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_frames_stack() {
-        let mut stack: Stack<u64> = Stack::with_capacity(128, 4);
-
-        assert!(stack.capacity() == 128);
-        assert!(stack.len() == 0);
-        assert!(stack.num_frames() == 0);
-
-        stack.push_frame();
-        assert!(stack.capacity() == 128);
-        assert!(stack.len() == 0);
-
-        stack.add_item(41);
-        assert!(stack.len() == 1);
-        assert!(stack.num_frames() == 1);
-
-        stack.push_frame();
-        stack.add_item(42);
-        stack.add_item(43);
-        stack.add_item(44);
-        assert!(stack.capacity() == 128);
-        assert!(stack.len() == 4);
-        assert!(stack.num_frames() == 2);
-        assert_eq!(stack.find_item(|it| *it == 43), Some(&43));
-
-        stack.pop_frame();
-        assert_eq!(stack.find_item(|it| *it == 43), None);
-        assert_eq!(stack.find_item(|it| *it == 41), Some(&41));
-        assert!(stack.num_frames() == 1);
-        assert!(stack.len() == 1);
-
-        assert_eq!(stack.pop_frame(), Ok(()));
-        assert_eq!(stack.pop_frame(), Err(Error::InvalidOperation));
+    pub fn insert_many_v2(&mut self, items: &[T]) -> Result<(), Error> {
+        self.items.extend_from_slice(items);
+        Ok(())
     }
-}
+
+    pub fn insert_many_v3(&mut self, items: &[T]) -> Result<(), Error> {
+        self.items.extend(items.iter().cloned());
+        Ok(())
+    }
+
+    // get(|item| (*item).key == 14)
+    pub fn get<'a, F>(&'a self, f: F) -> Option<&T>
+        where for<'r> F: FnMut(&'r &T) -> bool
+    {
+        self.items.iter().rev().find(f)
+    }
+} 

@@ -17,6 +17,7 @@ use streams::interpreter::*;
 pub enum Error<'ast> {
     ParseError,
     EvalError { desc: String, ast: AST<'ast> },
+    InternalError,
 }
 
 impl<'ast> fmt::Display for Error<'ast> {
@@ -26,6 +27,7 @@ impl<'ast> fmt::Display for Error<'ast> {
             Error::EvalError { ref desc, ref ast } => {
                 write!(f, "Eval error: {}.\nCaused here: {:?}\n", desc, ast)
             }
+            Error::InternalError => write!(f, "Internal error!\n"),
         }
     }
 }
