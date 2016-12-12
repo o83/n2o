@@ -304,10 +304,7 @@ impl<'ast> Arena<'ast> {
     }
 }
 
-pub fn parse<'ast>(s: &String, a: &'ast Arena<'ast>) -> &'ast AST<'ast> {
-    let ref mut x = interpreter::Interpreter::new().unwrap();
-    command::parse_Mex(a, s).unwrap()
-}
+
 
 impl<'ast> AST<'ast> {
     pub fn len(&self) -> usize {

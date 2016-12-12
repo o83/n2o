@@ -28,12 +28,13 @@ pub struct Console<'ast> {
 impl<'ast> Console<'ast> {
     pub fn new() -> Self {
         let tok = 10_000_000;
+        let ref mut arena = Arena::new();
         Console {
             tele: Tele::new(Token(tok)),
             token: Token(tok),
             running: true,
             events: Events::with_capacity(1024),
-            interpreter: Interpreter::new().unwrap(),
+            interpreter: Interpreter::new(arena).unwrap(),
         }
     }
 
@@ -121,9 +122,8 @@ impl<'ast> Console<'ast> {
                                 Ok(true)
                             }
                             line => {
-                                let ref mut a = Arena::new();
-                                let x = ast::parse(&line.to_string(), a);
-                                match self.interpreter.run(x, a) {
+                                let x = self.interpreter.parse(&line.to_string());
+                                match self.interpreter.run(x) {
                                     Ok(r) => println!("{}", r),
                                     Err(e) => print!("{}", e),
                                 };
@@ -147,9 +147,8 @@ impl<'ast> Console<'ast> {
                     println!("{}", AST::Nil);
                 }
                 line => {
-                    let ref mut a = Arena::new();
-                    let ref mut x = ast::parse(&line.to_string(), a);
-                    match self.interpreter.run(x, a) {
+                    let ref mut x = self.interpreter.parse(&line.to_string());
+                    match self.interpreter.run(x) {
                         Ok(r) => println!("{}", r),
                         Err(e) => print!("{:?}", e),
                     };
@@ -162,9 +161,8 @@ impl<'ast> Console<'ast> {
     pub fn read_all<R: Read>(&'ast mut self, mut config: R) -> io::Result<()> {
         let mut text = String::new();
         try!(config.read_to_string(&mut text));
-        let ref mut a = Arena::new();
-        let ref mut x = ast::parse(&text.to_string(), a);
-        match self.interpreter.run(x, a) {
+        let ref mut x = self.interpreter.parse(&text.to_string());
+        match self.interpreter.run(x) {
             Ok(r) => println!("{}", r),
             Err(e) => print!("{:?}", e),
         };
