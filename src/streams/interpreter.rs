@@ -173,8 +173,9 @@ impl<'ast> Interpreter<'ast> {
                 self.run_cont(&body, self.arena.cont(Cont::Func(names, args, cont)))
             }
             &AST::NameInt(s) => {
-                match self.env.get(s, None) {
-                    Some(v) => self.evaluate_fun(v, args, cont),
+                let (s1, s2) = self.split();
+                match s1.env.get(s, None) {
+                    Some(v) => s2.evaluate_fun(v, args, cont),
                     None => {
                         Err(Error::EvalError {
                             desc: "Unknown variable".to_string(),
