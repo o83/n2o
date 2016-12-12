@@ -17,18 +17,12 @@ use commands::ast;
 // Interpreter, Lazy and Cont
 
 pub struct Interpreter<'ast> {
-    pub root: Environment<'ast>,
-    pub names_size: u16,
-    pub symbols_size: u16,
-    pub sequences_size: u16,
-    pub names: HashMap<String, u16>,
-    pub symbols: HashMap<String, u16>,
-    pub sequences: HashMap<String, u16>,
+    arena: &'ast Arena<'ast>,
 }
 
 #[derive(Clone, Debug)]
 pub enum Lazy<'ast> {
-    Defer(&'ast AST<'ast>, Tape<'ast>),
+    Defer(&'ast AST<'ast>, &'ast Cont<'ast>),
     Return(&'ast AST<'ast>),
 }
 
@@ -44,50 +38,30 @@ pub enum Code {
 
 #[derive(Clone, Debug)]
 pub enum Cont<'ast> {
-    Expressions(&'ast AST<'ast>, Tape<'ast>),
-    Lambda(Code, &'ast AST<'ast>, &'ast AST<'ast>, Tape<'ast>),
-    Assign(&'ast AST<'ast>, Tape<'ast>),
-    Cond(&'ast AST<'ast>, &'ast AST<'ast>, Tape<'ast>),
-    Func(&'ast AST<'ast>, &'ast AST<'ast>, Tape<'ast>),
-    Call(&'ast AST<'ast>, Tape<'ast>),
-    Verb(Verb, &'ast AST<'ast>, u8, Tape<'ast>),
-    Adverb(Adverb, &'ast AST<'ast>, Tape<'ast>),
+    Expressions(&'ast AST<'ast>, &'ast Cont<'ast>),
+    Lambda(Code, &'ast AST<'ast>, &'ast AST<'ast>, &'ast Cont<'ast>),
+    Assign(&'ast AST<'ast>, &'ast Cont<'ast>),
+    Cond(&'ast AST<'ast>, &'ast AST<'ast>, &'ast Cont<'ast>),
+    Func(&'ast AST<'ast>, &'ast AST<'ast>, &'ast Cont<'ast>),
+    Call(&'ast AST<'ast>, &'ast Cont<'ast>),
+    Verb(Verb, &'ast AST<'ast>, u8, &'ast Cont<'ast>),
+    Adverb(Adverb, &'ast AST<'ast>, &'ast Cont<'ast>),
     Return,
 }
 
-#[derive(Clone, Debug)]
-pub struct Tape<'ast> {
-    arena: &'ast Arena<'ast>,
-    cont: &'ast Cont<'ast>,
-}
-
-
-
 impl<'ast> Interpreter<'ast> {
-    pub fn new() -> Result<Interpreter<'ast>, Error<'ast>> {
+    pub fn new(arena: &'ast Arena<'ast) -> Result<Interpreter<'ast>, Error<'ast>> {
         let env = try!(Environment::new_root());
         Ok(Interpreter {
-            root: env,
-            names_size: 0,
-            symbols_size: 0,
-            sequences_size: 0,
-            names: HashMap::new(),
-            symbols: HashMap::new(),
-            sequences: HashMap::new(),
+            arena: arena,
         })
     }
 
     pub fn run(&'ast mut self,
-               ast: &'ast AST<'ast>,
-               arena: &'ast Arena<'ast>)
+               ast: &'ast AST<'ast>)
                -> Result<&'ast AST<'ast>, Error<'ast>> {
         let mut a = 0;
-        let mut b = try!(evaluate_expr(ast,
-                                       Tape {
-                                           env: &self.root,
-                                           arena: arena,
-                                           cont: arena.cont(Cont::Return),
-                                       }));
+        let mut b = try!(evaluate_expr(ast, self.arena.cont(Cont::Return)));
         //  while a < 5 {
         loop {
             debug!("[Trampoline:{}]:{:?}\n", a, b);
@@ -104,15 +78,12 @@ impl<'ast> Interpreter<'ast> {
 
     fn handle_defer(&'ast mut self,
                     a: &'ast AST<'ast>,
-                    tape: Tape<'ast>)
+                    cont: &'ast Cont<'ast>)
                     -> Result<&'ast Lazy<'ast>, Error<'ast>> {
         match a {
             &AST::Assign(name, body) => {
-                Ok(tape.arena.lazy(Lazy::Defer(body,
-                                               Tape {
-                                                   arena: tape.arena,
-                                                   cont: tape.arena.cont(Cont::Assign(name, tape)),
-                                               })))
+                Ok(self.arena.lazy(Lazy::Defer(body, self.arena.cont(Cont::Assign(name, cont)),
+                                               )))
             }
             &AST::Cond(val, left, right) => {
                 match val {
