@@ -20,7 +20,7 @@ pub struct Environment<'ast> {
 }
 
 impl<'ast> Environment<'ast> {
-    pub fn new_root() -> Result<Environment<'ast>, Error<'ast>> {
+    pub fn new_root() -> Result<Environment<'ast>, Error> {
         Ok(Environment {
             parent: None,
             index: 0,

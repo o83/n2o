@@ -6,10 +6,7 @@ pub mod div;
 
 use commands::ast::*;
 
-pub fn eval<'ast>(verb: Verb,
-                  left: &'ast AST<'ast>,
-                  right: &'ast AST<'ast>)
-                  -> Result<AST<'ast>, Error<'ast>> {
+pub fn eval<'ast>(verb: Verb, left: &'ast AST<'ast>, right: &'ast AST<'ast>) -> Result<AST<'ast>, Error> {
     match verb {
         Verb::Plus => {
             let mut a = plus::new(left, right);
@@ -34,7 +31,7 @@ pub fn eval<'ast>(verb: Verb,
         x => {
             Err(Error::EvalError {
                 desc: "Verb is not implemented".to_string(),
-                ast: AST::Nil,
+                ast: format!("{:?}", AST::Nil),
             })
         }
     }

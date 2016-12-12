@@ -51,7 +51,7 @@ pub struct Interpreter<'ast> {
 }
 
 impl<'ast> Interpreter<'ast> {
-    pub fn new(arena: &'ast Arena<'ast>) -> Result<Interpreter<'ast>, Error<'ast>> {
+    pub fn new(arena: &'ast Arena<'ast>) -> Result<Interpreter<'ast>, Error> {
         let env = try!(Environment::new_root());
         Ok(Interpreter {
             arena: arena,
@@ -63,7 +63,7 @@ impl<'ast> Interpreter<'ast> {
         command::parse_Mex(self.arena, s).unwrap()
     }
 
-    pub fn run(&'ast mut self, ast: &'ast AST<'ast>) -> Result<&'ast AST<'ast>, Error<'ast>> {
+    pub fn run(&'ast mut self, ast: &'ast AST<'ast>) -> Result<&'ast AST<'ast>, Error> {
         let mut a = 0;
         let mut b = try!(self.evaluate_expr(ast, self.arena.cont(Cont::Return)));
         loop {
@@ -75,14 +75,11 @@ impl<'ast> Interpreter<'ast> {
         }
         Err(Error::EvalError {
             desc: "Program is terminated abnormally".to_string(),
-            ast: AST::Nil,
+            ast: format!("{:?}", AST::Nil),
         })
     }
 
-    fn handle_defer(&'ast mut self,
-                    a: &'ast AST<'ast>,
-                    cont: &'ast Cont<'ast>)
-                    -> Result<&'ast Lazy<'ast>, Error<'ast>> {
+    fn handle_defer(&'ast mut self, a: &'ast AST<'ast>, cont: &'ast Cont<'ast>) -> Result<&'ast Lazy<'ast>, Error> {
         match a {
             &AST::Assign(name, body) => {
                 Ok(self.arena.lazy(Lazy::Defer(body, self.arena.cont(Cont::Assign(name, cont)))))
@@ -126,13 +123,13 @@ impl<'ast> Interpreter<'ast> {
         }
     }
 
-    fn lookup(&'ast mut self, name: u16, env: &'ast Environment<'ast>) -> Result<&'ast AST<'ast>, Error<'ast>> {
+    fn lookup(&'ast mut self, name: u16, env: &'ast Environment<'ast>) -> Result<&'ast AST<'ast>, Error> {
         match env.get(name, None) {
             Some(v) => Ok(v),
             None => {
                 Err(Error::EvalError {
                     desc: "Identifier not found".to_string(),
-                    ast: AST::NameInt(name),
+                    ast: format!("{:?}", AST::NameInt(name)),
                 })
             }
         }
@@ -142,7 +139,7 @@ impl<'ast> Interpreter<'ast> {
                         fun: &'ast AST<'ast>,
                         args: &'ast AST<'ast>,
                         cont: &'ast Cont<'ast>)
-                        -> Result<&'ast Lazy<'ast>, Error<'ast>> {
+                        -> Result<&'ast Lazy<'ast>, Error> {
         match *fun {
             AST::Lambda(names, body) => self.run_cont(&body, self.arena.cont(Cont::Func(names, args, cont))),
             AST::NameInt(s) => {
@@ -151,7 +148,7 @@ impl<'ast> Interpreter<'ast> {
                     None => {
                         Err(Error::EvalError {
                             desc: "Unknown variable".to_string(),
-                            ast: AST::NameInt(s),
+                            ast: format!("{:?}", AST::NameInt(s)),
                         })
                     }
                 }
@@ -160,7 +157,7 @@ impl<'ast> Interpreter<'ast> {
                 println!("{:?}", x);
                 Err(Error::EvalError {
                     desc: "Call Error".to_string(),
-                    ast: x,
+                    ast: format!("{:?}", x),
                 })
             }
         }
@@ -169,7 +166,7 @@ impl<'ast> Interpreter<'ast> {
     pub fn evaluate_expr(&'ast mut self,
                          exprs: &'ast AST<'ast>,
                          cont: &'ast Cont<'ast>)
-                         -> Result<&'ast Lazy<'ast>, Error<'ast>> {
+                         -> Result<&'ast Lazy<'ast>, Error> {
         match exprs {
             &AST::Cons(car, cdr) => {
                 Ok(self.arena.lazy(Lazy::Defer(car,
@@ -179,17 +176,14 @@ impl<'ast> Interpreter<'ast> {
             &AST::Nil => {
                 Err(Error::EvalError {
                     desc: "Empty list".to_string(),
-                    ast: AST::Nil,
+                    ast: format!("{:?}", AST::Nil),
                 })
             }
             x => Ok(self.arena.lazy(Lazy::Defer(x, cont))),
         }
     }
 
-    pub fn run_cont(&'ast mut self,
-                    val: &'ast AST<'ast>,
-                    cont: &'ast Cont<'ast>)
-                    -> Result<&'ast Lazy<'ast>, Error<'ast>> {
+    pub fn run_cont(&'ast mut self, val: &'ast AST<'ast>, cont: &'ast Cont<'ast>) -> Result<&'ast Lazy<'ast>, Error> {
         match cont {
             &Cont::Call(callee, cont) => {
                 match val {
@@ -221,7 +215,7 @@ impl<'ast> Interpreter<'ast> {
                     x => {
                         Err(Error::EvalError {
                             desc: "Can assign only to var".to_string(),
-                            ast: *x,
+                            ast: format!("{:?}", x),
                         })
                     }
 
@@ -231,8 +225,14 @@ impl<'ast> Interpreter<'ast> {
                 match (right, val) {
                     (&AST::Number(_), &AST::Number(_)) => {
                         match swap {
-                            0 => self.run_cont(&verb::eval(verb, right, val).unwrap(), cont),
-                            _ => self.run_cont(&verb::eval(verb, val, right).unwrap(), cont),
+                            0 => {
+                                let a = verb::eval(verb, right, val).unwrap();
+                                self.run_cont(self.arena.ast(a), cont)
+                            }
+                            _ => {
+                                let a = verb::eval(verb, right, val).unwrap();
+                                self.run_cont(self.arena.ast(a), cont)
+                            }
                         }
                     }
                     (x, y) => {
