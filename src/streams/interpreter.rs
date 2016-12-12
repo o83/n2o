@@ -2,9 +2,7 @@
 // O-CPS INTERPRETER by 5HT et all
 
 use std::fmt;
-use std::collections::HashMap;
-use std::rc::Rc;
-use std::cell::RefCell;
+use std::cell::UnsafeCell;
 use std::iter;
 use std::vec;
 // use streams::lambda::{self, call, func};
@@ -71,14 +69,17 @@ impl<'ast> Interpreter<'ast> {
         command::parse_Mex(self.arena, s).unwrap()
     }
 
-    pub fn run(&'ast mut self, ast: &'ast AST<'ast>) -> Result<&'ast AST<'ast>, Error> {
+    pub fn run(i: UnsafeCell<Interpreter<'ast>>,
+               ast: &'ast AST<'ast>)
+               -> Result<&'ast AST<'ast>, Error> {
+        let i1: &mut Interpreter<'ast> = unsafe { &mut *i.get() };
         let mut a = 0;
-        let (s1, s2) = self.split();
-        let mut b = try!(s1.evaluate_expr(ast, self.arena.cont(Cont::Return)));
+        let mut b = try!(i1.evaluate_expr(ast, i1.arena.cont(Cont::Return)));
         loop {
             debug!("[Trampoline:{}]:{:?}\n", a, b);
-            match b {                
-                &Lazy::Defer(a, t) => b = try!(s2.handle_defer(a, t)),
+            let i2: &mut Interpreter<'ast> = unsafe { &mut *i.get() };
+            match b {             
+                &Lazy::Defer(a, t) => b = try!(i2.handle_defer(a, t)),
                 &Lazy::Return(a) => return Ok(a),
             }
         }

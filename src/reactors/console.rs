@@ -123,10 +123,10 @@ impl<'ast> Console<'ast> {
                             }
                             line => {
                                 let x = self.interpreter.parse(&line.to_string());
-                                match self.interpreter.run(x) {
-                                    Ok(r) => println!("{}", r),
-                                    Err(e) => print!("{}", e),
-                                };
+                                // match self.interpreter.run(x) {
+                                //     Ok(r) => println!("{}", r),
+                                //     Err(e) => print!("{}", e),
+                                // };
                                 Ok(true)
                             }
                         }
@@ -148,10 +148,10 @@ impl<'ast> Console<'ast> {
                 }
                 line => {
                     let ref mut x = self.interpreter.parse(&line.to_string());
-                    match self.interpreter.run(x) {
-                        Ok(r) => println!("{}", r),
-                        Err(e) => print!("{:?}", e),
-                    };
+                    // match self.interpreter.run(x) {
+                    //     Ok(r) => println!("{}", r),
+                    //     Err(e) => print!("{:?}", e),
+                    // };
                 }
             }
         }
@@ -162,10 +162,10 @@ impl<'ast> Console<'ast> {
         let mut text = String::new();
         try!(config.read_to_string(&mut text));
         let ref mut x = self.interpreter.parse(&text.to_string());
-        match self.interpreter.run(x) {
-            Ok(r) => println!("{}", r),
-            Err(e) => print!("{:?}", e),
-        };
+        // match self.interpreter.run(x) {
+        //     Ok(r) => println!("{}", r),
+        //     Err(e) => print!("{:?}", e),
+        // };
         Ok(())
     }
 }
