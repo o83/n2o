@@ -10,6 +10,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use commands::command;
 use streams::interpreter;
+use streams::interpreter::*;
 // use streams::atomize::*;
 
 #[derive(Debug)]
@@ -250,10 +251,18 @@ pub enum AST<'ast> {
     Cond(&'ast AST<'ast>, &'ast AST<'ast>, &'ast AST<'ast>),
 }
 
+
+#[derive(Debug,Clone)]
 pub struct Arena<'ast> {
     pub names_size: u16,
     pub names: HashMap<String, u16>,
-    data: RefCell<Vec<Box<AST<'ast>>>>,
+    pub symbols_size: u16,
+    pub symbols: HashMap<String, u16>,
+    pub sequences_size: u16,
+    pub sequences: HashMap<String, u16>,
+    asts: RefCell<Vec<Box<AST<'ast>>>>,
+    conts: RefCell<Vec<Box<Cont<'ast>>>>,
+    lazys: RefCell<Vec<Box<Lazy<'ast>>>>,
 }
 
 impl<'ast> Arena<'ast> {
@@ -261,21 +270,40 @@ impl<'ast> Arena<'ast> {
         Arena {
             names_size: 0,
             names: HashMap::new(),
-            data: RefCell::new(vec![]),
+            symbols_size: 0,
+            symbols: HashMap::new(),
+            sequences_size: 0,
+            sequences: HashMap::new(),
+            asts: RefCell::new(vec![]),
+            conts: RefCell::new(vec![]),
+            lazys: RefCell::new(vec![]),
         }
     }
 
-    pub fn alloc(&'ast self, n: AST<'ast>) -> &'ast AST<'ast> {
+    pub fn ast(&'ast self, n: AST<'ast>) -> &'ast AST<'ast> {
         let b = Box::new(n);
         let p: *const AST<'ast> = &*b;
-        self.data.borrow_mut().push(b);
+        self.asts.borrow_mut().push(b);
+        unsafe { &*p }
+    }
+
+    pub fn lazy(&'ast self, n: Lazy<'ast>) -> &'ast Lazy<'ast> {
+        let b = Box::new(n);
+        let p: *const Lazy<'ast> = &*b;
+        self.lazys.borrow_mut().push(b);
+        unsafe { &*p }
+    }
+
+    pub fn cont(&'ast self, n: Cont<'ast>) -> &'ast Cont<'ast> {
+        let b = Box::new(n);
+        let p: *const Cont<'ast> = &*b;
+        self.conts.borrow_mut().push(b);
         unsafe { &*p }
     }
 }
 
-pub fn parse<'ast>(s: &String) -> &'ast AST<'ast> {
+pub fn parse<'ast>(s: &String, a: &'ast Arena<'ast>) -> &'ast AST<'ast> {
     let ref mut x = interpreter::Interpreter::new().unwrap();
-    let ref mut a = Arena::new();
     command::parse_Mex(a, s).unwrap()
 }
 
@@ -387,23 +415,31 @@ impl<'ast> fmt::Display for Cell<'ast> {
 }
 
 pub fn nil<'ast>(arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
-    arena.alloc(AST::Nil)
+    arena.ast(AST::Nil)
 }
 
-pub fn alloc<'ast>(n: AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
-    arena.alloc(n)
+pub fn ast<'ast>(n: AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
+    arena.ast(n)
+}
+
+pub fn cont<'ast>(n: Cont<'ast>, arena: &'ast Arena<'ast>) -> &'ast Cont<'ast> {
+    arena.cont(n)
+}
+
+pub fn lazy<'ast>(n: Lazy<'ast>, arena: &'ast Arena<'ast>) -> &'ast Lazy<'ast> {
+    arena.lazy(n)
 }
 
 pub fn name_atomize<'ast>(n: AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
     match n {
         AST::Name(s) => {
             if arena.names.contains_key(&s) {
-                arena.alloc(AST::NameInt(arena.names[&s]))
+                arena.ast(AST::NameInt(arena.names[&s]))
             } else {
                 let a = arena.names_size;
                 arena.names.insert(s.clone(), a);
                 arena.names_size = a + 1;
-                arena.alloc(AST::NameInt(a))
+                arena.ast(AST::NameInt(a))
             }
         }
         _ => panic!("parse error"),
@@ -414,14 +450,14 @@ pub fn call<'ast>(l: &'ast AST<'ast>,
                   r: &'ast AST<'ast>,
                   arena: &'ast Arena<'ast>)
                   -> &'ast AST<'ast> {
-    alloc(AST::Call(l, r), arena)
+    ast(AST::Call(l, r), arena)
 }
 
 pub fn cons<'ast>(l: &'ast AST<'ast>,
                   r: &'ast AST<'ast>,
                   arena: &'ast Arena<'ast>)
                   -> &'ast AST<'ast> {
-    alloc(AST::Cons(l, r), arena)
+    ast(AST::Cons(l, r), arena)
 }
 
 pub fn fun<'ast>(l: &'ast AST<'ast>,
@@ -429,21 +465,21 @@ pub fn fun<'ast>(l: &'ast AST<'ast>,
                  arena: &'ast Arena<'ast>)
                  -> &'ast AST<'ast> {
     match *l {
-        AST::Nil => arena.alloc(AST::Lambda(arena.alloc(AST::Name("x".to_string())), r)),
-        _ => arena.alloc(AST::Lambda(l, r)),
+        AST::Nil => arena.ast(AST::Lambda(arena.ast(AST::Name("x".to_string())), r)),
+        _ => arena.ast(AST::Lambda(l, r)),
     }
 }
 
 pub fn dict<'ast>(l: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
     match *l {
-        AST::Cons(a, b) => arena.alloc(AST::Dict(l)),
+        AST::Cons(a, b) => arena.ast(AST::Dict(l)),
         x => &x,
     }
 }
 
 pub fn list<'ast>(l: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
     match *l {
-        AST::Cons(a, b) => arena.alloc(AST::List(l)),
+        AST::Cons(a, b) => arena.ast(AST::List(l)),
         x => &x,
     }
 }
@@ -461,7 +497,7 @@ pub fn verb<'ast>(v: Verb,
                         AST::Cons(a, b) => {
                             match *b {
                                 AST::Cons(t, f) => {
-                                    arena.alloc(AST::Cond(a, t, arena.alloc(AST::List(f))))
+                                    arena.ast(AST::Cond(a, t, arena.ast(AST::List(f))))
                                 }
                                 x => &x,
                             }
@@ -473,25 +509,23 @@ pub fn verb<'ast>(v: Verb,
             };
             match *l {
                 AST::Nil => rexpr,
-                _ => arena.alloc(AST::Call(l, rexpr)), 
+                _ => arena.ast(AST::Call(l, rexpr)), 
             }
         }
         _ => {
             match *r { // optional AST transformations could be done during parsing
                 AST::Adverb(a, al, ar) => {
                     match a {
-                        Adverb::Assign => arena.alloc(AST::Assign(al, ar)),
+                        Adverb::Assign => arena.ast(AST::Assign(al, ar)),
                         _ => {
-                            arena.alloc(AST::Adverb(a,
-                                                    arena.alloc(AST::Verb(v,
-                                                                          l,
-                                                                          arena.alloc(AST::Nil))),
-                                                    ar))
+                            arena.ast(AST::Adverb(a,
+                                                  arena.ast(AST::Verb(v, l, arena.ast(AST::Nil))),
+                                                  ar))
                         }
 
                     }
                 }
-                _ => arena.alloc(AST::Verb(v, l, r)),
+                _ => arena.ast(AST::Verb(v, l, r)),
             }
         }
     }
@@ -503,7 +537,7 @@ pub fn adverb<'ast>(a: Adverb,
                     arena: &'ast Arena<'ast>)
                     -> &'ast AST<'ast> {
     match a {
-        Adverb::Assign => arena.alloc(AST::Assign(l, r)),
-        _ => arena.alloc(AST::Adverb(a, l, r)),
+        Adverb::Assign => arena.ast(AST::Assign(l, r)),
+        _ => arena.ast(AST::Adverb(a, l, r)),
     }
 }

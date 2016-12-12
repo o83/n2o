@@ -13,6 +13,7 @@ use io::options::*;
 use io::tele::*;
 use commands::*;
 use commands::ast::AST;
+use commands::ast::*;
 use streams::interpreter::Interpreter;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -121,8 +122,9 @@ impl<'ast> Console<'ast> {
                                 Ok(true)
                             }
                             line => {
-                                let ref mut x = ast::parse(&line.to_string());
-                                match self.interpreter.run(x) {
+                                let ref mut a = Arena::new();
+                                let ref mut x = ast::parse(&line.to_string(), a);
+                                match self.interpreter.run(x, a) {
                                     Ok(r) => println!("{}", r),
                                     Err(e) => print!("{}", e),
                                 };
@@ -146,8 +148,9 @@ impl<'ast> Console<'ast> {
                     println!("{}", AST::Nil);
                 }
                 line => {
-                    let ref mut x = ast::parse(&line.to_string());
-                    match self.interpreter.run(x) {
+                    let ref mut a = Arena::new();
+                    let ref mut x = ast::parse(&line.to_string(), a);
+                    match self.interpreter.run(x, a) {
                         Ok(r) => println!("{}", r),
                         Err(e) => print!("{:?}", e),
                     };
@@ -160,8 +163,9 @@ impl<'ast> Console<'ast> {
     pub fn read_all<R: Read>(&mut self, mut config: R) -> io::Result<()> {
         let mut text = String::new();
         try!(config.read_to_string(&mut text));
-        let ref mut x = ast::parse(&text.to_string());
-        match self.interpreter.run(x) {
+        let ref mut a = Arena::new();
+        let ref mut x = ast::parse(&text.to_string(), a);
+        match self.interpreter.run(x, a) {
             Ok(r) => println!("{}", r),
             Err(e) => print!("{:?}", e),
         };
