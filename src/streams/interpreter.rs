@@ -57,7 +57,9 @@ impl<'ast> Interpreter<'ast> {
     }
 
     pub fn parse(&'ast self, s: &String) -> &'ast AST<'ast> {
-        command::parse_Mex(&self.arena, s).unwrap()
+        let s = command::parse_Mex(&self.arena, s).unwrap();
+        self.arena.to_string();
+        s
     }
 
     pub fn run(&'ast self, ast: &'ast AST<'ast>) -> Result<&'ast AST<'ast>, Error> {
@@ -151,7 +153,7 @@ impl<'ast> Interpreter<'ast> {
                 }
             }
             x => {
-                println!("{:?}", x);
+                // println!("{:?}", x);
                 Err(Error::EvalError {
                     desc: "Call Error".to_string(),
                     ast: format!("{:?}", x),
@@ -197,7 +199,7 @@ impl<'ast> Interpreter<'ast> {
             &Cont::Func(names, args, cont) => {
                 self.env.new_child();
                 for (name, value) in names.clone().into_iter().zip(args.clone().into_iter()) {
-                    println!("define: {:?} {:?}", name, value);
+                    // println!("define: {:?} {:?}", name, value);
                     try!(self.env.define(ast::extract_name(name), value));
                 }
                 self.evaluate_expr(val, cont)

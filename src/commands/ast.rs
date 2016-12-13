@@ -13,6 +13,7 @@ use streams::interpreter;
 use streams::interpreter::*;
 use std::cell::UnsafeCell;
 // use streams::atomize::*;
+use std::{mem, ptr, isize};
 
 #[derive(Debug)]
 pub enum Error {
@@ -77,7 +78,7 @@ pub enum Type {
 // "/" : [null,      null,       null,       null,       pack,       pack,       null,    null  ],
 // "\\": [null,      null,       null,       unpack,     split,      null,       null,    null  ],
 
-#[derive(PartialEq,Debug,Clone)]
+#[derive(PartialEq,Debug,Clone, Copy)]
 pub enum Verb {
     Plus = 0,
     Minus = 1,
@@ -167,7 +168,7 @@ impl fmt::Display for Verb {
     }
 }
 
-#[derive(PartialEq,Debug,Clone)]
+#[derive(PartialEq,Debug,Clone, Copy)]
 pub enum Adverb {
     Each,
     EachPrio,
@@ -260,9 +261,9 @@ pub struct Arena<'ast> {
     pub symbols: HashMap<String, u16>,
     pub sequences_size: u16,
     pub sequences: HashMap<String, u16>,
-    asts: RefCell<Vec<Box<AST<'ast>>>>,
-    conts: RefCell<Vec<Box<Cont<'ast>>>>,
-    lazys: RefCell<Vec<Box<Lazy<'ast>>>>,
+    asts: UnsafeCell<Vec<AST<'ast>>>,
+    conts: UnsafeCell<Vec<Cont<'ast>>>,
+    lazys: UnsafeCell<Vec<Lazy<'ast>>>,
 }
 
 impl<'ast> Arena<'ast> {
@@ -273,31 +274,45 @@ impl<'ast> Arena<'ast> {
             symbols: HashMap::new(),
             sequences_size: 0,
             sequences: HashMap::new(),
-            asts: RefCell::new(vec![]),
-            conts: RefCell::new(vec![]),
-            lazys: RefCell::new(vec![]),
+            asts: UnsafeCell::new(Vec::with_capacity(1024)),
+            conts: UnsafeCell::new(Vec::with_capacity(1024)),
+            lazys: UnsafeCell::new(Vec::with_capacity(1024)),
         }
     }
 
     pub fn ast(&self, n: AST<'ast>) -> &'ast AST<'ast> {
-        let b = Box::new(n);
-        let p: *const AST<'ast> = &*b;
-        self.asts.borrow_mut().push(b);
-        unsafe { &*p }
+        // let b = Box::new(n);
+        // let p: *const AST<'ast> = &*b;
+        let ast = unsafe { &mut *self.asts.get() };
+        // let to = ast.as_mut_ptr();
+        // unsafe {
+        //     ptr::copy_nonoverlapping(&n, to.offset(ast.len() as isize - 1), 0);
+        // }
+        // mem::forget(i);
+
+        ast.push(n.clone());
+        ast.last().unwrap()
     }
 
     pub fn lazy(&self, n: Lazy<'ast>) -> &'ast Lazy<'ast> {
-        let b = Box::new(n);
-        let p: *const Lazy<'ast> = &*b;
-        self.lazys.borrow_mut().push(b);
-        unsafe { &*p }
+        // let b = Box::new(n);
+        // let p: *const Lazy<'ast> = &*b;
+        // self.lazys.borrow_mut().push(n);
+        // unsafe { &*p }
+
+        let lazys = unsafe { &mut *self.lazys.get() };
+        lazys.push(n.clone());
+        lazys.last().unwrap()
     }
 
     pub fn cont(&self, n: Cont<'ast>) -> &'ast Cont<'ast> {
-        let b = Box::new(n);
-        let p: *const Cont<'ast> = &*b;
-        self.conts.borrow_mut().push(b);
-        unsafe { &*p }
+        // let b = Box::new(n);
+        // let p: *const Cont<'ast> = &*b;
+        // self.conts.borrow_mut().push(n);
+        // unsafe { &*p }
+        let conts = unsafe { &mut *self.conts.get() };
+        conts.push(n.clone());
+        conts.last().unwrap()
     }
 
     pub fn intern(&self, n: AST<'ast>) -> &'ast AST<'ast> {
@@ -314,6 +329,11 @@ impl<'ast> Arena<'ast> {
             }
             _ => panic!("parse error"),
         }
+    }
+
+    pub fn to_string(&self) {
+        let ast = unsafe { &mut *self.asts.get() };
+        println!("AST {}, {:?}", ast.len(), ast);
     }
 }
 

@@ -15,16 +15,18 @@ fn empty(b: &mut Bencher) {
 #[bench]
 fn parse1(b: &mut Bencher) {
     let mut i = Interpreter::new().unwrap();
+    let eval = &"1*2+3".to_string();
     b.iter(|| {
-        i.parse(&"1*2+3".to_string());
+        i.parse(eval);
     })
 }
 
 #[bench]
 fn parse2(b: &mut Bencher) {
     let mut i = Interpreter::new().unwrap();
+    let eval = &"+/{x*y}[(a;b;c;d;e);(2;6;2;1;3)]".to_string();
     b.iter(|| {
-        i.parse(&"+/{x*y}[(a;b;c;d;e);(2;6;2;1;3)]".to_string());
+        i.parse(eval);
     })
 }
 
@@ -36,10 +38,10 @@ fn parse2(b: &mut Bencher) {
 #[bench]
 fn parse4(b: &mut Bencher) {
     let mut i = Interpreter::new().unwrap();
+    let eval = &"();[];{};(());[[]];{{}};()();1 2 3;(1 2 3);[1 2 3];[a[b[c[d]]]];(a(b(c(d))));{a{b{c{d}}}};"
+        .to_string();
     b.iter(|| {
-        i.parse(&"();[];{};(());[[]];{{}};()();1 2 3;(1 2 3);[1 2 \
-                            3];[a[b[c[d]]]];(a(b(c(d))));{a{b{c{d}}}};"
-            .to_string());
+        i.parse(eval);
     })
 }
 
@@ -64,10 +66,11 @@ fn factorial(value: i64) -> i64 {
 #[bench]
 fn fac(b: &mut Bencher) {
     let mut i = Interpreter::new().unwrap();
-    let code = i.parse(&"fac:{$[x=1;1;x*fac[x-1]]}".to_string());
-    i.run(code).unwrap();
-    let f = i.parse(&"fac[5]".to_string());
+    let eval = &"fac:{$[x=1;1;x*fac[x-1]]}; fac[5]".to_string();
+    // i.run(code).unwrap();
+    // let f = i.parse(&"fac[5]".to_string());
     b.iter(|| {
-        i.run(f);
+        let code = i.parse(eval);
+        // i.run(code);
     })
 }
