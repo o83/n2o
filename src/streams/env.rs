@@ -20,7 +20,7 @@ pub struct Environment<'ast> {
 
 impl<'ast> Environment<'ast> {
     pub fn new_root() -> Result<Environment<'ast>, Error> {
-        Ok(Environment { stack: UnsafeCell::new(Stack::with_capacity(20000 as usize)) })
+        Ok(Environment { stack: UnsafeCell::new(Stack::with_capacity(10000 as usize)) })
     }
 
     pub fn new_child(&'ast self) -> Result<usize, Error> {
