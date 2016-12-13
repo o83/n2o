@@ -255,9 +255,7 @@ pub enum AST<'ast> {
 #[derive(Debug)]
 pub struct Arena<'ast> {
     pub names: UnsafeCell<HashMap<String, u16>>,
-    pub symbols_size: u16,
     pub symbols: HashMap<String, u16>,
-    pub sequences_size: u16,
     pub sequences: HashMap<String, u16>,
     asts: UnsafeCell<Vec<AST<'ast>>>,
     conts: UnsafeCell<Vec<Cont<'ast>>>,
@@ -268,9 +266,7 @@ impl<'ast> Arena<'ast> {
     pub fn new() -> Arena<'ast> {
         Arena {
             names: UnsafeCell::new(HashMap::new()),
-            symbols_size: 0,
             symbols: HashMap::new(),
-            sequences_size: 0,
             sequences: HashMap::new(),
             asts: UnsafeCell::new(Vec::with_capacity(2048)),
             conts: UnsafeCell::new(Vec::with_capacity(2048)),
