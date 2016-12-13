@@ -10,7 +10,6 @@ pub fn eval<'ast>(verb: Verb,
                   left: &'ast AST<'ast>,
                   right: &'ast AST<'ast>)
                   -> Result<AST<'ast>, Error> {
-    println!("Verb: {:?} {:?} {:?}", verb, left, right);
     match verb {
         Verb::Plus => {
             let mut a = plus::new(left, right);
