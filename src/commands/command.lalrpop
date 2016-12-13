@@ -6,15 +6,10 @@ use commands::ast::*;
 use core::str::FromStr;
 
 grammar<'ast>(arena: &'ast Arena<'ast>);
-
 pub Mex:   &'ast AST<'ast> = { ExprList };
-
-
-// Three Type of Brackets and Their Lists 9 LOC
 
 List:      &'ast AST<'ast> = { "(" ")" => nil(arena), "(" <l:ExprList> ")" => list(l, arena), };
 Dict:      &'ast AST<'ast> = { "[" "]" => nil(arena), "[" <l:ExprList> "]" => dict(l, arena), };
-
 Lambda:    &'ast AST<'ast> = { "{" <m:ExprList> "}"          => fun(nil(arena),m, arena),
                    "{[" <c:NameList> "]" <m:ExprList> "}"    => fun(c,m, arena),
                    "{" "}"                                   => fun(nil(arena),nil(arena), arena) };
@@ -22,14 +17,9 @@ Lambda:    &'ast AST<'ast> = { "{" <m:ExprList> "}"          => fun(nil(arena),m
 Call:      &'ast AST<'ast> = { <c:Noun> <a:CallCont>                     => call(c,a, arena), };
 NameList:  &'ast AST<'ast> = { Name, <o:Name> <m:NameCont>               => cons(o,m, arena), };
 ExprList:  &'ast AST<'ast> = { ExprCont, Expr, <o:Expr> <m:ExprCont>     => cons(o,m, arena), };
-
 CallCont:  &'ast AST<'ast> = { Noun, <m:Call>                            => m };
 NameCont:  &'ast AST<'ast> = { ";" => nil(arena), ";" <m:NameList>       => m };
 ExprCont:  &'ast AST<'ast> = { ";" => nil(arena), ";" <m:ExprList>       => m };
-
-
-// Expressions and Statements 4 LOC
-
 Noun:      &'ast AST<'ast> = { Name, Number, Hexlit, Bool, Symbol, List, Dict, Sequence, Lambda, Ioverb };
 Expr:      &'ast AST<'ast> = { Noun, Call, Verbs, Adverbs, };
 
