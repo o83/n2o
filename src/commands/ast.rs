@@ -25,9 +25,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::ParseError => write!(f, "Parse error!\n"),
-            Error::EvalError { ref desc, ref ast } => {
-                write!(f, "Eval error: {}.\nCaused here: {}\n", desc, ast)
-            }
+            Error::EvalError { ref desc, ref ast } => write!(f, "Eval error: {}.\nCaused here: {}\n", desc, ast),
             Error::InternalError => write!(f, "Internal error!\n"),
         }
     }
@@ -448,26 +446,17 @@ pub fn name_atomize<'ast>(n: AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'
     arena.intern(n)
 }
 
-pub fn call<'ast>(l: &'ast AST<'ast>,
-                  r: &'ast AST<'ast>,
-                  arena: &'ast Arena<'ast>)
-                  -> &'ast AST<'ast> {
+pub fn call<'ast>(l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
     ast(AST::Call(l, r), arena)
 }
 
-pub fn cons<'ast>(l: &'ast AST<'ast>,
-                  r: &'ast AST<'ast>,
-                  arena: &'ast Arena<'ast>)
-                  -> &'ast AST<'ast> {
+pub fn cons<'ast>(l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
     ast(AST::Cons(l, r), arena)
 }
 
-pub fn fun<'ast>(l: &'ast AST<'ast>,
-                 r: &'ast AST<'ast>,
-                 arena: &'ast Arena<'ast>)
-                 -> &'ast AST<'ast> {
+pub fn fun<'ast>(l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
     match *l {
-        AST::Nil => arena.ast(AST::Lambda(arena.ast(AST::Name("x".to_string())), r)),
+        AST::Nil => arena.ast(AST::Lambda(arena.intern(AST::Name("x".to_string())), r)),
         _ => arena.ast(AST::Lambda(l, r)),
     }
 }
@@ -486,11 +475,7 @@ pub fn list<'ast>(l: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'as
     }
 }
 
-pub fn verb<'ast>(v: Verb,
-                  l: &'ast AST<'ast>,
-                  r: &'ast AST<'ast>,
-                  arena: &'ast Arena<'ast>)
-                  -> &'ast AST<'ast> {
+pub fn verb<'ast>(v: Verb, l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
     match v {
         Verb::Cast => {
             let rexpr = match r {
@@ -498,9 +483,7 @@ pub fn verb<'ast>(v: Verb,
                     match d {
                         &AST::Cons(a, b) => {
                             match b {
-                                &AST::Cons(t, f) => {
-                                    arena.ast(AST::Cond(a, t, arena.ast(AST::List(f))))
-                                }
+                                &AST::Cons(t, f) => arena.ast(AST::Cond(a, t, arena.ast(AST::List(f)))),
                                 x => x,
                             }
                         }
@@ -533,11 +516,7 @@ pub fn verb<'ast>(v: Verb,
     }
 }
 
-pub fn adverb<'ast>(a: Adverb,
-                    l: &'ast AST<'ast>,
-                    r: &'ast AST<'ast>,
-                    arena: &'ast Arena<'ast>)
-                    -> &'ast AST<'ast> {
+pub fn adverb<'ast>(a: Adverb, l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
     match a {
         Adverb::Assign => arena.ast(AST::Assign(l, r)),
         _ => arena.ast(AST::Adverb(a, l, r)),

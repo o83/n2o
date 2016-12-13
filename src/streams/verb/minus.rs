@@ -16,7 +16,7 @@ pub fn new<'ast>(lvalue: &'ast AST<'ast>, rvalue: &'ast AST<'ast>) -> Minus<'ast
 
 impl<'ast> Minus<'ast> {
     fn a_a(l: i64, r: i64) -> AST<'ast> {
-        AST::Number(l - r)
+        AST::Number(r - l)
     }
     fn l_a(l: &'ast AST<'ast>, r: &'ast AST<'ast>) -> AST<'ast> {
         AST::Number(1)
