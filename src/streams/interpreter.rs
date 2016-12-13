@@ -64,10 +64,10 @@ impl<'ast> Interpreter<'ast> {
         let mut a = 0;
         let mut b = try!(self.evaluate_expr(ast, self.arena.cont(Cont::Return)));
         loop {
-            debug!("[Trampoline:{}]:{:?}\n", a, b);
+            // debug!("[Trampoline:{}]:{:?}\n", a, b);
             match b {             
                 &Lazy::Defer(x, t) => {
-                    // a = a + 1;
+                    a = a + 1;
                     b = try!(self.handle_defer(x, t))
                 }
                 &Lazy::Return(a) => return Ok(a),
@@ -141,7 +141,7 @@ impl<'ast> Interpreter<'ast> {
                         cont: &'ast Cont<'ast>)
                         -> Result<&'ast Lazy<'ast>, Error> {
         match fun {
-            &AST::Lambda(names, body) => self.run_cont(&body, self.arena.cont(Cont::Func(names, args, cont))),
+            &AST::Lambda(names, body) => self.run_cont(body, self.arena.cont(Cont::Func(names, args, cont))),
             &AST::NameInt(s) => {
                 match self.env.get(s, None) {
                     Some(v) => self.evaluate_fun(v, args, cont),
@@ -181,6 +181,11 @@ impl<'ast> Interpreter<'ast> {
             }
             x => Ok(self.arena.lazy(Lazy::Defer(x, cont))),
         }
+    }
+
+    pub fn clean(&'ast mut self) {
+        self.arena = Arena::new();
+        self.env = Environment::new_root().unwrap();
     }
 
     pub fn run_cont(&'ast self, val: &'ast AST<'ast>, cont: &'ast Cont<'ast>) -> Result<&'ast Lazy<'ast>, Error> {

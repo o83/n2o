@@ -252,14 +252,11 @@ pub enum AST<'ast> {
     Cond(&'ast AST<'ast>, &'ast AST<'ast>, &'ast AST<'ast>),
 }
 
-
 #[derive(Debug)]
 pub struct Arena<'ast> {
     pub names: UnsafeCell<HashMap<String, u16>>,
-    pub symbols_size: u16,
-    pub symbols: HashMap<String, u16>,
-    pub sequences_size: u16,
-    pub sequences: HashMap<String, u16>,
+    pub symbols: UnsafeCell<HashMap<String, u16>>,
+    pub sequences: UnsafeCell<HashMap<String, u16>>,
     asts: RefCell<Vec<Box<AST<'ast>>>>,
     conts: RefCell<Vec<Box<Cont<'ast>>>>,
     lazys: RefCell<Vec<Box<Lazy<'ast>>>>,
@@ -269,10 +266,8 @@ impl<'ast> Arena<'ast> {
     pub fn new() -> Arena<'ast> {
         Arena {
             names: UnsafeCell::new(HashMap::new()),
-            symbols_size: 0,
-            symbols: HashMap::new(),
-            sequences_size: 0,
-            sequences: HashMap::new(),
+            symbols: UnsafeCell::new(HashMap::new()),
+            sequences: UnsafeCell::new(HashMap::new()),
             asts: RefCell::new(vec![]),
             conts: RefCell::new(vec![]),
             lazys: RefCell::new(vec![]),
@@ -308,7 +303,7 @@ impl<'ast> Arena<'ast> {
                     self.ast(AST::NameInt(names[&s]))
                 } else {
                     let id = names.len() as u16;
-                    names.insert(s.clone(), id);
+                    names.insert(s, id);
                     self.ast(AST::NameInt(id))
                 }
             }
@@ -316,8 +311,6 @@ impl<'ast> Arena<'ast> {
         }
     }
 }
-
-
 
 impl<'ast> AST<'ast> {
     pub fn len(&self) -> usize {
@@ -440,10 +433,6 @@ pub fn cont<'ast>(n: Cont<'ast>, arena: &'ast Arena<'ast>) -> &'ast Cont<'ast> {
 
 pub fn lazy<'ast>(n: Lazy<'ast>, arena: &'ast Arena<'ast>) -> &'ast Lazy<'ast> {
     arena.lazy(n)
-}
-
-pub fn name_atomize<'ast>(n: AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
-    arena.intern(n)
 }
 
 pub fn call<'ast>(l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
