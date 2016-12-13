@@ -58,7 +58,7 @@ impl<'ast> Interpreter<'ast> {
 
     pub fn parse(&'ast self, s: &String) -> &'ast AST<'ast> {
         let s = command::parse_Mex(&self.arena, s).unwrap();
-        self.arena.to_string();
+        // self.arena.to_string();
         s
     }
 
@@ -66,9 +66,12 @@ impl<'ast> Interpreter<'ast> {
         let mut a = 0;
         let mut b = try!(self.evaluate_expr(ast, self.arena.cont(Cont::Return)));
         loop {
-            debug!("[Trampoline:{}]:{:?}\n", a, b);
+            // debug!("[Trampoline:{}]:{:?}\n", a, b);
             match b {             
-                &Lazy::Defer(a, t) => b = try!(self.handle_defer(a, t)),
+                &Lazy::Defer(x, t) => {
+                    a = a + 1;
+                    b = try!(self.handle_defer(x, t))
+                }
                 &Lazy::Return(a) => return Ok(a),
             }
         }
@@ -76,6 +79,11 @@ impl<'ast> Interpreter<'ast> {
             desc: "Program is terminated abnormally".to_string(),
             ast: format!("{:?}", AST::Nil),
         })
+    }
+
+    pub fn gc(&self) -> Result<usize, Error> {
+        self.env.clean();
+        Ok(1)
     }
 
     fn handle_defer(&'ast self, a: &'ast AST<'ast>, cont: &'ast Cont<'ast>) -> Result<&'ast Lazy<'ast>, Error> {
@@ -140,7 +148,7 @@ impl<'ast> Interpreter<'ast> {
                         cont: &'ast Cont<'ast>)
                         -> Result<&'ast Lazy<'ast>, Error> {
         match fun {
-            &AST::Lambda(names, body) => self.run_cont(&body, self.arena.cont(Cont::Func(names, args, cont))),
+            &AST::Lambda(names, body) => self.run_cont(body, self.arena.cont(Cont::Func(names, args, cont))),
             &AST::NameInt(s) => {
                 match self.env.get(s, None) {
                     Some(v) => self.evaluate_fun(v, args, cont),
@@ -178,13 +186,7 @@ impl<'ast> Interpreter<'ast> {
                     ast: format!("{:?}", AST::Nil),
                 })
             }
-            x => {
-                Ok(self.arena.lazy(Lazy::Defer(x,
-                                               self.arena
-                                                   .cont(Cont::Expressions(self.arena
-                                                                               .ast(AST::Nil),
-                                                                           cont)))))
-            }
+            x => Ok(self.arena.lazy(Lazy::Defer(x, cont))),
         }
     }
 
@@ -199,7 +201,6 @@ impl<'ast> Interpreter<'ast> {
             &Cont::Func(names, args, cont) => {
                 self.env.new_child();
                 for (name, value) in names.clone().into_iter().zip(args.clone().into_iter()) {
-                    // println!("define: {:?} {:?}", name, value);
                     try!(self.env.define(ast::extract_name(name), value));
                 }
                 self.evaluate_expr(val, cont)
@@ -235,7 +236,7 @@ impl<'ast> Interpreter<'ast> {
                                 self.run_cont(self.arena.ast(a), cont)
                             }
                             _ => {
-                                let a = verb::eval(verb.clone(), right, val).unwrap();
+                                let a = verb::eval(verb.clone(), val, right).unwrap();
                                 self.run_cont(self.arena.ast(a), cont)
                             }
                         }

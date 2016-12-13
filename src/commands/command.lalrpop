@@ -24,8 +24,8 @@ NameList:  &'ast AST<'ast> = { Name, <o:Name> <m:NameCont>               => cons
 ExprList:  &'ast AST<'ast> = { ExprCont, Expr, <o:Expr> <m:ExprCont>     => cons(o,m, arena), };
 
 CallCont:  &'ast AST<'ast> = { Noun, <m:Call>                            => m };
-NameCont:  &'ast AST<'ast> = { ";" => nil(arena), ";" <m:NameList>         => m };
-ExprCont:  &'ast AST<'ast> = { ";" => nil(arena), ";" <m:ExprList>         => m };
+NameCont:  &'ast AST<'ast> = { ";" => nil(arena), ";" <m:NameList>       => m };
+ExprCont:  &'ast AST<'ast> = { ";" => nil(arena), ";" <m:ExprList>       => m };
 
 
 // Expressions and Statements 4 LOC
@@ -52,7 +52,7 @@ Adverbs:   &'ast AST<'ast> = {<a:Adverb>            => adverb(a,nil(arena),nil(a
 Number:    &'ast AST<'ast> = { <n:r"\d+">                         => ast(AST::Number(i64::from_str(n).unwrap()), arena), };
 Hexlit:    &'ast AST<'ast> = { <h:r"0x[a-zA-Z\d]+">               => ast(AST::Number(i64::from_str_radix(&h[2..], 16).unwrap()), arena), };
 Bool:      &'ast AST<'ast> = { <b:r"[01]+b">                      => ast(AST::Number(i64::from_str_radix(&b[0..b.len()-1], 2).unwrap()), arena), };
-Name:      &'ast AST<'ast> = { <n:r"[a-zA-Z][a-zA-Z\d]*">         => name_atomize(AST::Name(String::from(n)), arena), };
+Name:      &'ast AST<'ast> = { <n:r"[a-zA-Z][a-zA-Z\d]*">         => arena.intern(AST::Name(String::from(n))), };
 Symbol:    &'ast AST<'ast> = { <s:r"`([a-z][a-z0-9]*)?">          => ast(AST::Symbol(String::from(&s[1..s.len()])), arena), };
 Adverb: Adverb = { <a:r"[\x27:\x5C\x2F]:?">                       => Adverb::from_str(a).unwrap(), };
 Verb:     Verb = { <v:r"[+\x2D*$%!&|<>=~,^#_?@.]">                => Verb::from_str(v).unwrap(), };

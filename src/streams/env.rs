@@ -20,7 +20,7 @@ pub struct Environment<'ast> {
 
 impl<'ast> Environment<'ast> {
     pub fn new_root() -> Result<Environment<'ast>, Error> {
-        Ok(Environment { stack: UnsafeCell::new(Stack::with_capacity((!0 as u16) as usize)) })
+        Ok(Environment { stack: UnsafeCell::new(Stack::with_capacity(10000 as usize)) })
     }
 
     pub fn new_child(&'ast self) -> Result<usize, Error> {
@@ -47,5 +47,10 @@ impl<'ast> Environment<'ast> {
             Some(x) => Some(&x.1),
             None => None,
         }
+    }
+
+    pub fn clean(&self) {
+        let stack = unsafe { &mut *self.stack.get() };
+        stack.clean();
     }
 }

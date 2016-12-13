@@ -119,4 +119,9 @@ impl<T: Clone> Stack<T> {
             None => self.items.iter().rev().find(f),
         }
     }
+
+    pub fn clean(&mut self) {
+        self.items.clear();
+        self.frames.clear();
+    }
 }

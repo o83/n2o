@@ -253,7 +253,6 @@ pub enum AST<'ast> {
     Cond(&'ast AST<'ast>, &'ast AST<'ast>, &'ast AST<'ast>),
 }
 
-
 #[derive(Debug)]
 pub struct Arena<'ast> {
     pub names: UnsafeCell<HashMap<String, u16>>,
@@ -274,9 +273,9 @@ impl<'ast> Arena<'ast> {
             symbols: HashMap::new(),
             sequences_size: 0,
             sequences: HashMap::new(),
-            asts: UnsafeCell::new(Vec::with_capacity(1024)),
-            conts: UnsafeCell::new(Vec::with_capacity(1024)),
-            lazys: UnsafeCell::new(Vec::with_capacity(1024)),
+            asts: UnsafeCell::new(Vec::with_capacity(2048)),
+            conts: UnsafeCell::new(Vec::with_capacity(2048)),
+            lazys: UnsafeCell::new(Vec::with_capacity(2048)),
         }
     }
 
@@ -323,7 +322,7 @@ impl<'ast> Arena<'ast> {
                     self.ast(AST::NameInt(names[&s]))
                 } else {
                     let id = names.len() as u16;
-                    names.insert(s.clone(), id);
+                    names.insert(s, id);
                     self.ast(AST::NameInt(id))
                 }
             }
@@ -336,8 +335,6 @@ impl<'ast> Arena<'ast> {
         println!("AST {}, {:?}", ast.len(), ast);
     }
 }
-
-
 
 impl<'ast> AST<'ast> {
     pub fn len(&self) -> usize {
@@ -460,10 +457,6 @@ pub fn cont<'ast>(n: Cont<'ast>, arena: &'ast Arena<'ast>) -> &'ast Cont<'ast> {
 
 pub fn lazy<'ast>(n: Lazy<'ast>, arena: &'ast Arena<'ast>) -> &'ast Lazy<'ast> {
     arena.lazy(n)
-}
-
-pub fn name_atomize<'ast>(n: AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
-    arena.intern(n)
 }
 
 pub fn call<'ast>(l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
