@@ -69,5 +69,6 @@ fn fac(b: &mut Bencher) {
     let f = i.parse(&"fac[5]".to_string());
     b.iter(|| {
         i.run(f);
+        i.gc();
     })
 }

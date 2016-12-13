@@ -48,4 +48,9 @@ impl<'ast> Environment<'ast> {
             None => None,
         }
     }
+
+    pub fn clean(&self) {
+        let stack = unsafe { &mut *self.stack.get() };
+        stack.clean();
+    }
 }

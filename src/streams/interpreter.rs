@@ -79,6 +79,11 @@ impl<'ast> Interpreter<'ast> {
         })
     }
 
+    pub fn gc(&self) -> Result<usize, Error> {
+        self.env.clean();
+        Ok(1)
+    }
+
     fn handle_defer(&'ast self, a: &'ast AST<'ast>, cont: &'ast Cont<'ast>) -> Result<&'ast Lazy<'ast>, Error> {
         match a {
             &AST::Assign(name, body) => {
@@ -181,11 +186,6 @@ impl<'ast> Interpreter<'ast> {
             }
             x => Ok(self.arena.lazy(Lazy::Defer(x, cont))),
         }
-    }
-
-    pub fn clean(&'ast mut self) {
-        self.arena = Arena::new();
-        self.env = Environment::new_root().unwrap();
     }
 
     pub fn run_cont(&'ast self, val: &'ast AST<'ast>, cont: &'ast Cont<'ast>) -> Result<&'ast Lazy<'ast>, Error> {
