@@ -292,19 +292,14 @@ impl<'ast> Arena<'ast> {
         conts.last().unwrap()
     }
 
-    pub fn intern(&self, n: AST<'ast>) -> &'ast AST<'ast> {
-        match n {
-            AST::Name(s) => {
-                let names = unsafe { &mut *self.names.get() };
-                if names.contains_key(&s) {
-                    self.ast(AST::NameInt(names[&s]))
-                } else {
-                    let id = names.len() as u16;
-                    names.insert(s, id);
-                    self.ast(AST::NameInt(id))
-                }
-            }
-            _ => panic!("parse error"),
+    pub fn intern(&self, s: String) -> &'ast AST<'ast> {
+        let names = unsafe { &mut *self.names.get() };
+        if names.contains_key(&s) {
+            self.ast(AST::NameInt(names[&s]))
+        } else {
+            let id = names.len() as u16;
+            names.insert(s, id);
+            self.ast(AST::NameInt(id))
         }
     }
 
@@ -475,7 +470,7 @@ pub fn cons<'ast>(l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'as
 
 pub fn fun<'ast>(l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
     match *l {
-        AST::Nil => arena.ast(AST::Lambda(arena.intern(AST::Name("x".to_string())), r)),
+        AST::Nil => arena.ast(AST::Lambda(arena.intern("x".to_string()), r)),
         _ => arena.ast(AST::Lambda(l, r)),
     }
 }

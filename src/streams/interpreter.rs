@@ -57,9 +57,7 @@ impl<'ast> Interpreter<'ast> {
     }
 
     pub fn parse(&'ast self, s: &String) -> &'ast AST<'ast> {
-        let s = command::parse_Mex(&self.arena, s).unwrap();
-        // self.arena.to_string();
-        s
+        command::parse_Mex(&self.arena, s).unwrap()
     }
 
     pub fn run(&'ast self, ast: &'ast AST<'ast>) -> Result<&'ast AST<'ast>, Error> {
@@ -67,7 +65,7 @@ impl<'ast> Interpreter<'ast> {
         let mut b = try!(self.evaluate_expr(ast, self.arena.cont(Cont::Return)));
         loop {
             // debug!("[Trampoline:{}]:{:?}\n", a, b);
-            match b {             
+            match b {
                 &Lazy::Defer(x, t) => {
                     a = a + 1;
                     b = try!(self.handle_defer(x, t))
@@ -161,7 +159,6 @@ impl<'ast> Interpreter<'ast> {
                 }
             }
             x => {
-                // println!("{:?}", x);
                 Err(Error::EvalError {
                     desc: "Call Error".to_string(),
                     ast: format!("{:?}", x),
