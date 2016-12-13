@@ -23,7 +23,7 @@ pub struct Console<'ast> {
     running: bool,
     token: Token,
     events: Events,
-    interpreter: Interpreter<'ast>,
+    interpreter: UnsafeCell<Interpreter<'ast>>,
 }
 
 impl<'ast> Console<'ast> {
@@ -34,7 +34,7 @@ impl<'ast> Console<'ast> {
             token: Token(tok),
             running: true,
             events: Events::with_capacity(1024),
-            interpreter: Interpreter::new().unwrap(),
+            interpreter: UnsafeCell::new(Interpreter::new().unwrap()),
         }
     }
 
@@ -104,9 +104,10 @@ impl<'ast> Console<'ast> {
         }
     }
 
-    fn interpreter_run(&'ast mut self, text: String) {
-        let x = self.interpreter.parse(&text);
-        match self.interpreter.run(x) {
+    fn interpreter_run(&mut self, text: String) {
+        let i: &mut Interpreter = unsafe { &mut *self.interpreter.get() };
+        let x = i.parse(&text);
+        match i.run(x) {
             Ok(r) => println!("{}", r),
             Err(e) => print!("{}", e),
         }
@@ -130,13 +131,7 @@ impl<'ast> Console<'ast> {
                                 Ok(true)
                             }
                             line => {
-                                let i = Interpreter::new().unwrap();
-                                let x = i.parse(&line.to_string());
-                                match i.run(x) {
-                                    Ok(r) => println!("{}", r),
-                                    Err(e) => print!("{}", e),
-                                }
-                                // let _ = self.interpreter_run(line.to_string());
+                                let _ = self.interpreter_run(line.to_string());
                                 Ok(true)
                             }
                         }
@@ -156,8 +151,7 @@ impl<'ast> Console<'ast> {
                 "" => {
                     println!("{}", AST::Nil);
                 }
-                line => (),
-                // line => self.interpreter_run(line.to_string()),
+                line => self.interpreter_run(line.to_string()),
             }
         }
         Ok(())
@@ -166,7 +160,7 @@ impl<'ast> Console<'ast> {
     pub fn read_all<R: Read>(&mut self, mut config: R) -> io::Result<()> {
         let mut text = String::new();
         try!(config.read_to_string(&mut text));
-        // let _ = self.interpreter_run(text.to_string());
+        let _ = self.interpreter_run(text.to_string());
         Ok(())
     }
 }

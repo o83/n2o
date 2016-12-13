@@ -17,6 +17,7 @@ Features
 * Session Types and π-calculus semantics
 * 10-40ns latency
 * Minimal Dependencies
+* Zero-Copy Interpreter
 
 Prerequisites
 -------------
@@ -29,16 +30,11 @@ Test The O Language
 -------------------
 
 ```
-$ rlwrap ./target/debug/console init etc/ath/jrnl.q
-
-Ok(Adverb(Over, Call(Name("system"), Sequence("d .jrnl")), Verb(Minus, Name("jfnpt"),
-Adverb(Assign, Call(Name("Journal"), Call(Name("File"), Call(Name("Path"),
-Call(Name("Template"), Name("jfpt"))))), Adverb(Over, Sequence(""), Verb(Minus,
-Name("jfn"), Adverb(Over, Call(Name("Journal"), Call(Name("File"), Name("Name"))),
-Verb(Minus, Name("jfh"), Adverb(Over, Call(Name("Journal"), Call(Name("File"),
-Name("Hande"))), ...
-
-Console is listening...
+$ cargo build ; rlwrap ./target/debug/console 
+    Finished debug [unoptimized + debuginfo] target(s) in 0.0 secs
+Welcome to O-CPS Interpreter v0.11.0!
+> fac:{$[x=1;1;x*fac[x-1]]};fac[20]
+2432902008176640000
 >
 ```
 
