@@ -289,7 +289,7 @@ impl<'ast> Arena<'ast> {
         // }
         // mem::forget(i);
 
-        ast.push(n.clone());
+        ast.push(n);
         ast.last().unwrap()
     }
 
@@ -300,7 +300,7 @@ impl<'ast> Arena<'ast> {
         // unsafe { &*p }
 
         let lazys = unsafe { &mut *self.lazys.get() };
-        lazys.push(n.clone());
+        lazys.push(n);
         lazys.last().unwrap()
     }
 
@@ -310,7 +310,7 @@ impl<'ast> Arena<'ast> {
         // self.conts.borrow_mut().push(n);
         // unsafe { &*p }
         let conts = unsafe { &mut *self.conts.get() };
-        conts.push(n.clone());
+        conts.push(n);
         conts.last().unwrap()
     }
 
