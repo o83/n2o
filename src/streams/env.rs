@@ -11,7 +11,7 @@ use streams::stack::Stack;
 use std::cell::UnsafeCell;
 
 #[derive(Debug, Clone)]
-pub struct Entry<'ast>(u16, &'ast AST<'ast>);
+pub struct Entry<'ast>(pub u16, pub &'ast AST<'ast>);
 
 #[derive(Debug)]
 pub struct Environment<'ast> {
@@ -34,6 +34,12 @@ impl<'ast> Environment<'ast> {
     pub fn define(&'ast self, key: u16, value: &'ast AST<'ast>) -> Result<(), Error> {
         let stack = unsafe { &mut *self.stack.get() };
         stack.insert(Entry(key, value));
+        Ok(())
+    }
+
+    pub fn define_batch(&'ast self, items: &'ast [Entry]) -> Result<(), Error> {
+        let stack = unsafe { &mut *self.stack.get() };
+        stack.insert_many(items);
         Ok(())
     }
 

@@ -200,9 +200,7 @@ impl<'ast> Interpreter<'ast> {
             }
             &Cont::Func(names, args, cont) => {
                 self.env.new_child();
-                for (name, value) in names.into_iter().zip(args.into_iter()) {
-                    try!(self.env.define(ast::extract_name(name), value));
-                }
+                names.into_iter().zip(args.into_iter()).map(|(k, v)| self.env.define(ast::extract_name(k), v));
                 self.evaluate_expr(val, cont)
             }
             &Cont::Cond(if_expr, else_expr, cont) => {
