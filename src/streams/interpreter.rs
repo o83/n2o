@@ -195,7 +195,13 @@ impl<'ast> Interpreter<'ast> {
                     ast: format!("{:?}", AST::Nil),
                 })
             }
-            x => Ok(self.arena.lazy(Lazy::Defer(x, cont))),
+            x => {
+                Ok(self.arena.lazy(Lazy::Defer(x,
+                                               self.arena
+                                                   .cont(Cont::Expressions(self.arena
+                                                                               .ast(AST::Nil),
+                                                                           cont)))))
+            }
         }
     }
 
@@ -213,10 +219,10 @@ impl<'ast> Interpreter<'ast> {
             &Cont::Func(names, args, cont) => {
                 self.env.new_child();
                 for (name, value) in names.clone().into_iter().zip(args.clone().into_iter()) {
+                    println!("define: {:?} {:?}", name, value);
                     try!(self.env.define(ast::extract_name(name), value));
                 }
                 self.evaluate_expr(val, cont)
-
             }
             &Cont::Cond(if_expr, else_expr, cont) => {
                 match val {
