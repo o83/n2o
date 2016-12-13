@@ -7,14 +7,19 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 pub struct Cond {
-    left: AST,
-    right: AST,
+    left: AST<'ast>,
+    right: AST<'ast>,
     cont: Cont,
-    val: AST,
+    val: AST<'ast>,
     env: Rc<RefCell<Environment>>,
 }
 
-pub fn new(left: AST, right: AST, env: Rc<RefCell<Environment>>, val: AST, cont: Cont) -> Cond {
+pub fn new(left: AST<'ast>,
+           right: AST<'ast>,
+           env: Rc<RefCell<Environment>>,
+           val: AST<'ast>,
+           cont: Cont)
+           -> Cond {
     Cond {
         left: left,
         right: right,

@@ -12,10 +12,6 @@ Abstract Reactive Streams
 build = "build.rs"
 
 [[bin]]
-name = "sh"
-path = "src/apps/sh.rs"
-
-[[bin]]
 name = "sup"
 path = "src/apps/sup.rs"
 

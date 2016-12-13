@@ -7,14 +7,19 @@ use std::cell::RefCell;
 use streams::env::*;
 
 pub struct Assign {
-    var: AST,
-    args: AST,
+    var: AST<'ast>,
+    args: AST<'ast>,
     env: Rc<RefCell<Environment>>,
-    val: AST,
+    val: AST<'ast>,
     cont: Cont,
 }
 
-pub fn new(var: AST, args: AST, env: Rc<RefCell<Environment>>, val: AST, cont: Cont) -> Assign {
+pub fn new(var: AST<'ast>,
+           args: AST<'ast>,
+           env: Rc<RefCell<Environment>>,
+           val: AST<'ast>,
+           cont: Cont)
+           -> Assign {
     Assign {
         var: var,
         args: args,

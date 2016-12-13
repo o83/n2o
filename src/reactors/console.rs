@@ -12,20 +12,21 @@ use io::poll::*;
 use io::options::*;
 use io::tele::*;
 use commands::*;
-use commands::ast::AST;
+use commands::ast::*;
 use streams::interpreter::Interpreter;
+use std::cell::UnsafeCell;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-pub struct Console {
+pub struct Console<'ast> {
     tele: Tele,
     running: bool,
     token: Token,
     events: Events,
-    interpreter: Interpreter,
+    interpreter: Interpreter<'ast>,
 }
 
-impl Console {
+impl<'ast> Console<'ast> {
     pub fn new() -> Self {
         let tok = 10_000_000;
         Console {
@@ -103,6 +104,14 @@ impl Console {
         }
     }
 
+    fn interpreter_run(&'ast mut self, text: String) {
+        let x = self.interpreter.parse(&text);
+        match self.interpreter.run(x) {
+            Ok(r) => println!("{}", r),
+            Err(e) => print!("{}", e),
+        }
+    }
+
     fn readable(&mut self, token: Token) -> io::Result<bool> {
         trace!("console is readable; token={:?}", token);
         let mut msg = [0u8; 128];
@@ -121,11 +130,13 @@ impl Console {
                                 Ok(true)
                             }
                             line => {
-                    let ref mut x = ast::parse(&line.to_string());
-                                match self.interpreter.run(x) {
+                                let i = Interpreter::new().unwrap();
+                                let x = i.parse(&line.to_string());
+                                match i.run(x) {
                                     Ok(r) => println!("{}", r),
                                     Err(e) => print!("{}", e),
-                                };
+                                }
+                                // let _ = self.interpreter_run(line.to_string());
                                 Ok(true)
                             }
                         }
@@ -139,19 +150,14 @@ impl Console {
         }
     }
 
-    pub fn read_lines<R: BufRead>(&mut self, config: R) -> io::Result<()> {
+    pub fn read_lines<R: BufRead>(&'ast mut self, config: R) -> io::Result<()> {
         for line in config.lines() {
             match line.unwrap().trim() {
                 "" => {
                     println!("{}", AST::Nil);
                 }
-                line => {
-                    let ref mut x = ast::parse(&line.to_string());
-                    match self.interpreter.run(x) {
-                        Ok(r) => println!("{}", r),
-                        Err(e) => print!("{:?}", e),
-                    };
-                }
+                line => (),
+                // line => self.interpreter_run(line.to_string()),
             }
         }
         Ok(())
@@ -160,11 +166,7 @@ impl Console {
     pub fn read_all<R: Read>(&mut self, mut config: R) -> io::Result<()> {
         let mut text = String::new();
         try!(config.read_to_string(&mut text));
-                    let ref mut x = ast::parse(&text.to_string());
-        match self.interpreter.run(x) {
-            Ok(r) => println!("{}", r),
-            Err(e) => print!("{:?}", e),
-        };
+        // let _ = self.interpreter_run(text.to_string());
         Ok(())
     }
 }

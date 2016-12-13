@@ -7,74 +7,50 @@ use std::iter;
 use std::vec;
 use commands::ast::*;
 use fnv::*;
-type Linked<K, V> = HashMap<K, V, BuildHasherDefault<FnvHasher>>;
+use streams::stack::Stack;
+use std::cell::UnsafeCell;
 
-#[derive(PartialEq, Debug, Clone)]
-pub struct Environment {
-    pub index: u64,
-    pub parent: Option<Rc<RefCell<Environment>>>,
-    pub values: Linked<u16, AST>,
+#[derive(Debug, Clone)]
+pub struct Entry<'ast>(u16, AST<'ast>);
+
+#[derive(Debug)]
+pub struct Environment<'ast> {
+    stack: UnsafeCell<Stack<Entry<'ast>>>,
 }
 
-impl Environment {
-    pub fn new_root() -> Result<Rc<RefCell<Environment>>, Error> {
-        let mut env = Environment {
-            parent: None,
-            index: 0,
-            values: FnvHashMap::with_capacity_and_hasher(10, Default::default())
-        };
-        Ok(Rc::new(RefCell::new(env)))
+impl<'ast> Environment<'ast> {
+    pub fn new_root() -> Result<Environment<'ast>, Error> {
+        Ok(Environment { stack: UnsafeCell::new(Stack::with_capacity(10000 as usize)) })
     }
 
-    pub fn new_child(parent: Rc<RefCell<Environment>>) -> Rc<RefCell<Environment>> {
-        let idx = unsafe { (&*parent.as_unsafe_cell().get()).index };
-        let env = Environment {
-            parent: Some(parent),
-            index: idx + 1,
-            values: FnvHashMap::with_capacity_and_hasher(10, Default::default())
-        };
-        Rc::new(RefCell::new(env))
+    pub fn new_child(&'ast self) -> Result<usize, Error> {
+        let stack = unsafe { &mut *self.stack.get() };
+        match stack.push_frame() {
+            Ok(id) => Ok(id),
+            Err(_) => Err(Error::InternalError),
+        }
     }
 
-    pub fn index(parent: Rc<RefCell<Environment>>) -> u64 {
-        let a = unsafe { parent.as_unsafe_cell().get() };
-        unsafe { (&*a).index }
-    }
-
-    pub fn define(&mut self, key: u16, value: AST) -> Result<(), Error> {
-        self.values.insert(key, value);
+    pub fn define(&'ast self, key: u16, value: AST<'ast>) -> Result<(), Error> {
+        let stack = unsafe { &mut *self.stack.get() };
+        stack.insert(Entry(key, value));
+        // println!("Set {:?}:{:?} in Level {:?}",
+        //          key,
+        //          value,
+        //          stack.last_frame_id());
         Ok(())
     }
 
-    pub fn get(&self, key: &u16) -> Option<AST> {
-        match self.values.get(key) {
-            Some(val) => Some(val.clone()),
-            None => {
-                match self.parent {
-                    Some(ref parent) => parent.borrow().get(key),
-                    None => None,
-                }
-            }
+    pub fn get(&'ast self, key: u16, from: Option<usize>) -> Option<&'ast AST> {
+        let stack = unsafe { &mut *self.stack.get() };
+        match stack.get(|x| (*x).0 == key, from) {
+            Some(x) => Some(&x.1),
+            None => None,
         }
     }
 
-    pub fn find(&self, key: &u16) -> Option<(AST, Rc<RefCell<Environment>>)> {
-        match self.values.get(key) {
-            Some(val) => Some((val.clone(), Rc::new(RefCell::new(self.clone())))),
-            None => {
-                match self.parent {
-                    Some(ref parent) => parent.borrow().find(key),
-                    None => None,
-                }
-            }
-        }
-    }
-
-    pub fn get_root(env_ref: Rc<RefCell<Environment>>) -> Rc<RefCell<Environment>> {
-        let env = env_ref.borrow();
-        match env.parent {
-            Some(ref parent) => Environment::get_root(parent.clone()),
-            None => env_ref.clone(),
-        }
+    pub fn clean(&self) {
+        let stack = unsafe { &mut *self.stack.get() };
+        stack.clean();
     }
 }

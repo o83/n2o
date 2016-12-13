@@ -119,4 +119,29 @@ impl<T: Clone> Stack<T> {
             None => self.items.iter().rev().find(f),
         }
     }
+
+    #[inline]
+    fn frames_clean(&mut self) {
+        let to = self.items.as_mut_ptr();
+        let cap = self.capacity();
+        unsafe {
+            let i = mem::replace(&mut self.items, Vec::from_raw_parts(to, 0, cap));
+            mem::forget(i);
+        };
+    }
+
+    #[inline]
+    fn items_clean(&mut self) {
+        let to = self.frames.as_mut_ptr();
+        let cap = self.capacity();
+        unsafe {
+            let i = mem::replace(&mut self.frames, Vec::from_raw_parts(to, 0, cap));
+            mem::forget(i);
+        };
+    }
+
+    pub fn clean(&mut self) {
+        self.items_clean();
+        self.frames_clean();
+    }
 }
