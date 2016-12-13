@@ -121,27 +121,17 @@ impl<T: Clone> Stack<T> {
     }
 
     #[inline]
-    fn frames_clean(&mut self) {
-        let to = self.items.as_mut_ptr();
+    fn shrink(&mut self) {
+        let ip = self.items.as_mut_ptr();
+        let fp = self.frames.as_mut_ptr();
         let cap = self.capacity();
         unsafe {
-            let i = mem::replace(&mut self.items, Vec::from_raw_parts(to, 0, cap));
-            mem::forget(i);
-        };
-    }
-
-    #[inline]
-    fn items_clean(&mut self) {
-        let to = self.frames.as_mut_ptr();
-        let cap = self.capacity();
-        unsafe {
-            let i = mem::replace(&mut self.frames, Vec::from_raw_parts(to, 0, cap));
-            mem::forget(i);
+            mem::forget(mem::replace(&mut self.items, Vec::from_raw_parts(ip, 0, cap)));
+            mem::forget(mem::replace(&mut self.frames, Vec::from_raw_parts(fp, 0, cap)));
         };
     }
 
     pub fn clean(&mut self) {
-        self.items_clean();
-        self.frames_clean();
+        self.shrink();
     }
 }
