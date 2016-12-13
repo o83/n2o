@@ -33,11 +33,11 @@ impl<'ast> Environment<'ast> {
 
     pub fn define(&'ast self, key: u16, value: AST<'ast>) -> Result<(), Error> {
         let stack = unsafe { &mut *self.stack.get() };
-        println!("Set {:?}:{:?} in Level {:?}",
-                 key,
-                 value,
-                 stack.last_frame_id());
         stack.insert(Entry(key, value));
+        // println!("Set {:?}:{:?} in Level {:?}",
+        //          key,
+        //          value,
+        //          stack.last_frame_id());
         Ok(())
     }
 
