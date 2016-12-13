@@ -374,11 +374,39 @@ impl<'ast> AST<'ast> {
     }
 }
 
-impl<'ast> iter::IntoIterator for AST<'ast> {
-    type Item = AST<'ast>;
-    type IntoIter = vec::IntoIter<AST<'ast>>;
+pub struct AstIntoIterator<'ast> {
+    curr: &'ast AST<'ast>,
+    done: bool,
+}
+
+impl<'ast> Iterator for AstIntoIterator<'ast> {
+    type Item = &'ast AST<'ast>;
+    fn next(&mut self) -> Option<&'ast AST<'ast>> {
+        if self.done {
+            return None;
+        }
+        match self.curr {
+            &AST::Cons(car, cdr) => {
+                self.curr = cdr;
+                return Some(car);
+            }
+            &AST::Nil => return None,
+            x => {
+                self.done = true;
+                return Some(x);
+            }
+        }
+    }
+}
+
+impl<'ast> iter::IntoIterator for &'ast AST<'ast> {
+    type Item = &'ast AST<'ast>;
+    type IntoIter = AstIntoIterator<'ast>;
     fn into_iter(self) -> Self::IntoIter {
-        self.to_vec().into_iter()
+        AstIntoIterator {
+            curr: &self,
+            done: false,
+        }
     }
 }
 
@@ -420,9 +448,9 @@ impl<'ast> fmt::Display for AST<'ast> {
     }
 }
 
-pub fn extract_name<'ast>(a: AST<'ast>) -> u16 {
+pub fn extract_name<'ast>(a: &'ast AST<'ast>) -> u16 {
     match a {
-        AST::NameInt(s) => s,
+        &AST::NameInt(s) => s,
         x => 0,
     }
 }

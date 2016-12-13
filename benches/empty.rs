@@ -6,7 +6,7 @@ use test::Bencher;
 use kernel::commands::*;
 use kernel::commands::ast::*;
 use kernel::streams::interpreter::*;
-use kernel::streams::stack::*;
+use kernel::streams::stack::Stack;
 
 #[bench]
 fn empty(b: &mut Bencher) {

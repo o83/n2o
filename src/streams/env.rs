@@ -11,7 +11,7 @@ use streams::stack::Stack;
 use std::cell::UnsafeCell;
 
 #[derive(Debug, Clone)]
-pub struct Entry<'ast>(u16, AST<'ast>);
+pub struct Entry<'ast>(u16, &'ast AST<'ast>);
 
 #[derive(Debug)]
 pub struct Environment<'ast> {
@@ -31,7 +31,7 @@ impl<'ast> Environment<'ast> {
         }
     }
 
-    pub fn define(&'ast self, key: u16, value: AST<'ast>) -> Result<(), Error> {
+    pub fn define(&'ast self, key: u16, value: &'ast AST<'ast>) -> Result<(), Error> {
         let stack = unsafe { &mut *self.stack.get() };
         stack.insert(Entry(key, value));
         // println!("Set {:?}:{:?} in Level {:?}",
