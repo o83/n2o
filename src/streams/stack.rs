@@ -143,7 +143,5 @@ impl<T: Clone> Stack<T> {
     pub fn clean(&mut self) {
         self.items_clean();
         self.frames_clean();
-        // self.items.clear();
-        // self.frames.clear();
     }
 }
