@@ -12,7 +12,6 @@ use commands::command;
 use streams::interpreter;
 use streams::interpreter::*;
 use std::cell::UnsafeCell;
-// use streams::atomize::*;
 use std::{mem, ptr, isize};
 
 #[derive(Debug)]
@@ -280,35 +279,18 @@ impl<'ast> Arena<'ast> {
     }
 
     pub fn ast(&self, n: AST<'ast>) -> &'ast AST<'ast> {
-        // let b = Box::new(n);
-        // let p: *const AST<'ast> = &*b;
         let ast = unsafe { &mut *self.asts.get() };
-        // let to = ast.as_mut_ptr();
-        // unsafe {
-        //     ptr::copy_nonoverlapping(&n, to.offset(ast.len() as isize - 1), 0);
-        // }
-        // mem::forget(i);
-
         ast.push(n);
         ast.last().unwrap()
     }
 
     pub fn lazy(&self, n: Lazy<'ast>) -> &'ast Lazy<'ast> {
-        // let b = Box::new(n);
-        // let p: *const Lazy<'ast> = &*b;
-        // self.lazys.borrow_mut().push(n);
-        // unsafe { &*p }
-
         let lazys = unsafe { &mut *self.lazys.get() };
         lazys.push(n);
         lazys.last().unwrap()
     }
 
     pub fn cont(&self, n: Cont<'ast>) -> &'ast Cont<'ast> {
-        // let b = Box::new(n);
-        // let p: *const Cont<'ast> = &*b;
-        // self.conts.borrow_mut().push(n);
-        // unsafe { &*p }
         let conts = unsafe { &mut *self.conts.get() };
         conts.push(n);
         conts.last().unwrap()

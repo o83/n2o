@@ -34,10 +34,6 @@ impl<'ast> Environment<'ast> {
     pub fn define(&'ast self, key: u16, value: &'ast AST<'ast>) -> Result<(), Error> {
         let stack = unsafe { &mut *self.stack.get() };
         stack.insert(Entry(key, value));
-        // println!("Set {:?}:{:?} in Level {:?}",
-        //          key,
-        //          value,
-        //          stack.last_frame_id());
         Ok(())
     }
 
