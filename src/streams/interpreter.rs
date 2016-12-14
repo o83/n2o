@@ -119,8 +119,10 @@ impl<'a> Interpreter<'a> {
                 }
             }
             &AST::NameInt(name) => {
-                match self.lookup(name, &self.env) {
-                    Ok(v) => self.run_cont(frame, v, cont),
+                let l = self.lookup(name, &self.env);
+                println!("I::Lookup {:?}", &l);
+                match l {
+                    Ok((v, f)) => self.run_cont(Some(f), v, cont),
                     Err(x) => Err(x),
                 }
             }
@@ -128,9 +130,9 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    fn lookup(&'a self, name: u16, env: &'a Environment<'a>) -> Result<&'a AST<'a>, Error> {
+    fn lookup(&'a self, name: u16, env: &'a Environment<'a>) -> Result<(&'a AST<'a>, usize), Error> {
         match env.get(name, None) {
-            Some(v) => Ok(v),
+            Some((v, f)) => Ok((v, f)),
             None => {
                 Err(Error::EvalError {
                     desc: "Identifier not found".to_string(),
@@ -149,8 +151,10 @@ impl<'a> Interpreter<'a> {
         match fun {
             &AST::Lambda(names, body) => self.run_cont(frame, body, self.arena.cont(Cont::Func(names, args, cont))),
             &AST::NameInt(s) => {
-                match self.env.get(s, frame) {
-                    Some(v) => self.evaluate_fun(frame, v, args, cont),
+                let v = self.env.get(s, None);
+                println!("I::Found v {:?}", &v);
+                match v {
+                    Some((v, f)) => self.evaluate_fun(Some(f), v, args, cont),
                     None => {
                         Err(Error::EvalError {
                             desc: "Unknown variable".to_string(),

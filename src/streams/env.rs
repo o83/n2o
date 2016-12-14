@@ -11,7 +11,7 @@ use streams::stack::Stack;
 use std::cell::UnsafeCell;
 
 #[derive(Debug, Clone)]
-pub struct Entry<'a>(pub u16, pub &'a AST<'a>);
+pub struct Entry<'a>(u16, &'a AST<'a>, usize);
 
 #[derive(Debug)]
 pub struct Environment<'a> {
@@ -20,7 +20,9 @@ pub struct Environment<'a> {
 
 impl<'a> Environment<'a> {
     pub fn new_root() -> Result<Environment<'a>, Error> {
-        Ok(Environment { stack: UnsafeCell::new(Stack::with_capacity(10000 as usize)) })
+        let mut s = Stack::with_capacity(10000 as usize);
+        s.push_frame();
+        Ok(Environment { stack: UnsafeCell::new(s) })
     }
 
     pub fn new_child(&'a self) -> Option<usize> {
@@ -33,7 +35,10 @@ impl<'a> Environment<'a> {
 
     pub fn define(&'a self, key: u16, value: &'a AST<'a>) -> Result<(), Error> {
         let stack = unsafe { &mut *self.stack.get() };
-        stack.insert(Entry(key, value));
+        let frame = stack.last_frame_id();
+        stack.insert(Entry(key, value, frame));
+        println!("Env::Define {:?}:{:?}  Frame {:?}", key, value, &frame);
+        println!("Env::Stack {:?}", &stack);
         Ok(())
     }
 
@@ -43,10 +48,10 @@ impl<'a> Environment<'a> {
         Ok(())
     }
 
-    pub fn get(&'a self, key: u16, from: Option<usize>) -> Option<&'a AST> {
+    pub fn get(&'a self, key: u16, from: Option<usize>) -> Option<(&'a AST, usize)> {
         let stack = unsafe { &mut *self.stack.get() };
         match stack.get(|x| (*x).0 == key, from) {
-            Some(x) => Some(&x.1),
+            Some(x) => Some((&x.1, x.2)),
             None => None,
         }
     }
