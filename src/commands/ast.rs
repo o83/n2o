@@ -210,23 +210,23 @@ impl fmt::Display for Adverb {
 }
 
 #[derive(PartialEq,Debug,Clone)]
-pub enum AST<'ast> {
+pub enum AST<'a> {
     // 0
     Nil,
     // 1
-    Cons(&'ast AST<'ast>, &'ast AST<'ast>),
+    Cons(&'a AST<'a>, &'a AST<'a>),
     // 2
-    List(&'ast AST<'ast>),
+    List(&'a AST<'a>),
     // 3
-    Dict(&'ast AST<'ast>),
+    Dict(&'a AST<'a>),
     // 4
-    Call(&'ast AST<'ast>, &'ast AST<'ast>),
+    Call(&'a AST<'a>, &'a AST<'a>),
     // 5
-    Lambda(&'ast AST<'ast>, &'ast AST<'ast>),
+    Lambda(&'a AST<'a>, &'a AST<'a>),
     // 6
-    Verb(Verb, &'ast AST<'ast>, &'ast AST<'ast>),
+    Verb(Verb, &'a AST<'a>, &'a AST<'a>),
     // 7
-    Adverb(Adverb, &'ast AST<'ast>, &'ast AST<'ast>),
+    Adverb(Adverb, &'a AST<'a>, &'a AST<'a>),
     // 8
     Ioverb(String),
     // 9
@@ -245,25 +245,25 @@ pub enum AST<'ast> {
     // E
     Sequence(String),
     // F
-    Cell(Box<Cell<'ast>>),
+    Cell(Box<Cell<'a>>),
     // Syntactic sugar
-    Assign(&'ast AST<'ast>, &'ast AST<'ast>),
+    Assign(&'a AST<'a>, &'a AST<'a>),
     //
-    Cond(&'ast AST<'ast>, &'ast AST<'ast>, &'ast AST<'ast>),
+    Cond(&'a AST<'a>, &'a AST<'a>, &'a AST<'a>),
 }
 
 #[derive(Debug)]
-pub struct Arena<'ast> {
+pub struct Arena<'a> {
     pub names: UnsafeCell<HashMap<String, u16>>,
     pub symbols: HashMap<String, u16>,
     pub sequences: HashMap<String, u16>,
-    asts: UnsafeCell<Vec<AST<'ast>>>,
-    conts: UnsafeCell<Vec<Cont<'ast>>>,
-    lazys: UnsafeCell<Vec<Lazy<'ast>>>,
+    asts: UnsafeCell<Vec<AST<'a>>>,
+    conts: UnsafeCell<Vec<Cont<'a>>>,
+    lazys: UnsafeCell<Vec<Lazy<'a>>>,
 }
 
-impl<'ast> Arena<'ast> {
-    pub fn new() -> Arena<'ast> {
+impl<'a> Arena<'a> {
+    pub fn new() -> Arena<'a> {
         Arena {
             names: UnsafeCell::new(HashMap::new()),
             symbols: HashMap::new(),
@@ -274,25 +274,25 @@ impl<'ast> Arena<'ast> {
         }
     }
 
-    pub fn ast(&self, n: AST<'ast>) -> &'ast AST<'ast> {
+    pub fn ast(&self, n: AST<'a>) -> &'a AST<'a> {
         let ast = unsafe { &mut *self.asts.get() };
         ast.push(n);
         ast.last().unwrap()
     }
 
-    pub fn lazy(&self, n: Lazy<'ast>) -> &'ast Lazy<'ast> {
+    pub fn lazy(&self, n: Lazy<'a>) -> &'a Lazy<'a> {
         let lazys = unsafe { &mut *self.lazys.get() };
         lazys.push(n);
         lazys.last().unwrap()
     }
 
-    pub fn cont(&self, n: Cont<'ast>) -> &'ast Cont<'ast> {
+    pub fn cont(&self, n: Cont<'a>) -> &'a Cont<'a> {
         let conts = unsafe { &mut *self.conts.get() };
         conts.push(n);
         conts.last().unwrap()
     }
 
-    pub fn intern(&self, s: String) -> &'ast AST<'ast> {
+    pub fn intern(&self, s: String) -> &'a AST<'a> {
         let names = unsafe { &mut *self.names.get() };
         if names.contains_key(&s) {
             self.ast(AST::NameInt(names[&s]))
@@ -309,7 +309,7 @@ impl<'ast> Arena<'ast> {
     }
 }
 
-impl<'ast> AST<'ast> {
+impl<'a> AST<'a> {
     pub fn len(&self) -> usize {
         match self {
             &AST::List(ref car) => car.len(),
@@ -327,7 +327,7 @@ impl<'ast> AST<'ast> {
             _ => false,
         }
     }
-    pub fn to_vec(&self) -> Vec<AST<'ast>> {
+    pub fn to_vec(&self) -> Vec<AST<'a>> {
         let mut out = vec![];
         let mut l = self;
         loop {
@@ -347,14 +347,14 @@ impl<'ast> AST<'ast> {
     }
 }
 
-pub struct AstIntoIterator<'ast> {
-    curr: &'ast AST<'ast>,
+pub struct AstIntoIterator<'a> {
+    curr: &'a AST<'a>,
     done: bool,
 }
 
-impl<'ast> Iterator for AstIntoIterator<'ast> {
-    type Item = &'ast AST<'ast>;
-    fn next(&mut self) -> Option<&'ast AST<'ast>> {
+impl<'a> Iterator for AstIntoIterator<'a> {
+    type Item = &'a AST<'a>;
+    fn next(&mut self) -> Option<&'a AST<'a>> {
         if self.done {
             return None;
         }
@@ -372,9 +372,9 @@ impl<'ast> Iterator for AstIntoIterator<'ast> {
     }
 }
 
-impl<'ast> iter::IntoIterator for &'ast AST<'ast> {
-    type Item = &'ast AST<'ast>;
-    type IntoIter = AstIntoIterator<'ast>;
+impl<'a> iter::IntoIterator for &'a AST<'a> {
+    type Item = &'a AST<'a>;
+    type IntoIter = AstIntoIterator<'a>;
     fn into_iter(self) -> Self::IntoIter {
         AstIntoIterator {
             curr: &self,
@@ -384,7 +384,7 @@ impl<'ast> iter::IntoIterator for &'ast AST<'ast> {
 }
 
 
-impl<'ast> fmt::Display for AST<'ast> {
+impl<'a> fmt::Display for AST<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             AST::Nil => write!(f, ""),
@@ -421,7 +421,7 @@ impl<'ast> fmt::Display for AST<'ast> {
     }
 }
 
-pub fn extract_name<'ast>(a: &'ast AST<'ast>) -> u16 {
+pub fn extract_name<'a>(a: &'a AST<'a>) -> u16 {
     match a {
         &AST::NameInt(s) => s,
         x => 0,
@@ -429,12 +429,12 @@ pub fn extract_name<'ast>(a: &'ast AST<'ast>) -> u16 {
 }
 
 #[derive(PartialEq, Debug, Clone)]
-pub struct Cell<'ast> {
+pub struct Cell<'a> {
     t: Type,
-    v: Vec<AST<'ast>>,
+    v: Vec<AST<'a>>,
 }
 
-impl<'ast> fmt::Display for Cell<'ast> {
+impl<'a> fmt::Display for Cell<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "(");
         for i in &self.v {
@@ -444,52 +444,52 @@ impl<'ast> fmt::Display for Cell<'ast> {
     }
 }
 
-pub fn nil<'ast>(arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
+pub fn nil<'a>(arena: &'a Arena<'a>) -> &'a AST<'a> {
     arena.ast(AST::Nil)
 }
 
-pub fn ast<'ast>(n: AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
+pub fn ast<'a>(n: AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     arena.ast(n)
 }
 
-pub fn cont<'ast>(n: Cont<'ast>, arena: &'ast Arena<'ast>) -> &'ast Cont<'ast> {
+pub fn cont<'a>(n: Cont<'a>, arena: &'a Arena<'a>) -> &'a Cont<'a> {
     arena.cont(n)
 }
 
-pub fn lazy<'ast>(n: Lazy<'ast>, arena: &'ast Arena<'ast>) -> &'ast Lazy<'ast> {
+pub fn lazy<'a>(n: Lazy<'a>, arena: &'a Arena<'a>) -> &'a Lazy<'a> {
     arena.lazy(n)
 }
 
-pub fn call<'ast>(l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
+pub fn call<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     ast(AST::Call(l, r), arena)
 }
 
-pub fn cons<'ast>(l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
+pub fn cons<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     ast(AST::Cons(l, r), arena)
 }
 
-pub fn fun<'ast>(l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
+pub fn fun<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     match *l {
         AST::Nil => arena.ast(AST::Lambda(arena.intern("x".to_string()), r)),
         _ => arena.ast(AST::Lambda(l, r)),
     }
 }
 
-pub fn dict<'ast>(l: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
+pub fn dict<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     match l {
         &AST::Cons(a, b) => arena.ast(AST::Dict(l)),
         x => x,
     }
 }
 
-pub fn list<'ast>(l: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
+pub fn list<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     match l {
         &AST::Cons(a, b) => arena.ast(AST::List(l)),
         x => x,
     }
 }
 
-pub fn verb<'ast>(v: Verb, l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
+pub fn verb<'a>(v: Verb, l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     match v {
         Verb::Cast => {
             let rexpr = match r {
@@ -530,7 +530,7 @@ pub fn verb<'ast>(v: Verb, l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast 
     }
 }
 
-pub fn adverb<'ast>(a: Adverb, l: &'ast AST<'ast>, r: &'ast AST<'ast>, arena: &'ast Arena<'ast>) -> &'ast AST<'ast> {
+pub fn adverb<'a>(a: Adverb, l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     match a {
         Adverb::Assign => arena.ast(AST::Assign(l, r)),
         _ => arena.ast(AST::Adverb(a, l, r)),

@@ -15,9 +15,9 @@ use commands::command;
 
 // Interpreter, Lazy and Cont
 #[derive(Clone, Debug)]
-pub enum Lazy<'ast> {
-    Defer(&'ast AST<'ast>, &'ast Cont<'ast>),
-    Return(&'ast AST<'ast>),
+pub enum Lazy<'a> {
+    Defer(&'a AST<'a>, &'a Cont<'a>),
+    Return(&'a AST<'a>),
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -31,36 +31,36 @@ pub enum Code {
 // Plug Any Combinators here
 
 #[derive(Clone, Debug)]
-pub enum Cont<'ast> {
-    Expressions(&'ast AST<'ast>, &'ast Cont<'ast>),
-    Lambda(Code, &'ast AST<'ast>, &'ast AST<'ast>, &'ast Cont<'ast>),
-    Assign(&'ast AST<'ast>, &'ast Cont<'ast>),
-    Cond(&'ast AST<'ast>, &'ast AST<'ast>, &'ast Cont<'ast>),
-    Func(&'ast AST<'ast>, &'ast AST<'ast>, &'ast Cont<'ast>),
-    Call(&'ast AST<'ast>, &'ast Cont<'ast>),
-    Verb(Verb, &'ast AST<'ast>, u8, &'ast Cont<'ast>),
-    Adverb(Adverb, &'ast AST<'ast>, &'ast Cont<'ast>),
+pub enum Cont<'a> {
+    Expressions(&'a AST<'a>, &'a Cont<'a>),
+    Lambda(Code, &'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
+    Assign(&'a AST<'a>, &'a Cont<'a>),
+    Cond(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
+    Func(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
+    Call(&'a AST<'a>, &'a Cont<'a>),
+    Verb(Verb, &'a AST<'a>, u8, &'a Cont<'a>),
+    Adverb(Adverb, &'a AST<'a>, &'a Cont<'a>),
     Return,
 }
 
-pub struct Interpreter<'ast> {
-    arena: Arena<'ast>,
-    env: Environment<'ast>,
+pub struct Interpreter<'a> {
+    arena: Arena<'a>,
+    env: Environment<'a>,
 }
 
-impl<'ast> Interpreter<'ast> {
-    pub fn new() -> Result<Interpreter<'ast>, Error> {
+impl<'a> Interpreter<'a> {
+    pub fn new() -> Result<Interpreter<'a>, Error> {
         Ok(Interpreter {
             arena: Arena::new(),
             env: try!(Environment::new_root()),
         })
     }
 
-    pub fn parse(&'ast self, s: &String) -> &'ast AST<'ast> {
+    pub fn parse(&'a self, s: &String) -> &'a AST<'a> {
         command::parse_Mex(&self.arena, s).unwrap()
     }
 
-    pub fn run(&'ast self, ast: &'ast AST<'ast>) -> Result<&'ast AST<'ast>, Error> {
+    pub fn run(&'a self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
         let mut a = 0;
         let mut b = try!(self.evaluate_expr(ast, self.arena.cont(Cont::Return)));
         loop {
@@ -84,7 +84,7 @@ impl<'ast> Interpreter<'ast> {
         Ok(1)
     }
 
-    fn handle_defer(&'ast self, a: &'ast AST<'ast>, cont: &'ast Cont<'ast>) -> Result<&'ast Lazy<'ast>, Error> {
+    fn handle_defer(&'a self, a: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
         match a {
             &AST::Assign(name, body) => {
                 Ok(self.arena.lazy(Lazy::Defer(body, self.arena.cont(Cont::Assign(name, cont)))))
@@ -128,7 +128,7 @@ impl<'ast> Interpreter<'ast> {
         }
     }
 
-    fn lookup(&'ast self, name: u16, env: &'ast Environment<'ast>) -> Result<&'ast AST<'ast>, Error> {
+    fn lookup(&'a self, name: u16, env: &'a Environment<'a>) -> Result<&'a AST<'a>, Error> {
         match env.get(name, None) {
             Some(v) => Ok(v),
             None => {
@@ -140,11 +140,11 @@ impl<'ast> Interpreter<'ast> {
         }
     }
 
-    pub fn evaluate_fun(&'ast self,
-                        fun: &'ast AST<'ast>,
-                        args: &'ast AST<'ast>,
-                        cont: &'ast Cont<'ast>)
-                        -> Result<&'ast Lazy<'ast>, Error> {
+    pub fn evaluate_fun(&'a self,
+                        fun: &'a AST<'a>,
+                        args: &'a AST<'a>,
+                        cont: &'a Cont<'a>)
+                        -> Result<&'a Lazy<'a>, Error> {
         match fun {
             &AST::Lambda(names, body) => self.run_cont(body, self.arena.cont(Cont::Func(names, args, cont))),
             &AST::NameInt(s) => {
@@ -167,10 +167,7 @@ impl<'ast> Interpreter<'ast> {
         }
     }
 
-    pub fn evaluate_expr(&'ast self,
-                         exprs: &'ast AST<'ast>,
-                         cont: &'ast Cont<'ast>)
-                         -> Result<&'ast Lazy<'ast>, Error> {
+    pub fn evaluate_expr(&'a self, exprs: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
         match exprs {
             &AST::Cons(car, cdr) => {
                 Ok(self.arena.lazy(Lazy::Defer(car,
@@ -187,7 +184,7 @@ impl<'ast> Interpreter<'ast> {
         }
     }
 
-    pub fn run_cont(&'ast self, val: &'ast AST<'ast>, cont: &'ast Cont<'ast>) -> Result<&'ast Lazy<'ast>, Error> {
+    pub fn run_cont(&'a self, val: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
         match cont {
             &Cont::Call(callee, cont) => {
                 match val {

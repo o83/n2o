@@ -11,19 +11,19 @@ use streams::stack::Stack;
 use std::cell::UnsafeCell;
 
 #[derive(Debug, Clone)]
-pub struct Entry<'ast>(pub u16, pub &'ast AST<'ast>);
+pub struct Entry<'a>(pub u16, pub &'a AST<'a>);
 
 #[derive(Debug)]
-pub struct Environment<'ast> {
-    stack: UnsafeCell<Stack<Entry<'ast>>>,
+pub struct Environment<'a> {
+    stack: UnsafeCell<Stack<Entry<'a>>>,
 }
 
-impl<'ast> Environment<'ast> {
-    pub fn new_root() -> Result<Environment<'ast>, Error> {
+impl<'a> Environment<'a> {
+    pub fn new_root() -> Result<Environment<'a>, Error> {
         Ok(Environment { stack: UnsafeCell::new(Stack::with_capacity(10000 as usize)) })
     }
 
-    pub fn new_child(&'ast self) -> Result<usize, Error> {
+    pub fn new_child(&'a self) -> Result<usize, Error> {
         let stack = unsafe { &mut *self.stack.get() };
         match stack.push_frame() {
             Ok(id) => Ok(id),
@@ -31,19 +31,19 @@ impl<'ast> Environment<'ast> {
         }
     }
 
-    pub fn define(&'ast self, key: u16, value: &'ast AST<'ast>) -> Result<(), Error> {
+    pub fn define(&'a self, key: u16, value: &'a AST<'a>) -> Result<(), Error> {
         let stack = unsafe { &mut *self.stack.get() };
         stack.insert(Entry(key, value));
         Ok(())
     }
 
-    pub fn define_batch(&'ast self, items: &'ast [Entry]) -> Result<(), Error> {
+    pub fn define_batch(&'a self, items: &'a [Entry]) -> Result<(), Error> {
         let stack = unsafe { &mut *self.stack.get() };
         stack.insert_many(items);
         Ok(())
     }
 
-    pub fn get(&'ast self, key: u16, from: Option<usize>) -> Option<&'ast AST> {
+    pub fn get(&'a self, key: u16, from: Option<usize>) -> Option<&'a AST> {
         let stack = unsafe { &mut *self.stack.get() };
         match stack.get(|x| (*x).0 == key, from) {
             Some(x) => Some(&x.1),
