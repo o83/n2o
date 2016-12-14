@@ -43,6 +43,10 @@ path = "src/apps/console.rs"
 name = "streams"
 path = "src/apps/iter_stream.rs"
 
+[[bin]]
+name = "fac"
+path = "src/apps/fac.rs"
+
 [dependencies]
 net2         = "0.2.19"
 log          = "0.3"
