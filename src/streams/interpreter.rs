@@ -45,7 +45,7 @@ pub enum Cont<'a> {
 
 pub struct Interpreter<'a> {
     arena: Arena<'a>,
-    env: Environment<'a>, // frame: usize,
+    env: Environment<'a>,
 }
 
 impl<'a> Interpreter<'a> {
@@ -122,8 +122,7 @@ impl<'a> Interpreter<'a> {
                 }
             }
             &AST::NameInt(name) => {
-                println!("NAMEINT: {:?}", name);
-                match self.lookup(frame, name, &self.env) {
+                match self.lookup(name, &self.env) {
                     Ok(v) => self.run_cont(frame, v, cont),
                     Err(x) => Err(x),
                 }
@@ -132,9 +131,8 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    fn lookup(&'a self, frame: Option<usize>, name: u16, env: &'a Environment<'a>) -> Result<&'a AST<'a>, Error> {
-        println!("FRAME: {:?}", frame);
-        match env.get(name, frame) {
+    fn lookup(&'a self, name: u16, env: &'a Environment<'a>) -> Result<&'a AST<'a>, Error> {
+        match env.get(name, None) {
             Some(v) => Ok(v),
             None => {
                 Err(Error::EvalError {
@@ -154,7 +152,7 @@ impl<'a> Interpreter<'a> {
         match fun {
             &AST::Lambda(names, body) => self.run_cont(frame, body, self.arena.cont(Cont::Func(names, args, cont))),
             &AST::NameInt(s) => {
-                match self.env.get(s, None) {
+                match self.env.get(s, frame) {
                     Some(v) => self.evaluate_fun(frame, v, args, cont),
                     None => {
                         Err(Error::EvalError {
@@ -209,7 +207,11 @@ impl<'a> Interpreter<'a> {
             }
             &Cont::Func(names, args, cont) => {
                 let f = self.env.new_child();
-                names.into_iter().zip(args.into_iter()).map(|(k, v)| self.env.define(ast::extract_name(k), v));
+                println!("---FUNC names: {:?} args: {:?}", &names, &args);
+                for (k, v) in names.into_iter().zip(args.into_iter()) {
+                    println!("---- MAP define {:?}:{:?}", ast::extract_name(k), &v);
+                    self.env.define(ast::extract_name(k), v);
+                }
                 self.evaluate_expr(f, val, cont)
             }
             &Cont::Cond(if_expr, else_expr, cont) => {
@@ -226,7 +228,7 @@ impl<'a> Interpreter<'a> {
             &Cont::Assign(name, cont) => {
                 match name {
                     &AST::NameInt(s) => {
-                        println!("Define NameInt: {:?}:{:?}", s, val);
+                        println!("Define {:?}:{:?}", s, val);
                         try!(self.env.define(s, val));
                         self.evaluate_expr(frame, val, cont)
                     }
