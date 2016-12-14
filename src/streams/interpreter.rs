@@ -153,7 +153,7 @@ impl<'a> Interpreter<'a> {
             &AST::Lambda(names, body) => self.run_cont(frame, body, self.arena.cont(Cont::Func(names, args, cont))),
             &AST::NameInt(s) => {
                 match self.env.get(s, frame) {
-                    Some(v) => self.evaluate_fun(frame, v, args, cont),
+                    Some(v) => self.evaluate_fun(None, v, args, cont),
                     None => {
                         Err(Error::EvalError {
                             desc: "Unknown variable".to_string(),
