@@ -32,7 +32,6 @@ impl<'a> Environment<'a> {
     }
 
     pub fn define(&'a self, key: u16, value: &'a AST<'a>) -> Result<(), Error> {
-        println!("ENV::DEFINE key: {:?}, value: {:?}", key, value);
         let stack = unsafe { &mut *self.stack.get() };
         stack.insert(Entry(key, value));
         Ok(())
@@ -46,10 +45,6 @@ impl<'a> Environment<'a> {
 
     pub fn get(&'a self, key: u16, from: Option<usize>) -> Option<&'a AST> {
         let stack = unsafe { &mut *self.stack.get() };
-        println!("ENV::SEARCH KEY: {:?}, FROM: {:?} STACK: {:?}",
-                 key,
-                 from,
-                 &stack);
         match stack.get(|x| (*x).0 == key, from) {
             Some(x) => Some(&x.1),
             None => None,

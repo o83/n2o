@@ -153,7 +153,7 @@ impl<'a> Interpreter<'a> {
             &AST::Lambda(names, body) => self.run_cont(frame, body, self.arena.cont(Cont::Func(names, args, cont))),
             &AST::NameInt(s) => {
                 match self.env.get(s, frame) {
-                    Some(v) => self.evaluate_fun(None, v, args, cont),
+                    Some(v) => self.evaluate_fun(frame, v, args, cont),
                     None => {
                         Err(Error::EvalError {
                             desc: "Unknown variable".to_string(),
@@ -207,9 +207,7 @@ impl<'a> Interpreter<'a> {
             }
             &Cont::Func(names, args, cont) => {
                 let f = self.env.new_child();
-                println!("---FUNC names: {:?} args: {:?}", &names, &args);
                 for (k, v) in names.into_iter().zip(args.into_iter()) {
-                    println!("---- MAP define {:?}:{:?}", ast::extract_name(k), &v);
                     self.env.define(ast::extract_name(k), v);
                 }
                 self.evaluate_expr(f, val, cont)
@@ -228,7 +226,6 @@ impl<'a> Interpreter<'a> {
             &Cont::Assign(name, cont) => {
                 match name {
                     &AST::NameInt(s) => {
-                        println!("Define {:?}:{:?}", s, val);
                         try!(self.env.define(s, val));
                         self.evaluate_expr(frame, val, cont)
                     }
