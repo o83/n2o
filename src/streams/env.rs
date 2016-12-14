@@ -23,11 +23,11 @@ impl<'a> Environment<'a> {
         Ok(Environment { stack: UnsafeCell::new(Stack::with_capacity(10000 as usize)) })
     }
 
-    pub fn new_child(&'a self) -> Result<usize, Error> {
+    pub fn new_child(&'a self) -> Option<usize> {
         let stack = unsafe { &mut *self.stack.get() };
         match stack.push_frame() {
-            Ok(id) => Ok(id),
-            Err(_) => Err(Error::InternalError),
+            Ok(id) => Some(id),
+            Err(_) => None,
         }
     }
 
