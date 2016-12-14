@@ -116,8 +116,10 @@ Reading
 Credits
 -------
 
-* Viktor Sovietov
-* Anton Kundenko
-* Ievgenii Lysiuchenko
-* Mykola Oleksiienko
-* Maxim Sokhatsky
+* Viktor Sovietov, Core Suggestions
+* Anton Kundenko, Stream Processing
+* Ievgenii Lysiuchenko, Optimizations
+* Mykola Oleksiienko, K expertise
+* Maxim Sokhatsky, General View
+* Ken Pratt, Rusty Scheme
+* Carl Lerche, MIO
