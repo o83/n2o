@@ -7,58 +7,56 @@ use std::iter;
 use std::vec;
 use commands::ast::*;
 use fnv::*;
-use streams::stack::Stack;
 use std::cell::UnsafeCell;
-use streams::otree::Tree;
-
-#[derive(Debug, Clone)]
-pub struct Entry<'a>(u16, &'a AST<'a>, usize);
+use streams::otree::*;
 
 #[derive(Debug)]
 pub struct Environment<'a> {
-    stack: UnsafeCell<Stack<Entry<'a>>>,
+    tree: UnsafeCell<Tree<'a>>,
 }
 
 impl<'a> Environment<'a> {
     pub fn new_root() -> Result<Environment<'a>, Error> {
-        let mut s = Stack::with_capacity(10000 as usize);
-        s.push_frame();
-        Ok(Environment { stack: UnsafeCell::new(s) })
+        let mut s = tree::with_capacity(10000 as usize);
+        Ok(Environment { tree: UnsafeCell::new(s) })
     }
 
     pub fn new_child(&'a self) -> Option<usize> {
-        let stack = unsafe { &mut *self.stack.get() };
-        match stack.push_frame() {
-            Ok(id) => Some(id),
-            Err(_) => None,
+        let tree = unsafe { &mut *self.tree.get() };
+        let ln = tree.last_node();
+        let b = ln.bounds.1+1;
+        let nn = Node {
+            parent: Some(ln),
+            bounds: (b,b),
         }
-    }
+        tree.new_node(nn);
+            }
 
     pub fn define(&'a self, key: u16, value: &'a AST<'a>) -> Result<(), Error> {
-        let stack = unsafe { &mut *self.stack.get() };
-        let frame = stack.last_frame_id();
-        stack.insert(Entry(key, value, frame));
+        let tree = unsafe { &mut *self.tree.get() };
+        let frame = tree.last_frame_id();
+        tree.insert(Entry(key, value, frame));
         println!("Env::Define {:?}:{:?}  Frame {:?}", key, value, &frame);
-        println!("Env::Stack {:?}", &stack);
+        println!("Env::tree {:?}", &tree);
         Ok(())
     }
 
     pub fn define_batch(&'a self, items: &'a [Entry]) -> Result<(), Error> {
-        let stack = unsafe { &mut *self.stack.get() };
-        stack.insert_many(items);
+        let tree = unsafe { &mut *self.tree.get() };
+        tree.insert_many(items);
         Ok(())
     }
 
     pub fn get(&'a self, key: u16, from: Option<usize>) -> Option<(&'a AST, usize)> {
-        let stack = unsafe { &mut *self.stack.get() };
-        match stack.get(|x| (*x).0 == key, from) {
+        let tree = unsafe { &mut *self.tree.get() };
+        match tree.get(|x| (*x).0 == key, from) {
             Some(x) => Some((&x.1, x.2)),
             None => None,
         }
     }
 
     pub fn clean(&self) {
-        let stack = unsafe { &mut *self.stack.get() };
-        stack.clean();
+        let tree = unsafe { &mut *self.tree.get() };
+        tree.clean();
     }
 }
