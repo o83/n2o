@@ -142,3 +142,10 @@ pub fn k_14() {
     let code = i.parse(&"f{a:9};a:14;k:{[x] a}; k 3".to_string());
     assert_eq!(format!("{}", i.run(code).unwrap()), "14");
 }
+
+#[test]
+pub fn k_multiargs() {
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"xa:9;f:{[x;y;z](x+y)*z};f[1;xa+11;3]".to_string());
+    assert_eq!(format!("{}", i.run(code).unwrap()), "63");
+}
