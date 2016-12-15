@@ -16,7 +16,7 @@ use commands::command;
 // Interpreter, Lazy and Cont
 #[derive(Clone, Debug)]
 pub enum Lazy<'a> {
-    Defer(Option<usize>, &'a AST<'a>, &'a Cont<'a>),
+    Defer(&'a Node<'a>, &'a AST<'a>, &'a Cont<'a>),
     Return(&'a AST<'a>),
 }
 
@@ -62,7 +62,7 @@ impl<'a> Interpreter<'a> {
 
     pub fn run(&'a self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
         let mut a = 0;
-        let mut b = try!(self.evaluate_expr(None, ast, self.arena.cont(Cont::Return)));
+        let mut b = try!(self.evaluate_expr(self.env.last(), ast, self.arena.cont(Cont::Return)));
         loop {
             // debug!("[Trampoline:{}]:{:?}\n", a, b);
             match b {

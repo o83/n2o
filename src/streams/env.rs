@@ -10,47 +10,41 @@ use fnv::*;
 use std::cell::UnsafeCell;
 use streams::otree::*;
 
+#[derive(Debug, Clone)]
+pub struct Entry<'a>(u16, &'a AST<'a>);
+
 #[derive(Debug)]
 pub struct Environment<'a> {
-    tree: UnsafeCell<Tree<'a>>,
+    tree: UnsafeCell<Tree<'a, Entry<'a>>>,
 }
 
 impl<'a> Environment<'a> {
     pub fn new_root() -> Result<Environment<'a>, Error> {
-        let mut s = tree::with_capacity(10000 as usize);
+        let mut s = Tree::with_capacity(10000 as usize);
         Ok(Environment { tree: UnsafeCell::new(s) })
     }
 
-    pub fn new_child(&'a self) -> Option<usize> {
+    pub fn last(&'a self) -> &'a Node<'a> {
+        let tree = unsafe { &*self.tree.get() };
+        tree.last_node()
+    }
+
+    pub fn new_child(&'a mut self) -> &'a Node<'a> {
         let tree = unsafe { &mut *self.tree.get() };
         let ln = tree.last_node();
-        let b = ln.bounds.1+1;
-        let nn = Node {
-            parent: Some(ln),
-            bounds: (b,b),
-        }
-        tree.new_node(nn);
-            }
+        tree.new_node(ln)
+    }
 
     pub fn define(&'a self, key: u16, value: &'a AST<'a>) -> Result<(), Error> {
         let tree = unsafe { &mut *self.tree.get() };
-        let frame = tree.last_frame_id();
-        tree.insert(Entry(key, value, frame));
-        println!("Env::Define {:?}:{:?}  Frame {:?}", key, value, &frame);
-        println!("Env::tree {:?}", &tree);
+        tree.insert(Entry(key, value));
         Ok(())
     }
 
-    pub fn define_batch(&'a self, items: &'a [Entry]) -> Result<(), Error> {
+    pub fn get(&'a self, key: u16, n: &'a Node<'a>) -> Option<(&'a AST, &Node<'a>)> {
         let tree = unsafe { &mut *self.tree.get() };
-        tree.insert_many(items);
-        Ok(())
-    }
-
-    pub fn get(&'a self, key: u16, from: Option<usize>) -> Option<(&'a AST, usize)> {
-        let tree = unsafe { &mut *self.tree.get() };
-        match tree.get(|x| (*x).0 == key, from) {
-            Some(x) => Some((&x.1, x.2)),
+        match tree.get(n, |e| e.0 == key) {
+            Some(x) => Some(((x.0).1, x.1)),
             None => None,
         }
     }

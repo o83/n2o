@@ -1,61 +1,71 @@
 use std::{mem, ptr, isize};
-use commands::ast::*;
-
-#[derive(Debug, PartialEq)]
-pub enum Error {
-    Capacity,
-    InvalidOperation,
-}
-
-pub type Key = u16;
-pub type Value<'a> = AST<'a>;
-
-#[derive(Debug,PartialEq,Clone)]
-pub struct Entry<'a>(Key, Value<'a>);
+use std::fmt::Debug;
 
 #[derive(Debug,Clone)]
 pub struct Node<'a> {
-    bounds: (usize, usize),
-    parent: Option<&'a Node<'a>>,
+    pub bounds: (usize, usize),
+    pub parent: Option<&'a Node<'a>>,
 }
 
 #[derive(Debug)]
-pub struct Tree<'a> {
+pub struct Tree<'a, T> {
     nodes: Vec<Node<'a>>,
-    items: Vec<Entry<'a>>,
+    items: Vec<T>,
 }
 
-impl<'a> Tree<'a> {
+impl<'a, T: Debug> Tree<'a, T> {
     pub fn with_capacity(cap: usize) -> Self {
+        let mut n = Vec::with_capacity(cap);
+        n.push(Node {
+            bounds: (0, 0),
+            parent: None,
+        });
         Tree {
-            nodes: Vec::with_capacity(cap),
+            nodes: n,
             items: Vec::with_capacity(cap),
         }
     }
 
-    pub fn last_node(&'a mut self) -> Option<&'a mut Node<'a>> {
-        self.nodes.last_mut()
+    #[inline]
+    pub fn last_node(&'a self) -> &'a Node<'a> {
+        self.nodes.last().unwrap()
     }
 
-    pub fn new_node(&'a mut self, n: Node<'a>) {
-        self.nodes.push(n);
+    #[inline]
+    pub fn split(&'a mut self) -> (&'a mut Self, &'a mut Self) {
+        let f: *mut Tree<'a, T> = self;
+        let uf: &mut Tree<'a, T> = unsafe { &mut *f };
+        let us: &mut Tree<'a, T> = unsafe { &mut *f };
+        (uf, us)
     }
 
-    pub fn insert(&mut self, item: Entry<'a>) {
+    pub fn new_node(&'a mut self, n: &'a Node<'a>) -> &'a Node<'a> {
+        let (s1, s2) = self.split();
+        let nl = s1.last_node();
+        s2.nodes.push(Node {
+            bounds: (n.bounds.1, n.bounds.1),
+            parent: Some(n),
+        });
+        s1.last_node()
+    }
+
+    pub fn insert(&mut self, item: T) {
         self.items.push(item);
+        let mut n = self.nodes.last_mut().unwrap();
+        n.bounds.1 += 1;
     }
 
-    pub fn insert_many(&mut self, items: &[Entry]) {}
-
-    pub fn get(&'a self, n: &'a Node<'a>, key: Key) -> Option<(Key, &Node<'a>)> {
-        for i in n.bounds.0..n.bounds.1 + 1 {
-            if self.items[i].0 == key {
-                return Some((self.items[i].0, n));
+    pub fn get<F>(&'a self, n: &'a Node<'a>, mut f: F) -> Option<(&'a T, &'a Node<'a>)>
+        where for<'r> F: FnMut(&'r &T) -> bool
+    {
+        for i in self.items[n.bounds.0..n.bounds.1].iter().rev() {
+            if f(&i) {
+                return Some((i, n));
             }
         }
         match n.parent {
+            Some(p) => self.get(p, f),
             None => None,
-            Some(p) => self.get(p, key),
         }
     }
 
