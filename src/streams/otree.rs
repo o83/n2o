@@ -13,6 +13,7 @@ pub struct Tree<'a, T> {
     items: Vec<T>,
 }
 
+// TODO: Remove T: Debug
 impl<'a, T: Debug> Tree<'a, T> {
     pub fn with_capacity(cap: usize) -> Self {
         let mut n = Vec::with_capacity(cap);
@@ -43,7 +44,7 @@ impl<'a, T: Debug> Tree<'a, T> {
         let (s1, s2) = self.split();
         let nl = s1.last_node();
         s2.nodes.push(Node {
-            bounds: (n.bounds.1, n.bounds.1),
+            bounds: (nl.bounds.1, nl.bounds.1),
             parent: Some(n),
         });
         s1.last_node()
