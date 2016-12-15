@@ -39,9 +39,19 @@ impl<'a, T: Debug> Tree<'a, T> {
         (uf, us)
     }
 
-    pub fn new_node(&'a mut self, n: &'a Node<'a>) -> &'a Node<'a> {
+    pub fn append_node(&'a mut self, n: &'a Node<'a>) -> &'a Node<'a> {
         let (s1, s2) = self.split();
         let nl = s1.last_node();
+        s2.nodes.push(Node {
+            bounds: (n.bounds.1, n.bounds.1),
+            parent: Some(n),
+        });
+        s1.last_node()
+    }
+
+    pub fn alloc_node(&'a mut self) -> &'a Node<'a> {
+        let (s1, s2) = self.split();
+        let n = s1.last_node();
         s2.nodes.push(Node {
             bounds: (n.bounds.1, n.bounds.1),
             parent: Some(n),

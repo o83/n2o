@@ -12,7 +12,7 @@ use streams::env::*;
 use commands::ast::*;
 use commands::ast;
 use commands::command;
-use commands::streams::otree::Node;
+use streams::otree::Node;
 
 // Interpreter, Lazy and Cont
 #[derive(Clone, Debug)]
@@ -85,37 +85,37 @@ impl<'a> Interpreter<'a> {
         Ok(1)
     }
 
-    fn handle_defer(&'a self, frame: Option<usize>, a: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
+    fn handle_defer(&'a self, node: &'a Node<'a>, a: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
         match a {
             &AST::Assign(name, body) => {
-                Ok(self.arena.lazy(Lazy::Defer(frame, body, self.arena.cont(Cont::Assign(name, cont)))))
+                Ok(self.arena.lazy(Lazy::Defer(node, body, self.arena.cont(Cont::Assign(name, cont)))))
             }
             &AST::Cond(val, left, right) => {
                 match val {
-                    &AST::Number(x) => self.run_cont(frame, val, cont), 
+                    &AST::Number(x) => self.run_cont(node, val, cont), 
                     x => {
                         Ok(self.arena
-                            .lazy(Lazy::Defer(frame, x, self.arena.cont(Cont::Cond(left, right, cont)))))
+                            .lazy(Lazy::Defer(node, x, self.arena.cont(Cont::Cond(left, right, cont)))))
                     }
                 }
             }
-            &AST::List(x) => self.evaluate_expr(frame, x, cont),
-            &AST::Call(c, a) => Ok(self.arena.lazy(Lazy::Defer(frame, a, self.arena.cont(Cont::Call(c, cont))))),
+            &AST::List(x) => self.evaluate_expr(node, x, cont),
+            &AST::Call(c, a) => Ok(self.arena.lazy(Lazy::Defer(node, a, self.arena.cont(Cont::Call(c, cont))))),
             &AST::Verb(ref verb, left, right) => {
                 match (left, right) {
                     (&AST::Number(_), _) => {
-                        Ok(self.arena.lazy(Lazy::Defer(frame,
+                        Ok(self.arena.lazy(Lazy::Defer(node,
                                                        right,
                                                        self.arena.cont(Cont::Verb(verb.clone(), left, 0, cont)))))
                     }
                     (_, &AST::Number(_)) => {
-                        Ok(self.arena.lazy(Lazy::Defer(frame,
+                        Ok(self.arena.lazy(Lazy::Defer(node,
                                                        left,
                                                        self.arena
                                                            .cont(Cont::Verb(verb.clone(), right, 1, cont)))))
                     }
                     (x, y) => {
-                        Ok(self.arena.lazy(Lazy::Defer(frame,
+                        Ok(self.arena.lazy(Lazy::Defer(node,
                                                        x,
                                                        self.arena
                                                            .cont(Cont::Verb(verb.clone(), y, 0, cont)))))
@@ -123,23 +123,23 @@ impl<'a> Interpreter<'a> {
                 }
             }
             &AST::NameInt(name) => {
-                let l = self.lookup(frame, name, &self.env);
-                println!("I::Lookup {:?},{:?} found: {:?}", frame, &name, &l);
+                let l = self.lookup(node, name, &self.env);
+                println!("I::Lookup {:?},{:?} found: {:?}", node, &name, &l);
                 match l {
-                    Ok((v, f)) => self.run_cont(Some(f), v, cont),
+                    Ok((v, f)) => self.run_cont(f, v, cont),
                     Err(x) => Err(x),
                 }
             }
-            x => self.run_cont(frame, x, cont),
+            x => self.run_cont(node, x, cont),
         }
     }
 
     fn lookup(&'a self,
-              frame: Option<usize>,
+              node: &'a Node<'a>,
               name: u16,
               env: &'a Environment<'a>)
-              -> Result<(&'a AST<'a>, usize), Error> {
-        match env.get(name, frame) {
+              -> Result<(&'a AST<'a>, &'a Node<'a>), Error> {
+        match env.get(name, node) {
             Some((v, f)) => Ok((v, f)),
             None => {
                 Err(Error::EvalError {
@@ -151,19 +151,19 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn evaluate_fun(&'a self,
-                        frame: Option<usize>,
+                        node: &'a Node<'a>,
                         fun: &'a AST<'a>,
                         args: &'a AST<'a>,
                         cont: &'a Cont<'a>)
                         -> Result<&'a Lazy<'a>, Error> {
-        println!("I::Eval fun {:?} frame: {:?}", fun, frame);
+        println!("I::Eval fun {:?} node: {:?}", fun, node);
         match fun {
-            &AST::Lambda(names, body) => self.run_cont(frame, body, self.arena.cont(Cont::Func(names, args, cont))),
+            &AST::Lambda(names, body) => self.run_cont(node, body, self.arena.cont(Cont::Func(names, args, cont))),
             &AST::NameInt(s) => {
-                let v = self.env.get(s, frame);
-                println!("I::NameInt get {:?},{:?} found {:?}", s, frame, &v);
+                let v = self.env.get(s, node);
+                println!("I::NameInt get {:?},{:?} found {:?}", s, node, &v);
                 match v {
-                    Some((v, f)) => self.evaluate_fun(Some(f), v, args, cont),
+                    Some((v, f)) => self.evaluate_fun(f, v, args, cont),
                     None => {
                         Err(Error::EvalError {
                             desc: "Unknown variable".to_string(),
@@ -182,13 +182,13 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn evaluate_expr(&'a self,
-                         frame: Option<usize>,
+                         node: &'a Node<'a>,
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
                          -> Result<&'a Lazy<'a>, Error> {
         match exprs {
             &AST::Cons(car, cdr) => {
-                Ok(self.arena.lazy(Lazy::Defer(frame,
+                Ok(self.arena.lazy(Lazy::Defer(node,
                                                car,
                                                self.arena
                                                    .cont(Cont::Expressions(cdr, cont)))))
@@ -199,20 +199,16 @@ impl<'a> Interpreter<'a> {
                     ast: format!("{:?}", AST::Nil),
                 })
             }
-            x => Ok(self.arena.lazy(Lazy::Defer(frame, x, cont))),
+            x => Ok(self.arena.lazy(Lazy::Defer(node, x, cont))),
         }
     }
 
-    pub fn run_cont(&'a self,
-                    frame: Option<usize>,
-                    val: &'a AST<'a>,
-                    cont: &'a Cont<'a>)
-                    -> Result<&'a Lazy<'a>, Error> {
+    pub fn run_cont(&'a self, node: &'a Node<'a>, val: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
         match cont {
             &Cont::Call(callee, cont) => {
                 match val {
-                    &AST::Dict(v) => self.evaluate_fun(None, callee, v, cont),
-                    x => self.evaluate_fun(None, callee, x, cont),
+                    &AST::Dict(v) => self.evaluate_fun(node, callee, v, cont),
+                    x => self.evaluate_fun(node, callee, x, cont),
                 }
             }
             &Cont::Func(names, args, cont) => {
@@ -225,10 +221,10 @@ impl<'a> Interpreter<'a> {
             }
             &Cont::Cond(if_expr, else_expr, cont) => {
                 match val {
-                    &AST::Number(0) => Ok(self.arena.lazy(Lazy::Defer(frame, else_expr, cont))),
-                    &AST::Number(_) => Ok(self.arena.lazy(Lazy::Defer(frame, if_expr, cont))),
+                    &AST::Number(0) => Ok(self.arena.lazy(Lazy::Defer(node, else_expr, cont))),
+                    &AST::Number(_) => Ok(self.arena.lazy(Lazy::Defer(node, if_expr, cont))),
                     x => {
-                        Ok(self.arena.lazy(Lazy::Defer(frame,
+                        Ok(self.arena.lazy(Lazy::Defer(node,
                                                        x,
                                                        self.arena.cont(Cont::Cond(if_expr, else_expr, cont)))))
                     }
@@ -238,7 +234,7 @@ impl<'a> Interpreter<'a> {
                 match name {
                     &AST::NameInt(s) => {
                         try!(self.env.define(s, val));
-                        self.evaluate_expr(frame, val, cont)
+                        self.evaluate_expr(node, val, cont)
                     }
                     x => {
                         Err(Error::EvalError {
@@ -255,17 +251,17 @@ impl<'a> Interpreter<'a> {
                         match swap {
                             0 => {
                                 let a = verb::eval(verb.clone(), right, val).unwrap();
-                                self.run_cont(frame, self.arena.ast(a), cont)
+                                self.run_cont(node, self.arena.ast(a), cont)
                             }
                             _ => {
                                 let a = verb::eval(verb.clone(), val, right).unwrap();
-                                self.run_cont(frame, self.arena.ast(a), cont)
+                                self.run_cont(node, self.arena.ast(a), cont)
                             }
                         }
                     }
                     (x, y) => {
                         Ok(self.arena
-                            .lazy(Lazy::Defer(frame,
+                            .lazy(Lazy::Defer(node,
                                               x,
                                               self.arena
                                                   .cont(Cont::Verb(verb.clone(), y, 0, cont)))))
@@ -274,9 +270,9 @@ impl<'a> Interpreter<'a> {
             }
             &Cont::Expressions(rest, cont) => {
                 if rest.is_cons() || !rest.is_empty() {
-                    self.evaluate_expr(frame, rest, cont)
+                    self.evaluate_expr(node, rest, cont)
                 } else {
-                    self.run_cont(frame, val, cont)
+                    self.run_cont(node, val, cont)
                 }
             }
             x => Ok(self.arena.lazy(Lazy::Return(val))),
