@@ -29,9 +29,9 @@ impl<'a> Environment<'a> {
         tree.last_node()
     }
 
-    pub fn new_child(&'a self) -> &'a Node<'a> {
+    pub fn new_child(&'a self, n: &'a Node<'a>) -> &'a Node<'a> {
         let tree = unsafe { &mut *self.tree.get() };
-        tree.alloc_node()
+        tree.append_node(n)
     }
 
     pub fn define(&'a self, key: u16, value: &'a AST<'a>) -> Result<(), Error> {

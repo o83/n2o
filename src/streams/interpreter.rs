@@ -212,7 +212,7 @@ impl<'a> Interpreter<'a> {
                 }
             }
             &Cont::Func(names, args, cont) => {
-                let f = self.env.new_child();
+                let f = self.env.new_child(node);
                 println!("I::New child {:?}", &f);
                 for (k, v) in names.into_iter().zip(args.into_iter()) {
                     self.env.define(ast::extract_name(k), v);
