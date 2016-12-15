@@ -148,4 +148,6 @@ pub fn k_multiargs() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"xa:9;f:{[x;y;z](x+y)*z};f[1;xa+11;3]".to_string());
     assert_eq!(format!("{}", i.run(code).unwrap()), "63");
+    let code = i.parse(&"b:2;a:3;fac:{[x;y]x*y};fac[b*a;a+1]".to_string());
+    assert_eq!(format!("{}", i.run(code).unwrap()), "24");
 }
