@@ -139,7 +139,7 @@ pub fn k_cond2() {
 #[test]
 pub fn k_14() {
     let mut i = Interpreter::new().unwrap();
-    let code = i.parse(&"f{a:9};a:14;k:{[x] a}; k 3".to_string());
+    let code = i.parse(&"f:{a:9};a:14;k:{[x] a}; k 3".to_string());
     assert_eq!(format!("{}", i.run(code).unwrap()), "14");
 }
 

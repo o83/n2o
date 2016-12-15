@@ -48,8 +48,8 @@ impl<'a> Environment<'a> {
         }
     }
 
-    pub fn clean(&self) {
+    pub fn clean(&self) -> usize {
         let tree = unsafe { &mut *self.tree.get() };
-        tree.clean();
+        tree.clean()
     }
 }
