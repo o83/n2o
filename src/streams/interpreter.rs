@@ -12,6 +12,7 @@ use streams::env::*;
 use commands::ast::*;
 use commands::ast;
 use commands::command;
+use commands::streams::otree::Node;
 
 // Interpreter, Lazy and Cont
 #[derive(Clone, Debug)]
