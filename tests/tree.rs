@@ -7,6 +7,6 @@ use std::mem;
 
 #[test]
 pub fn tree() {
-    let capacity = (!0 as u16) as usize;
-    let mut tree: Tree = Tree::with_capacity(capacity);
+    // let capacity = (!0 as u16) as usize;
+    // let mut tree: Tree = Tree::with_capacity(capacity);
 }
