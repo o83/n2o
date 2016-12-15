@@ -489,6 +489,34 @@ pub fn list<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     }
 }
 
+pub fn rev_list<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
+    let mut res = arena.ast(AST::Nil);
+    let mut from = match l {
+        &AST::List(xs) => xs,
+        _ => panic!(),
+    };
+    println!(" from {:?}", from);
+    let mut done = false;
+    loop {
+        if done {
+            break;
+        }
+        match from {
+            &AST::Cons(x, xs) => {
+                res = arena.ast(AST::Cons(x, res));
+                from = xs;
+            }
+            &AST::Nil => break,
+            x => {
+                res = arena.ast(AST::Cons(arena.ast(x.clone()), res));
+                done = true;
+            }
+        }
+    }
+    arena.ast(AST::List(res))
+}
+
+
 pub fn verb<'a>(v: Verb, l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     match v {
         Verb::Cast => {
