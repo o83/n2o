@@ -9,6 +9,7 @@ use commands::ast::*;
 use fnv::*;
 use streams::stack::Stack;
 use std::cell::UnsafeCell;
+use streams::otree::Tree;
 
 #[derive(Debug, Clone)]
 pub struct Entry<'a>(u16, &'a AST<'a>, usize);

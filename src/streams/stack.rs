@@ -115,7 +115,11 @@ impl<T: Clone> Stack<T> {
         where for<'r> F: FnMut(&'r &T) -> bool
     {
         match from {
-            Some(x) => self.items[..x + 1].iter().rev().find(f),
+            Some(x) => {
+                let to = self.frames[x] + 1;
+                self.items[..to].iter().rev().find(f)
+            }
+
             None => self.items.iter().rev().find(f),
         }
     }
