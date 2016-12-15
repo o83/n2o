@@ -80,9 +80,8 @@ impl<'a> Interpreter<'a> {
         })
     }
 
-    pub fn gc(&self) -> Result<usize, Error> {
-        self.env.clean();
-        Ok(1)
+    pub fn gc(&self) -> usize {
+        self.env.clean()
     }
 
     fn handle_defer(&'a self, node: &'a Node<'a>, a: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {

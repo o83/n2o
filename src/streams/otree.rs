@@ -80,7 +80,8 @@ impl<'a, T: Debug> Tree<'a, T> {
         }
     }
 
-    pub fn clean(&mut self) {
+    pub fn clean(&mut self) -> usize {
+        let l = self.items.len();
         unsafe {
             self.items.set_len(0);
             self.nodes.set_len(0);
@@ -89,5 +90,6 @@ impl<'a, T: Debug> Tree<'a, T> {
             bounds: (0, 0),
             parent: None,
         });
+        l
     }
 }
