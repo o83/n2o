@@ -124,7 +124,6 @@ impl<'a> Interpreter<'a> {
             }
             &AST::NameInt(name) => {
                 let l = self.lookup(node, name, &self.env);
-                println!("I::Lookup {:?},{:?} found: {:?}", node, &name, &l);
                 match l {
                     Ok((v, f)) => self.run_cont(f, v, cont),
                     Err(x) => Err(x),
@@ -156,12 +155,10 @@ impl<'a> Interpreter<'a> {
                         args: &'a AST<'a>,
                         cont: &'a Cont<'a>)
                         -> Result<&'a Lazy<'a>, Error> {
-        println!("I::Eval fun {:?} node: {:?}", fun, node);
         match fun {
             &AST::Lambda(names, body) => self.run_cont(node, body, self.arena.cont(Cont::Func(names, args, cont))),
             &AST::NameInt(s) => {
                 let v = self.env.get(s, node);
-                println!("I::NameInt get {:?},{:?} found {:?}", s, node, &v);
                 match v {
                     Some((v, f)) => self.evaluate_fun(f, v, args, cont),
                     None => {
@@ -213,7 +210,6 @@ impl<'a> Interpreter<'a> {
             }
             &Cont::Func(names, args, cont) => {
                 let f = self.env.new_child(node);
-                println!("I::New child {:?}", &f);
                 for (k, v) in names.into_iter().zip(args.into_iter()) {
                     self.env.define(ast::extract_name(k), v);
                 }

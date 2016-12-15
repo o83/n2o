@@ -85,5 +85,9 @@ impl<'a, T: Debug> Tree<'a, T> {
             self.items.set_len(0);
             self.nodes.set_len(0);
         }
+        self.nodes.push(Node {
+            bounds: (0, 0),
+            parent: None,
+        });
     }
 }
