@@ -140,7 +140,7 @@ impl<'a> Interpreter<'a> {
               env: &'a Environment<'a>)
               -> Result<(&'a AST<'a>, &'a Node<'a>), Error> {
         match env.get(name, node) {
-            Some((v, f)) => Ok((v, f)),
+            Some((v, f)) => Ok((v, node)),
             None => {
                 Err(Error::EvalError {
                     desc: "Identifier not found".to_string(),
