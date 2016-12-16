@@ -98,7 +98,7 @@ impl<'a> Interpreter<'a> {
             &AST::List(x) => self.evaluate_expr(node, x, cont),
             // &AST::Cons(x, y) => self.run_cont(node, a, cont),
             &AST::Dict(x) => {
-                // println!("Defer Dict: {:?}", x);
+                println!("Defer Dict: {:?}", x);
                 self.evaluate_dict(node, x, cont)
             }
             &AST::Call(c, a) => Ok(self.arena.lazy(Lazy::Defer(node, a, self.arena.cont(Cont::Call(c, cont))))),
@@ -160,7 +160,7 @@ impl<'a> Interpreter<'a> {
         match fun {
             &AST::Lambda(names, body) => {
                 let mut rev = ast::rev_dict(args, &self.arena);
-                println!("Args Fun: {:?}", rev);
+                println!("Args Fun: {:?} orig: {:?}, names: {:?}", rev, args, names);
                 self.run_cont(node,
                               body,
                               self.arena.cont(Cont::Func(node, names, rev, cont)))
@@ -272,13 +272,13 @@ impl<'a> Interpreter<'a> {
                 self.evaluate_expr(f, val, cont)
             }
             &Cont::Dict(rest, cont) => {
-                // println!("Cont Dict: {:?} Val {:?}", rest, val);
+                println!("Cont Dict: {:?} Val {:?}", rest, val);
                 match rest {
                     &AST::Cons(head, tail) => {
                         match head {
                             &AST::Number(_) => {
                                 self.run_cont(node,
-                                              self.arena.ast(AST::Cons(head, val)),
+                                              self.arena.ast(AST::Cons(val, head)),
                                               self.arena.cont(Cont::Dict(tail, cont)))
                             }
                             x => {
