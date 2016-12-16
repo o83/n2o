@@ -81,11 +81,21 @@ fn fac(b: &mut Bencher) {
 #[bench]
 fn fac2(b: &mut Bencher) {
     let mut i = Interpreter::new().unwrap();
-    let eval = &"x:5;fac:{[b;a]$[a=x;b;fac[a+1;a*b]]};".to_string();
+    let eval = &"fac:{[a;b]$[a=1;b;fac[a-1;a*b]]}".to_string();
     let code = i.parse(eval);
     i.run(code).unwrap();
-    let f = i.parse(&"fac[x;1]".to_string());
+    let f = i.parse(&"fac[4;5]".to_string());
     let code = i.parse(eval);
+    b.iter(|| {
+        i.run(f);
+        i.gc();
+    })
+}
+
+#[bench]
+fn fac_mul(b: &mut Bencher) {
+    let mut i = Interpreter::new().unwrap();
+    let f = i.parse(&"2*3*4*5".to_string());
     b.iter(|| {
         i.run(f);
         i.gc();

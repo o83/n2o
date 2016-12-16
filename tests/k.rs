@@ -116,6 +116,13 @@ pub fn k_factorial() {
 }
 
 #[test]
+pub fn k_tail_factorial() {
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"x:5;fac:{[a;b]$[a=1;b;fac[a-1;a*b]]};fac[x-1;x]".to_string());
+    assert_eq!(format!("{}", i.run(code).unwrap()), "120");
+}
+
+#[test]
 pub fn k_cond() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"a:{[x;y]$[x y;20;10]};a[{x};10]".to_string());
