@@ -16,7 +16,6 @@ Features
 * MPSC, SPMC, SPSC queues with CAS-semantics on Ring Buffers
 * Session Types and π-calculus semantics
 * 10-40ns latency
-* Minimal Dependencies
 * Zero-Copy Interpreter
 
 Prerequisites
