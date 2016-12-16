@@ -78,6 +78,20 @@ fn fac(b: &mut Bencher) {
     })
 }
 
+#[bench]
+fn fac2(b: &mut Bencher) {
+    let mut i = Interpreter::new().unwrap();
+    let eval = &"x:5;fac:{[b;a]$[a=x;b;fac[a+1;a*b]]};".to_string();
+    let code = i.parse(eval);
+    i.run(code).unwrap();
+    let f = i.parse(&"fac[x;1]".to_string());
+    let code = i.parse(eval);
+    b.iter(|| {
+        i.run(f);
+        i.gc();
+    })
+}
+
 #[derive(Debug,PartialEq,Clone)]
 struct Entry(u16, i64);
 

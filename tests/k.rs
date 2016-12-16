@@ -96,16 +96,10 @@ pub fn k_reduce() {
 #[test]
 pub fn k_repl() {
     let mut i = Interpreter::new().unwrap();
-    let code = i.parse(&"y:3;add:{[x]y};f:{[y]add y};f 1".to_string());
+    let code = i.parse(&"y:3;add:{[x]y};f:{[x]add x};f 1".to_string());
     assert_eq!(format!("{}", i.run(code).unwrap()), "3");
 }
 
-#[test]
-pub fn k_repl1() {
-    let mut i = Interpreter::new().unwrap();
-    let code = i.parse(&"y:3;addy:{[x]y};f:{[g;y]g y};f[addy;1]".to_string());
-    assert_eq!(format!("{}", i.run(code).unwrap()), "3");
-}
 
 #[test]
 pub fn k_repl2() {
@@ -143,11 +137,24 @@ pub fn k_14() {
     assert_eq!(format!("{}", i.run(code).unwrap()), "14");
 }
 
+
+#[test]
+pub fn k_multiargs2() {
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"b:2;a:3;fac:{[x;y]x*y};fac[b*a;a+1]".to_string());
+    assert_eq!(format!("{}", i.run(code).unwrap()), "24");
+}
+
 #[test]
 pub fn k_multiargs() {
     let mut i = Interpreter::new().unwrap();
-    let code = i.parse(&"xa:9;f:{[x;y;z](x+y)*z};f[1;xa+11;3]".to_string());
+    let code = i.parse(&"xa:9;f:{[x;y;z]x+y*z};f[1;xa+11;3]".to_string());
     assert_eq!(format!("{}", i.run(code).unwrap()), "63");
-    let code = i.parse(&"b:2;a:3;fac:{[x;y]x*y};fac[b*a;a+1]".to_string());
-    assert_eq!(format!("{}", i.run(code).unwrap()), "24");
+}
+
+#[test]
+pub fn k_repl1() {
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"y:3;addy:{[x]y};f:{[g;y]g y};f[addy;1]".to_string());
+    assert_eq!(format!("{}", i.run(code).unwrap()), "3");
 }

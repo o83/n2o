@@ -347,6 +347,7 @@ impl<'a> AST<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct AstIntoIterator<'a> {
     curr: &'a AST<'a>,
     done: bool,
@@ -363,7 +364,10 @@ impl<'a> Iterator for AstIntoIterator<'a> {
                 self.curr = cdr;
                 return Some(car);
             }
-            &AST::Nil => return None,
+            &AST::Nil => {
+                self.done = true;
+                return None;
+            }
             x => {
                 self.done = true;
                 return Some(x);
@@ -389,7 +393,7 @@ impl<'a> fmt::Display for AST<'a> {
         match *self {
             AST::Nil => write!(f, ""),
             AST::Cons(ref a, ref b) => write!(f, "{} {}", a, b),
-            AST::List(ref a) => write!(f, "{}", a),
+            AST::List(ref a) => write!(f, "({})", a),
             AST::Dict(ref d) => write!(f, "[{};]", d),
             AST::Call(ref a, ref b) => write!(f, "{} {}", a, b),
             AST::Lambda(a, b) => {
@@ -410,7 +414,7 @@ impl<'a> fmt::Display for AST<'a> {
             AST::Name(ref n) => write!(f, "{}", n),
             AST::Symbol(ref s) => write!(f, "{}", s),
             AST::Sequence(ref s) => write!(f, "{:?}", s),
-            AST::NameInt(ref n) => write!(f, "{}", n),
+            AST::NameInt(ref n) => write!(f, "^{}", n),
             AST::SymbolInt(ref s) => write!(f, "{}", s),
             AST::SequenceInt(ref s) => write!(f, "{:?}", s),
             AST::Cell(ref c) => write!(f, "{}", c),
@@ -563,4 +567,23 @@ pub fn adverb<'a>(a: Adverb, l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a
         Adverb::Assign => arena.ast(AST::Assign(l, r)),
         _ => arena.ast(AST::Adverb(a, l, r)),
     }
+}
+
+pub fn rev_dict<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
+    let mut res = arena.ast(AST::Nil);
+    let mut from = l;
+    loop {
+        match from {
+            &AST::Cons(x, xs) => {
+                res = arena.ast(AST::Cons(x, res));
+                from = xs;
+            }
+            &AST::Nil => break,
+            x => {
+                res = arena.ast(AST::Cons(x, res));
+                break;
+            }
+        }
+    }
+    res
 }

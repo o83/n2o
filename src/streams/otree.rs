@@ -33,6 +33,11 @@ impl<'a, T: Debug> Tree<'a, T> {
     }
 
     #[inline]
+    pub fn first_node(&'a self) -> &'a Node<'a> {
+        self.nodes.get(0).unwrap()
+    }
+
+    #[inline]
     pub fn split(&'a mut self) -> (&'a mut Self, &'a mut Self) {
         let f: *mut Tree<'a, T> = self;
         let uf: &mut Tree<'a, T> = unsafe { &mut *f };
