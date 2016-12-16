@@ -34,7 +34,7 @@ impl<'a, T: Debug> Tree<'a, T> {
 
     #[inline]
     pub fn first_node(&'a self) -> &'a Node<'a> {
-        self.nodes.get(0).unwrap()
+        self.nodes.first().unwrap()
     }
 
     #[inline]
