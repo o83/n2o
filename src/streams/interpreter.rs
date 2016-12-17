@@ -32,7 +32,7 @@ pub enum Cont<'a> {
     Lambda(Code, &'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
     Assign(&'a AST<'a>, &'a Cont<'a>),
     Cond(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
-    Func(&'a Node<'a>, &'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
+    Func(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
     List(&'a AST<'a>, &'a Cont<'a>),
     Dict(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
     Call(&'a AST<'a>, &'a Cont<'a>),
@@ -164,7 +164,7 @@ impl<'a> Interpreter<'a> {
                 // println!("Args Fun: {:?} orig: {:?}, names: {:?}", rev, args, names);
                 self.run_cont(node,
                               body,
-                              self.arena.cont(Cont::Func(node, names, rev, cont)))
+                              self.arena.cont(Cont::Func(names, rev, cont)))
             }
             &AST::NameInt(s) => {
                 let v = self.env.get(s, node);
@@ -267,9 +267,9 @@ impl<'a> Interpreter<'a> {
                     x => self.evaluate_fun(node, callee, x, cont),
                 }
             }
-            &Cont::Func(fnode, names, args, cont) => {
+            &Cont::Func(names, args, cont) => {
                 //  println!("Cont Func Args: {:?}", args);
-                let f = self.env.new_child(fnode);
+                let f = self.env.new_child(node);
                 for (k, v) in names.into_iter().zip(args.into_iter()) {
                     self.env.define(ast::extract_name(k), v);
                 }
@@ -381,7 +381,13 @@ impl<'a> Interpreter<'a> {
             }
             x => {
                 // println!("Return: {:?} ", val);
-                Ok(self.arena.lazy(Lazy::Return(val)))
+                match val {
+                    &AST::Cons(a,b) => {
+                         let mut rev = ast::rev_dict(val, &self.arena);
+                         Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::List(rev)))))
+                    },
+                    x => Ok(self.arena.lazy(Lazy::Return(x)))
+                }
             }
         }
     }
