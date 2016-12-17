@@ -493,6 +493,10 @@ pub fn list<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     }
 }
 
+pub fn parse<'a>(arena: &'a Arena<'a>, s: &String) -> &'a AST<'a> {
+    command::parse_Mex(arena, s).unwrap()
+}
+
 pub fn rev_list<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     let mut res = arena.ast(AST::Nil);
     let mut from = match l {

@@ -1,39 +1,16 @@
 
 // O-CPS INTERPRETER by 5HT et all
 
-use std::fmt;
-use std::cell::UnsafeCell;
-use std::iter;
-use std::vec;
-use streams::verb::{self, plus};
-use streams::env::*;
-use commands::ast::*;
-use commands::ast;
-use commands::command;
-use streams::otree::Node;
-
-#[derive(Clone, Debug)]
-pub enum Lazy<'a> {
-    Defer(&'a Node<'a>, &'a AST<'a>, &'a Cont<'a>),
-    Return(&'a AST<'a>),
-}
-
-#[derive(PartialEq, Clone, Debug)]
-pub enum Code {
-    Assign,
-    Cond,
-    Func,
-    Call,
-}
+use streams::{verb, adverb, env, otree};
+use commands::ast::{Error, AST, Verb, Adverb, Arena, self};
 
 #[derive(Clone, Debug)]
 pub enum Cont<'a> {
     Expressions(&'a AST<'a>, &'a Cont<'a>),
-    Lambda(Code, &'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
     Assign(&'a AST<'a>, &'a Cont<'a>),
     Cond(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
     Func(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
-    List(&'a AST<'a>, &'a Cont<'a>),
+    List(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
     Dict(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
     Call(&'a AST<'a>, &'a Cont<'a>),
     Verb(Verb, &'a AST<'a>, u8, &'a Cont<'a>),
@@ -41,21 +18,27 @@ pub enum Cont<'a> {
     Return,
 }
 
+#[derive(Clone, Debug)]
+pub enum Lazy<'a> {
+    Defer(&'a otree::Node<'a>, &'a AST<'a>, &'a Cont<'a>),
+    Return(&'a AST<'a>),
+}
+
 pub struct Interpreter<'a> {
     arena: Arena<'a>,
-    env: Environment<'a>,
+    env: env::Environment<'a>,
 }
 
 impl<'a> Interpreter<'a> {
     pub fn new() -> Result<Interpreter<'a>, Error> {
         Ok(Interpreter {
             arena: Arena::new(),
-            env: try!(Environment::new_root()),
+            env: try!(env::Environment::new_root()),
         })
     }
 
     pub fn parse(&'a self, s: &String) -> &'a AST<'a> {
-        command::parse_Mex(&self.arena, s).unwrap()
+        ast::parse(&self.arena, s)
     }
 
     pub fn run(&'a self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
@@ -81,7 +64,7 @@ impl<'a> Interpreter<'a> {
         self.env.clean()
     }
 
-    fn handle_defer(&'a self, node: &'a Node<'a>, a: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
+    fn handle_defer(&'a self, node: &'a otree::Node<'a>, a: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
         // println!("handle_defer: val: {:?} #### cont: {:?}\n", a, cont);
         match a {
             &AST::Assign(name, body) => {
@@ -136,10 +119,10 @@ impl<'a> Interpreter<'a> {
     }
 
     fn lookup(&'a self,
-              node: &'a Node<'a>,
+              node: &'a otree::Node<'a>,
               name: u16,
-              env: &'a Environment<'a>)
-              -> Result<(&'a AST<'a>, &'a Node<'a>), Error> {
+              env: &'a env::Environment<'a>)
+              -> Result<(&'a AST<'a>, &'a otree::Node<'a>), Error> {
         match env.get(name, node) {
             Some((v, f)) => Ok((v, f)),
             None => {
@@ -152,7 +135,7 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn evaluate_fun(&'a self,
-                        node: &'a Node<'a>,
+                        node: &'a otree::Node<'a>,
                         fun: &'a AST<'a>,
                         args: &'a AST<'a>,
                         cont: &'a Cont<'a>)
@@ -188,7 +171,7 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn evaluate_expr(&'a self,
-                         node: &'a Node<'a>,
+                         node: &'a otree::Node<'a>,
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
                          -> Result<&'a Lazy<'a>, Error> {
@@ -211,7 +194,8 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn evaluate_list(&'a self,
-                         node: &'a Node<'a>,
+                         node: &'a otree::Node<'a>,
+                         acc: &'a AST<'a>,
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
                          -> Result<&'a Lazy<'a>, Error> {
@@ -221,7 +205,7 @@ impl<'a> Interpreter<'a> {
                 Ok(self.arena.lazy(Lazy::Defer(node,
                                                car,
                                                self.arena
-                                                   .cont(Cont::List(cdr, cont)))))
+                                                   .cont(Cont::List(acc, cdr, cont)))))
             }
             &AST::Nil => {
                 Err(Error::EvalError {
@@ -234,7 +218,7 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn evaluate_dict(&'a self,
-                         node: &'a Node<'a>,
+                         node: &'a otree::Node<'a>,
                          acc: &'a AST<'a>,
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
@@ -257,7 +241,7 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn run_cont(&'a self, node: &'a Node<'a>, val: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
+    pub fn run_cont(&'a self, node: &'a otree::Node<'a>, val: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
         // println!("run_cont: val: {:?} #### cont: {:?}\n", val, cont);
 
         match cont {
