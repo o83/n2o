@@ -392,6 +392,7 @@ impl<'a> fmt::Display for AST<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             AST::Nil => write!(f, ""),
+            AST::Cons(ref a, &AST::Nil) => write!(f, "{}", a),
             AST::Cons(ref a, ref b) => write!(f, "{} {}", a, b),
             AST::List(ref a) => write!(f, "({})", a),
             AST::Dict(ref d) => write!(f, "[{};]", d),
