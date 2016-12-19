@@ -237,15 +237,7 @@ impl<'a> Interpreter<'a> {
                                                self.arena
                                                    .cont(Cont::Dict(acc, cdr, cont)))))
             }
-            &AST::Nil => {
-                // println!("Eval Dict: {:?} {:?}", acc, cont);
-                self.run_cont(node, acc, cont)
-                // Err(Error::EvalError {
-                // desc: "Empty list".to_string(),
-                // ast: format!("{:?}", AST::Nil),
-                // })
-                //
-            }
+            &AST::Nil => self.run_cont(node, acc, cont),
             x => Ok(self.arena.lazy(Lazy::Defer(node, x, cont))),
         }
     }
@@ -279,21 +271,12 @@ impl<'a> Interpreter<'a> {
                     &AST::Cons(head, tail) => {
                         match head {
                             &AST::Number(_) => {
-                                // println!("Cons-Number {:?} -- {:?}", head, val);
                                 self.run_cont(node,
                                               head,
                                               self.arena
                                                   .cont(Cont::Dict(new_acc, tail, cont)))
                             }
-                            &AST::Cons(x, y) => {
-                                // println!("Cons-Cons {:?} -- {:?}", head, val);
-                                Ok(self.arena.lazy(Lazy::Defer(node,
-                                                               self.arena.ast(AST::Dict(x)),
-                                                               self.arena
-                                                                   .cont(Cont::Dict(y, tail, cont)))))
-                            }
                             x => {
-                                // println!("Cons-Dict {:?} -- {:?}", head, val);
                                 self.evaluate_dict(node,
                                                    self.arena.ast(AST::Nil),
                                                    head,
