@@ -168,6 +168,6 @@ pub fn k_multiargs() {
 #[test]
 pub fn k_repl1() {
     let mut i = Interpreter::new().unwrap();
-    let code = i.parse(&"y:3;addy:{[x]y};f:{[g;y]g y};f[addy;1]".to_string());
+    let code = i.parse(&"y:3;addy:{[x]y};f:{[g;n]g n};f[addy;1]".to_string());
     assert_eq!(format!("{}", i.run(code).unwrap()), "3");
 }
