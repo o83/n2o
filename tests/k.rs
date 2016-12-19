@@ -97,7 +97,13 @@ pub fn k_reduce() {
 pub fn k_repl() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"y:3;add:{[x]y};f:{[x]add x};f 1".to_string());
-    assert_eq!(format!("{}", i.run(code).unwrap()), "3");
+}
+
+#[test]
+pub fn k_nested_dict() {
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"a:10;[1;2;[a+a;[4+a;3];2];5]".to_string());
+    assert_eq!(format!("{}", i.run(code).unwrap()), "[1 2 [20 [14 3] 2] 5]");
 }
 
 
