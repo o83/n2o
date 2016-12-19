@@ -307,6 +307,19 @@ impl<'a> Arena<'a> {
         let ast = unsafe { &mut *self.asts.get() };
         println!("AST {}, {:?}", ast.len(), ast);
     }
+
+    pub fn clean(&self) -> usize {
+        let asts = unsafe { &mut *self.asts.get() };
+        let lazys = unsafe { &mut *self.lazys.get() };
+        let conts = unsafe { &mut *self.conts.get() };
+        let l = conts.len() + asts.len() + lazys.len();
+        unsafe {
+            asts.set_len(0);
+            conts.set_len(0);
+            lazys.set_len(0);
+        };
+        l
+    }
 }
 
 impl<'a> AST<'a> {

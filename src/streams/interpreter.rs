@@ -2,7 +2,7 @@
 // O-CPS INTERPRETER by 5HT et all
 
 use streams::{verb, adverb, env, otree};
-use commands::ast::{Error, AST, Verb, Adverb, Arena, self};
+use commands::ast::{self, Error, AST, Verb, Adverb, Arena};
 
 #[derive(Clone, Debug)]
 pub enum Cont<'a> {
@@ -61,10 +61,14 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn gc(&self) -> usize {
-        self.env.clean()
+        self.env.clean() + self.arena.clean()
     }
 
-    fn handle_defer(&'a self, node: &'a otree::Node<'a>, a: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
+    fn handle_defer(&'a self,
+                    node: &'a otree::Node<'a>,
+                    a: &'a AST<'a>,
+                    cont: &'a Cont<'a>)
+                    -> Result<&'a Lazy<'a>, Error> {
         // println!("handle_defer: val: {:?} #### cont: {:?}\n", a, cont);
         match a {
             &AST::Assign(name, body) => {
@@ -145,9 +149,7 @@ impl<'a> Interpreter<'a> {
             &AST::Lambda(names, body) => {
                 let mut rev = ast::rev_dict(args, &self.arena);
                 // println!("Args Fun: {:?} orig: {:?}, names: {:?}", rev, args, names);
-                self.run_cont(node,
-                              body,
-                              self.arena.cont(Cont::Func(names, rev, cont)))
+                self.run_cont(node, body, self.arena.cont(Cont::Func(names, rev, cont)))
             }
             &AST::NameInt(s) => {
                 let v = self.env.get(s, node);
@@ -241,7 +243,11 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn run_cont(&'a self, node: &'a otree::Node<'a>, val: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
+    pub fn run_cont(&'a self,
+                    node: &'a otree::Node<'a>,
+                    val: &'a AST<'a>,
+                    cont: &'a Cont<'a>)
+                    -> Result<&'a Lazy<'a>, Error> {
         // println!("run_cont: val: {:?} #### cont: {:?}\n", val, cont);
 
         match cont {
@@ -366,11 +372,11 @@ impl<'a> Interpreter<'a> {
             x => {
                 // println!("Return: {:?} ", val);
                 match val {
-                    &AST::Cons(a,b) => {
-                         let mut rev = ast::rev_dict(val, &self.arena);
-                         Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::List(rev)))))
-                    },
-                    x => Ok(self.arena.lazy(Lazy::Return(x)))
+                    &AST::Cons(a, b) => {
+                        let mut rev = ast::rev_dict(val, &self.arena);
+                        Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::List(rev)))))
+                    }
+                    x => Ok(self.arena.lazy(Lazy::Return(x))),
                 }
             }
         }
