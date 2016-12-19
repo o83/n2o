@@ -394,13 +394,9 @@ impl<'a> Interpreter<'a> {
             x => {
                 // println!("Return: {:?} {:?}", cont, val);
                 match val {
-                    //&AST::Cons(a, b) => {
-                    //    let mut rev = ast::rev_dict(val, &self.arena);
-                    //    Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::Dict(rev)))))
-                   // }
                     &AST::Dict(x) => {
                         let mut rev = ast::rev_dict(x, &self.arena);
-                        Ok(self.arena.lazy(Lazy::Return(rev)))
+                        Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::Dict(rev)))))
                     }
                     x => Ok(self.arena.lazy(Lazy::Return(x))),
                 }
