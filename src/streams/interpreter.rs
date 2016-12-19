@@ -45,13 +45,17 @@ impl<'a> Interpreter<'a> {
         let mut a = 0;
         let mut b = try!(self.evaluate_expr(self.env.last(), ast, self.arena.cont(Cont::Return)));
         loop {
-            // debug!("[Trampoline:{}]:{:?}\n", a, b);
+            // println!("[Trampoline:{}]:{:?}\n", a, b);
             match b {
                 &Lazy::Defer(f, x, t) => {
                     // a = a + 1;
                     b = try!(self.handle_defer(f, x, t))
                 }
-                &Lazy::Return(a) => return Ok(a),
+                &Lazy::Return(a) => {
+                    println!("Res: {:?}", a);
+                    return Ok(a);
+                }
+
             }
         }
         Err(Error::EvalError {
@@ -61,7 +65,7 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn gc(&self) -> usize {
-        self.env.clean() + self.arena.clean()
+        self.env.clean()
     }
 
     fn handle_defer(&'a self,
@@ -84,7 +88,7 @@ impl<'a> Interpreter<'a> {
                 }
             }
             &AST::List(x) => self.evaluate_expr(node, x, cont),
-            // &AST::Cons(x, y) => self.run_cont(node, a, cont),
+            &AST::Cons(x, y) => self.evaluate_dict(node, y, self.arena.ast(AST::Dict(x)), cont),
             &AST::Dict(x) => {
                 // println!("Defer Dict: {:?}", x);
                 self.evaluate_dict(node, self.arena.ast(AST::Nil), x, cont)
@@ -277,9 +281,16 @@ impl<'a> Interpreter<'a> {
                                               self.arena
                                                   .cont(Cont::Dict(new_acc, tail, cont)))
                             }
+                            &AST::Cons(x, y) => {
+                                Ok(self.arena.lazy(Lazy::Defer(node,
+                                                               self.arena.ast(AST::Dict(x)),
+                                                               self.arena
+                                                                   .cont(Cont::Dict(y, tail, cont)))))
+                            }
                             x => {
+                                println!("Dict {:?}", head);
                                 self.evaluate_dict(node,
-                                                   new_acc,
+                                                   self.arena.ast(AST::Nil),
                                                    head,
                                                    self.arena
                                                        .cont(Cont::Dict(new_acc, tail, cont)))
@@ -300,7 +311,14 @@ impl<'a> Interpreter<'a> {
                             }
                         }
                     }
-
+                    // &AST::Dict(x) => {
+                    // println!("Dict");
+                    // Ok(self.arena.lazy(Lazy::Defer(node,
+                    // self.arena.ast(AST::Dict(x)),
+                    // self.arena
+                    // .cont(Cont::Dict(self.arena.ast(AST::Nil), rest, cont)))))
+                    // }
+                    //
                     x => {
                         // println!("Lame Dict: {:?}", val);
                         Ok(self.arena.lazy(Lazy::Defer(node,
@@ -370,11 +388,11 @@ impl<'a> Interpreter<'a> {
                 }
             }
             x => {
-                // println!("Return: {:?} ", val);
+                println!("Return: {:?} {:?}", cont, val);
                 match val {
                     &AST::Cons(a, b) => {
                         let mut rev = ast::rev_dict(val, &self.arena);
-                        Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::List(rev)))))
+                        Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::Dict(rev)))))
                     }
                     x => Ok(self.arena.lazy(Lazy::Return(x))),
                 }

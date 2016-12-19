@@ -92,7 +92,7 @@ fn fac_tail(b: &mut Bencher) {
     })
 }
 
-#[bench]
+//#[bench]
 fn fac_mul(b: &mut Bencher) {
     let mut i = Interpreter::new().unwrap();
     let f = i.parse(&"2*3*4*5".to_string());
