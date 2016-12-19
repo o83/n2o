@@ -107,12 +107,10 @@ impl<'ast> Console<'ast> {
     fn interpreter_run(&mut self, text: String) {
         let i: &mut Interpreter = unsafe { &mut *self.interpreter.get() };
         let x = i.parse(&text);
-        let run = match i.run(x) {
+        match i.run(x) {
             Ok(r) => println!("{}", r),
             Err(e) => print!("{}", e),
-        };
-        i.gc();
-        run
+        }
     }
 
     fn readable(&mut self, token: Token) -> io::Result<bool> {
