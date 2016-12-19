@@ -408,7 +408,7 @@ impl<'a> fmt::Display for AST<'a> {
             AST::Cons(ref a, &AST::Nil) => write!(f, "{}", a),
             AST::Cons(ref a, ref b) => write!(f, "{} {}", a, b),
             AST::List(ref a) => write!(f, "({})", a),
-            AST::Dict(ref d) => write!(f, "[{};]", d),
+            AST::Dict(ref d) => write!(f, "[{}]", d),
             AST::Call(ref a, ref b) => write!(f, "{} {}", a, b),
             AST::Lambda(a, b) => {
                 match *a {
@@ -593,8 +593,22 @@ pub fn rev_dict<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     loop {
         match from {
             &AST::Cons(x, xs) => {
-                res = arena.ast(AST::Cons(x, res));
-                from = xs;
+                match x {
+                    &AST::Dict(z) => {
+                        let mut rev = rev_dict(z, arena);
+                        res = arena.ast(AST::Cons(arena.ast(AST::Dict(rev)), res));
+                        from = xs;
+                    }
+                    y => {
+                        res = arena.ast(AST::Cons(y, res));
+                        from = xs;
+                    }
+                }
+            }
+            &AST::Dict(x) => {
+                let mut rev = rev_dict(x, arena);
+                res = arena.ast(AST::Cons(arena.ast(AST::Dict(rev)), res));
+                break;
             }
             &AST::Nil => break,
             x => {
