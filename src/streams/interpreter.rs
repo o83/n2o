@@ -187,12 +187,7 @@ impl<'a> Interpreter<'a> {
                                                self.arena
                                                    .cont(Cont::Expressions(cdr, cont)))))
             }
-            &AST::Nil => {
-                Err(Error::EvalError {
-                    desc: "Empty list".to_string(),
-                    ast: format!("{:?}", AST::Nil),
-                })
-            }
+            &AST::Nil => self.run_cont(node, exprs, cont),
             x => Ok(self.arena.lazy(Lazy::Defer(node, x, cont))),
         }
     }
@@ -211,12 +206,7 @@ impl<'a> Interpreter<'a> {
                                                self.arena
                                                    .cont(Cont::List(acc, cdr, cont)))))
             }
-            &AST::Nil => {
-                Err(Error::EvalError {
-                    desc: "Empty list".to_string(),
-                    ast: format!("{:?}", AST::Nil),
-                })
-            }
+            &AST::Nil => self.run_cont(node, acc, cont),
             x => Ok(self.arena.lazy(Lazy::Defer(node, x, cont))),
         }
     }
