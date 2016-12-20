@@ -179,3 +179,27 @@ pub fn k_tensor() {
     assert_eq!(format!("{}", i.run(code).unwrap()),
                "[[1 1 1 0] [1 1 180 0] [0 0 270 0] [0 0 0 1]]");
 }
+
+#[test]
+pub fn k_tensor1() {
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"a:10;[[[a;2;3];[1;[a;4];3]];[1;2]]".to_string());
+    assert_eq!(format!("{}", i.run(code).unwrap()),
+               "[[[10 2 3] [1 [10 4] 3]] [1 2]]");
+}
+
+#[test]
+pub fn k_tensor2() {
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"a:10;[[[a;2;3];[[a;4];[3;0]]];[1;2]]".to_string());
+    assert_eq!(format!("{}", i.run(code).unwrap()),
+               "[[[10 2 3] [[10 4] [3 0]]] [1 2]]");
+}
+
+#[test]
+pub fn k_tensor3() {
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"a:10;[[[[a;2;3];[[a;4];[3;0]]];[1;2]];1]".to_string());
+    assert_eq!(format!("{}", i.run(code).unwrap()),
+               "[[[[10 2 3] [[10 4] [3 0]]] [1 2]] 1]");
+}
