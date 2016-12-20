@@ -171,3 +171,11 @@ pub fn k_repl1() {
     let code = i.parse(&"y:3;addy:{[x]y};f:{[g;n]g n};f[addy;1]".to_string());
     assert_eq!(format!("{}", i.run(code).unwrap()), "3");
 }
+
+#[test]
+pub fn k_tensor() {
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"g:1;b:1;[[g;g*b;1;0];[g*b;g;180;0];[0;0;270;0];[0;0;0;1]]".to_string());
+    assert_eq!(format!("{}", i.run(code).unwrap()),
+               "[[1 1 1 0] [1 1 180 0] [0 0 270 0] [0 0 0 1]]");
+}

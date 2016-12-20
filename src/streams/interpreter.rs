@@ -88,11 +88,7 @@ impl<'a> Interpreter<'a> {
                 }
             }
             &AST::List(x) => self.evaluate_expr(node, x, cont),
-            //&AST::Cons(x, y) => self.evaluate_dict(node, y, self.arena.ast(AST::Dict(x)), cont),
-            &AST::Dict(x) => {
-                // println!("Defer Dict: {:?}", x);
-                self.evaluate_dict(node, self.arena.ast(AST::Nil), x, cont)
-            }
+            &AST::Dict(x) => self.evaluate_dict(node, self.arena.ast(AST::Nil), x, cont),
             &AST::Call(c, a) => Ok(self.arena.lazy(Lazy::Defer(node, a, self.arena.cont(Cont::Call(c, cont))))),
             &AST::Verb(ref verb, left, right) => {
                 match (left, right) {
@@ -292,7 +288,7 @@ impl<'a> Interpreter<'a> {
                                       cont)
                     }
                     &AST::Nil => {
-                        // println!("Nil: {:?} -- {:?}", acc, val);
+                        println!("Nil: {:?} -- {:?}", acc, val);
                         self.run_cont(node, new_acc, cont)
                     }
                     &AST::NameInt(name) => {
@@ -375,11 +371,17 @@ impl<'a> Interpreter<'a> {
                 }
             }
             x => {
-                // println!("Return: {:?} {:?}", cont, val);
+                println!("Return: {:?} {:?}", cont, val);
                 match val {
                     &AST::Dict(x) => {
                         let mut rev = ast::rev_dict(x, &self.arena);
                         Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::Dict(rev)))))
+                    }
+                    &AST::Cons(x, y) => {
+                        let mut rev = ast::rev_dict(x, &self.arena);
+                        let mut rev2 = ast::rev_dict(y, &self.arena);
+                        Ok(self.arena
+                            .lazy(Lazy::Return(self.arena.ast(AST::Dict(self.arena.ast(AST::Cons(rev2, rev)))))))
                     }
                     x => Ok(self.arena.lazy(Lazy::Return(x))),
                 }
