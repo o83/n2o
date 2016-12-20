@@ -268,9 +268,9 @@ impl<'a> Arena<'a> {
             names: UnsafeCell::new(HashMap::new()),
             symbols: HashMap::new(),
             sequences: HashMap::new(),
-            asts: UnsafeCell::new(Vec::with_capacity(2048)),
-            conts: UnsafeCell::new(Vec::with_capacity(2048)),
-            lazys: UnsafeCell::new(Vec::with_capacity(2048)),
+            asts: UnsafeCell::new(Vec::with_capacity(2048*2048)),
+            conts: UnsafeCell::new(Vec::with_capacity(2048*2048)),
+            lazys: UnsafeCell::new(Vec::with_capacity(2048*2048)),
         }
     }
 
