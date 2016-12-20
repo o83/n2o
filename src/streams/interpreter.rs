@@ -186,18 +186,6 @@ impl<'a> Interpreter<'a> {
                                                self.arena
                                                    .cont(Cont::Expressions(cdr, cont)))))
             }
-            &AST::NameInt(s) => {
-                let v = self.env.get(s, node);
-                match v {
-                    Some((v, f)) => self.evaluate_expr(f, v, cont),
-                    None => {
-                        Err(Error::EvalError {
-                            desc: "Unknown variable".to_string(),
-                            ast: format!("{:?}", AST::NameInt(s)),
-                        })
-                    }
-                }
-            }
             &AST::Nil => {
                 Err(Error::EvalError {
                     desc: "Empty list".to_string(),
