@@ -612,11 +612,16 @@ pub fn rev_dict<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
             }
             &AST::Dict(x) => {
                 let mut rev = rev_dict(x, arena);
-                res = arena.ast(AST::Cons(arena.ast(AST::Dict(rev)), res));
+                // println!("f x: {:?}", res);
+                match res {
+                    &AST::Nil => res = arena.ast(AST::Dict(rev)),
+                    _ => res = arena.ast(AST::Cons(arena.ast(AST::Dict(rev)), res)),
+                }
                 break;
             }
             &AST::Nil => break,
             x => {
+                // println!("x: {:?}", x);
                 res = arena.ast(AST::Cons(x, res));
                 break;
             }

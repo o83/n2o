@@ -52,7 +52,7 @@ impl<'a> Interpreter<'a> {
                     b = try!(self.handle_defer(f, x, t))
                 }
                 &Lazy::Return(a) => {
-                    println!("Res: {:?}", a);
+                    // println!("Res: {:?}", a);
                     return Ok(a);
                 }
 
@@ -244,7 +244,6 @@ impl<'a> Interpreter<'a> {
                     cont: &'a Cont<'a>)
                     -> Result<&'a Lazy<'a>, Error> {
         // println!("run_cont: val: {:?} #### cont: {:?}\n", val, cont);
-
         match cont {
             &Cont::Call(callee, cont) => {
                 match val {
@@ -261,11 +260,14 @@ impl<'a> Interpreter<'a> {
                 self.evaluate_expr(f, val, cont)
             }
             &Cont::Dict(acc, rest, cont) => {
-                println!("Cont Dict: rest {:?} val {:?} acc {:?}", rest, val, acc);
+                // println!("Cont Dict: rest {:?} val {:?} acc {:?}", rest, val, acc);
                 let new_acc;
                 match val {
-                    &AST::Cons(_, _) => new_acc = self.arena.ast(AST::Cons(self.arena.ast(AST::Dict(val)), acc)),
-                    _ => new_acc = self.arena.ast(AST::Cons(val, acc)),
+                    &AST::Cons(x, y) => new_acc = self.arena.ast(AST::Cons(self.arena.ast(AST::Dict(val)), acc)),
+                    _ => {
+                        // println!("Acc: {:?}", val);
+                        new_acc = self.arena.ast(AST::Cons(val, acc))
+                    }
                 }
                 match rest {
                     &AST::Cons(head, tail) => {
@@ -286,10 +288,7 @@ impl<'a> Interpreter<'a> {
                         }
                     }
                     &AST::Number(s) => {
-                        println!("Number: {:?} -- {:?}", acc, val);
-                        // self.run_cont(node,
-                        //              self.arena.ast(AST::Dict(self.arena.ast(AST::Cons(rest, new_acc)))),
-                        //              cont)
+                        // println!("Number: {:?} -- {:?}", acc, val);
                         self.run_cont(node, self.arena.ast(AST::Cons(rest, new_acc)), cont)
                     }
                     &AST::Nil => {
@@ -376,23 +375,22 @@ impl<'a> Interpreter<'a> {
                 }
             }
             x => {
-                println!("Return: {:?} {:?}", cont, val);
+                // println!("Return: {:?} {:?}", cont, val);
                 match val {
                     &AST::Dict(x) => {
-
                         let mut rev = ast::rev_dict(x, &self.arena);
                         Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::Dict(rev)))))
                     }
                     &AST::Cons(x, y) => {
-                        println!("Dict: {:?}", y);
                         let mut rev = ast::rev_dict(x, &self.arena);
                         let mut rev2 = ast::rev_dict(y, &self.arena);
+                        // println!("Dict2: {:?}", y);
                         Ok(self.arena
                             .lazy(Lazy::Return(self.arena
                                 .ast(AST::Dict(self.arena.ast(AST::Cons(rev2, rev)))))))
                     }
                     x => {
-                        println!("Unknown: {:?}", x);
+                        // println!("Unknown: {:?}", x);
                         Ok(self.arena.lazy(Lazy::Return(x)))
                     }
                 }
