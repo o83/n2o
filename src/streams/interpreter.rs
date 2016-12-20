@@ -288,7 +288,7 @@ impl<'a> Interpreter<'a> {
                                       cont)
                     }
                     &AST::Nil => {
-                        println!("Nil: {:?} -- {:?}", acc, val);
+                        // println!("Nil: {:?} -- {:?}", acc, val);
                         self.run_cont(node, new_acc, cont)
                     }
                     &AST::NameInt(name) => {
@@ -371,7 +371,7 @@ impl<'a> Interpreter<'a> {
                 }
             }
             x => {
-                println!("Return: {:?} {:?}", cont, val);
+                // println!("Return: {:?} {:?}", cont, val);
                 match val {
                     &AST::Dict(x) => {
                         let mut rev = ast::rev_dict(x, &self.arena);
