@@ -35,14 +35,13 @@ pub fn k_symbols() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"`a`b`c;`1`1`1".to_string());
     assert_eq!(*code,
-               AST::Cons(&AST::Call(&AST::Symbol(String::from("a")),
-                                    &AST::Call(&AST::Symbol(String::from("b")),
-                                               &AST::Symbol(String::from("c")))),
-                         &AST::Call(&AST::Symbol(String::from("")),
+               AST::Cons(&AST::Call(&AST::SymbolInt(0),
+                                    &AST::Call(&AST::SymbolInt(1), &AST::SymbolInt(2))),
+                         &AST::Call(&AST::SymbolInt(3),
                                     &AST::Call(&AST::Number(1),
-                                               &AST::Call(&AST::Symbol(String::from("")),
+                                               &AST::Call(&AST::SymbolInt(3),
                                                           &AST::Call(&AST::Number(1),
-                                                                     &AST::Call(&AST::Symbol(String::from("")),
+                                                                     &AST::Call(&AST::SymbolInt(3),
                                                                                 &AST::Number(1))))))));
 }
 

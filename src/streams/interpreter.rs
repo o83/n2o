@@ -52,7 +52,7 @@ impl<'a> Interpreter<'a> {
                     b = try!(self.handle_defer(f, x, t))
                 }
                 &Lazy::Return(a) => {
-                    // println!("Res: {:?}", a);
+                    println!("Res: {:?}", a);
                     return Ok(a);
                 }
 
@@ -80,7 +80,7 @@ impl<'a> Interpreter<'a> {
             }
             &AST::Cond(val, left, right) => {
                 match val {
-                    &AST::Number(x) => self.run_cont(node, val, cont), 
+                    &AST::Number(x) => self.run_cont(node, val, cont),
                     x => {
                         Ok(self.arena
                             .lazy(Lazy::Defer(node, x, self.arena.cont(Cont::Cond(left, right, cont)))))
@@ -150,8 +150,13 @@ impl<'a> Interpreter<'a> {
             &AST::Lambda(closure, names, body) => {
                 let mut rev = ast::rev_dict(args, &self.arena);
                 // println!("Args Fun: {:?} orig: {:?}, names: {:?}", rev, args, names);
-                self.run_cont(if closure == None { node } else { closure.unwrap() },
-                              body, self.arena.cont(Cont::Func(names, rev, cont)))
+                self.run_cont(if closure == None {
+                                  node
+                              } else {
+                                  closure.unwrap()
+                              },
+                              body,
+                              self.arena.cont(Cont::Func(names, rev, cont)))
             }
             &AST::NameInt(s) => {
                 let v = self.env.get(s, node);
@@ -179,7 +184,7 @@ impl<'a> Interpreter<'a> {
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
                          -> Result<&'a Lazy<'a>, Error> {
-        //println!("Eval Expr: {:?}", exprs);
+        // println!("Eval Expr: {:?}", exprs);
         match exprs {
             &AST::Cons(car, cdr) => {
                 Ok(self.arena.lazy(Lazy::Defer(node,
@@ -230,24 +235,21 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn parse_return(&'a self, val: &'a AST<'a>, cont: &'a Cont<'a>) ->
-        Result<&'a Lazy<'a>, Error> {
-                match val {
-                    &AST::Dict(x) => {
-                        let mut rev = ast::rev_dict(x, &self.arena);
-                        Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::Dict(rev)))))
-                    }
-                    &AST::Cons(x, y) => {
-                        let mut rev = ast::rev_dict(x, &self.arena);
-                        let mut rev2 = ast::rev_dict(y, &self.arena);
-                        Ok(self.arena
-                            .lazy(Lazy::Return(self.arena
-                                .ast(AST::Dict(self.arena.ast(AST::Cons(rev2, rev)))))))
-                    }
-                    x => {
-                        Ok(self.arena.lazy(Lazy::Return(x)))
-                    }
-                }
+    pub fn parse_return(&'a self, val: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
+        match val {
+            &AST::Dict(x) => {
+                let mut rev = ast::rev_dict(x, &self.arena);
+                Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::Dict(rev)))))
+            }
+            &AST::Cons(x, y) => {
+                let mut rev = ast::rev_dict(x, &self.arena);
+                let mut rev2 = ast::rev_dict(y, &self.arena);
+                Ok(self.arena
+                    .lazy(Lazy::Return(self.arena
+                        .ast(AST::Dict(self.arena.ast(AST::Cons(rev2, rev)))))))
+            }
+            x => Ok(self.arena.lazy(Lazy::Return(x))),
+        }
     }
 
     pub fn run_cont(&'a self,
@@ -342,7 +344,7 @@ impl<'a> Interpreter<'a> {
             &Cont::Assign(name, cont) => {
                 match name {
                     &AST::NameInt(s) => {
-                        //println!("Assign: {:?}:{:?}", s, val);
+                        // println!("Assign: {:?}:{:?}", s, val);
                         try!(self.env.define(s, val));
                         self.evaluate_expr(node, val, cont)
                     }
@@ -393,4 +395,3 @@ impl<'a> Interpreter<'a> {
         }
     }
 }
-
