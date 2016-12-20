@@ -118,6 +118,7 @@ impl<'a> Interpreter<'a> {
                     Err(x) => Err(x),
                 }
             }
+            &AST::Lambda(_, x, y) => self.run_cont(node, self.arena.ast(AST::Lambda(Some(node), x, y)), cont),
             x => self.run_cont(node, x, cont),
         }
     }
@@ -146,15 +147,15 @@ impl<'a> Interpreter<'a> {
                         -> Result<&'a Lazy<'a>, Error> {
         // println!("Eval Fun: {:?}", fun);
         match fun {
-            &AST::Lambda(names, body) => {
+            &AST::Lambda(closure, names, body) => {
                 let mut rev = ast::rev_dict(args, &self.arena);
                 // println!("Args Fun: {:?} orig: {:?}, names: {:?}", rev, args, names);
-                self.run_cont(node, body, self.arena.cont(Cont::Func(names, rev, cont)))
+                self.run_cont(closure.unwrap(), body, self.arena.cont(Cont::Func(names, rev, cont)))
             }
             &AST::NameInt(s) => {
                 let v = self.env.get(s, node);
                 match v {
-                    Some((v, f)) => self.evaluate_fun(f, v, args, cont), 
+                    Some((v, f)) => self.evaluate_fun(f, v, args, cont),
                     None => {
                         Err(Error::EvalError {
                             desc: "Unknown variable".to_string(),
@@ -177,13 +178,25 @@ impl<'a> Interpreter<'a> {
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
                          -> Result<&'a Lazy<'a>, Error> {
-        // println!("Eval Expr: {:?}", cont);
+        //println!("Eval Expr: {:?}", exprs);
         match exprs {
             &AST::Cons(car, cdr) => {
                 Ok(self.arena.lazy(Lazy::Defer(node,
                                                car,
                                                self.arena
                                                    .cont(Cont::Expressions(cdr, cont)))))
+            }
+            &AST::NameInt(s) => {
+                let v = self.env.get(s, node);
+                match v {
+                    Some((v, f)) => self.evaluate_expr(f, v, cont),
+                    None => {
+                        Err(Error::EvalError {
+                            desc: "Unknown variable".to_string(),
+                            ast: format!("{:?}", AST::NameInt(s)),
+                        })
+                    }
+                }
             }
             &AST::Nil => {
                 Err(Error::EvalError {
@@ -238,13 +251,33 @@ impl<'a> Interpreter<'a> {
         }
     }
 
+    pub fn parse_return(&'a self, val: &'a AST<'a>, cont: &'a Cont<'a>) ->
+        Result<&'a Lazy<'a>, Error> {
+                match val {
+                    &AST::Dict(x) => {
+                        let mut rev = ast::rev_dict(x, &self.arena);
+                        Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::Dict(rev)))))
+                    }
+                    &AST::Cons(x, y) => {
+                        let mut rev = ast::rev_dict(x, &self.arena);
+                        let mut rev2 = ast::rev_dict(y, &self.arena);
+                        Ok(self.arena
+                            .lazy(Lazy::Return(self.arena
+                                .ast(AST::Dict(self.arena.ast(AST::Cons(rev2, rev)))))))
+                    }
+                    x => {
+                        Ok(self.arena.lazy(Lazy::Return(x)))
+                    }
+                }
+    }
+
     pub fn run_cont(&'a self,
                     node: &'a otree::Node<'a>,
                     val: &'a AST<'a>,
-                    cont: &'a Cont<'a>)
+                    con: &'a Cont<'a>)
                     -> Result<&'a Lazy<'a>, Error> {
         // println!("run_cont: val: {:?} #### cont: {:?}\n", val, cont);
-        match cont {
+        match con {
             &Cont::Call(callee, cont) => {
                 match val {
                     &AST::Dict(v) => self.evaluate_fun(node, callee, v, cont),
@@ -252,7 +285,6 @@ impl<'a> Interpreter<'a> {
                 }
             }
             &Cont::Func(names, args, cont) => {
-                //  println!("Cont Func Args: {:?}", args);
                 let f = self.env.new_child(node);
                 for (k, v) in names.into_iter().zip(args.into_iter()) {
                     self.env.define(ast::extract_name(k), v);
@@ -331,6 +363,7 @@ impl<'a> Interpreter<'a> {
             &Cont::Assign(name, cont) => {
                 match name {
                     &AST::NameInt(s) => {
+                        //println!("Assign: {:?}:{:?}", s, val);
                         try!(self.env.define(s, val));
                         self.evaluate_expr(node, val, cont)
                     }
@@ -375,26 +408,10 @@ impl<'a> Interpreter<'a> {
                 }
             }
             x => {
+                self.parse_return(val, con)
                 // println!("Return: {:?} {:?}", cont, val);
-                match val {
-                    &AST::Dict(x) => {
-                        let mut rev = ast::rev_dict(x, &self.arena);
-                        Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::Dict(rev)))))
-                    }
-                    &AST::Cons(x, y) => {
-                        let mut rev = ast::rev_dict(x, &self.arena);
-                        let mut rev2 = ast::rev_dict(y, &self.arena);
-                        // println!("Dict2: {:?}", y);
-                        Ok(self.arena
-                            .lazy(Lazy::Return(self.arena
-                                .ast(AST::Dict(self.arena.ast(AST::Cons(rev2, rev)))))))
-                    }
-                    x => {
-                        // println!("Unknown: {:?}", x);
-                        Ok(self.arena.lazy(Lazy::Return(x)))
-                    }
-                }
             }
         }
     }
 }
+

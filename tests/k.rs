@@ -68,7 +68,7 @@ pub fn k_func() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"{x*2}[(1;2;3)]".to_string());
     assert_eq!(format!("{:?}", code),
-               "Call(Lambda(NameInt(0), Verb(Times, NameInt(0), Number(2))), \
+               "Call(Lambda(None, NameInt(0), Verb(Times, NameInt(0), Number(2))), \
                 List(Cons(Number(1), Cons(Number(2), Number(3)))))");
 }
 
@@ -77,7 +77,7 @@ pub fn k_adverb() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"{x+2}/(1;2;3)".to_string());
     assert_eq!(format!("{:?}", code),
-               "Adverb(Over, Lambda(NameInt(0), Verb(Plus, NameInt(0), Number(2))), \
+               "Adverb(Over, Lambda(None, NameInt(0), Verb(Plus, NameInt(0), Number(2))), \
                 List(Cons(Number(1), Cons(Number(2), Number(3)))))");
 }
 
@@ -87,7 +87,7 @@ pub fn k_reduce() {
     let mut i = Interpreter::new().unwrap();
     let ref mut code = i.parse(&"+/{x*y}[(1;3;4;5;6);(2;6;2;1;3)]".to_string());
     assert_eq!(format!("{:?}", code),
-               "Adverb(Over, Verb(Plus, Nil, Nil), Call(Lambda(NameInt(0), Verb(Times, \
+               "Adverb(Over, Verb(Plus, Nil, Nil), Call(Lambda(None, NameInt(0), Verb(Times, \
                 NameInt(0), NameInt(1))), Dict(Cons(List(Cons(Number(1), Cons(Number(3), \
                 Cons(Number(4), Cons(Number(5), Number(6)))))), List(Cons(Number(2), \
                 Cons(Number(6), Cons(Number(2), Cons(Number(1), Number(3))))))))))");
@@ -168,7 +168,7 @@ pub fn k_multiargs() {
 #[test]
 pub fn k_repl1() {
     let mut i = Interpreter::new().unwrap();
-    let code = i.parse(&"y:3;addy:{[x]y};f:{[g;n]g n};f[addy;1]".to_string());
+    let code = i.parse(&"y:3;addy:{y};f:{[g;y]g y};f[addy;1]".to_string());
     assert_eq!(format!("{}", i.run(code).unwrap()), "3");
 }
 

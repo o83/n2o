@@ -1,7 +1,7 @@
 use std::{mem, ptr, isize};
 use std::fmt::Debug;
 
-#[derive(Debug,Clone)]
+#[derive(PartialEq, Debug,Clone)]
 pub struct Node<'a> {
     pub bounds: (usize, usize),
     pub parent: Option<&'a Node<'a>>,

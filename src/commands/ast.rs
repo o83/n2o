@@ -9,7 +9,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use commands::command;
-use streams::interpreter;
+use streams::{otree, interpreter, env};
 use streams::interpreter::*;
 use std::cell::UnsafeCell;
 use std::{mem, ptr, isize};
@@ -222,7 +222,7 @@ pub enum AST<'a> {
     // 4
     Call(&'a AST<'a>, &'a AST<'a>),
     // 5
-    Lambda(&'a AST<'a>, &'a AST<'a>),
+    Lambda(Option<&'a otree::Node<'a>>, &'a AST<'a>, &'a AST<'a>),
     // 6
     Verb(Verb, &'a AST<'a>, &'a AST<'a>),
     // 7
@@ -410,7 +410,7 @@ impl<'a> fmt::Display for AST<'a> {
             AST::List(ref a) => write!(f, "({})", a),
             AST::Dict(ref d) => write!(f, "[{}]", d),
             AST::Call(ref a, ref b) => write!(f, "{} {}", a, b),
-            AST::Lambda(a, b) => {
+            AST::Lambda(_, a, b) => {
                 match *a {
                     AST::Nil => write!(f, "{{[x]{}}}", b),
                     _ => {
@@ -488,8 +488,8 @@ pub fn cons<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST
 
 pub fn fun<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     match *l {
-        AST::Nil => arena.ast(AST::Lambda(arena.intern("x".to_string()), r)),
-        _ => arena.ast(AST::Lambda(l, r)),
+        AST::Nil => arena.ast(AST::Lambda(None, arena.intern("x".to_string()), r)),
+        _ => arena.ast(AST::Lambda(None, l, r)),
     }
 }
 
