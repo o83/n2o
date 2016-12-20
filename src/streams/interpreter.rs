@@ -150,7 +150,8 @@ impl<'a> Interpreter<'a> {
             &AST::Lambda(closure, names, body) => {
                 let mut rev = ast::rev_dict(args, &self.arena);
                 // println!("Args Fun: {:?} orig: {:?}, names: {:?}", rev, args, names);
-                self.run_cont(closure.unwrap(), body, self.arena.cont(Cont::Func(names, rev, cont)))
+                self.run_cont(if closure == None { node } else { closure.unwrap() },
+                              body, self.arena.cont(Cont::Func(names, rev, cont)))
             }
             &AST::NameInt(s) => {
                 let v = self.env.get(s, node);
