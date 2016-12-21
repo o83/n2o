@@ -42,20 +42,17 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn run(&'a self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
-        let mut a = 0;
-        let mut b = try!(self.evaluate_expr(self.env.last(), ast, self.arena.cont(Cont::Return)));
+        let mut counter = 0;
+        let mut tick = try!(self.evaluate_expr(self.env.last(), ast, self.arena.cont(Cont::Return)));
         loop {
-            // println!("[Trampoline:{}]:{:?}\n", a, b);
-            match b {
-                &Lazy::Defer(f, x, t) => {
-                    // a = a + 1;
-                    b = try!(self.handle_defer(f, x, t))
+            match tick {
+                &Lazy::Defer(node, ast, cont) => {
+                    tick = try!({
+                        counter = counter + 1;
+                        self.handle_defer(node, ast, cont)
+                    })
                 }
-                &Lazy::Return(a) => {
-                    // println!("Res: {:?}", a);
-                    return Ok(a);
-                }
-
+                &Lazy::Return(ast) => return Ok(ast),
             }
         }
         Err(Error::EvalError {
@@ -229,18 +226,18 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn parse_return(&'a self, val: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
+    pub fn emit_return(&'a self, val: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<&'a Lazy<'a>, Error> {
         match val {
             &AST::Dict(x) => {
-                let mut rev = ast::rev_dict(x, &self.arena);
-                Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::Dict(rev)))))
+                let mut dict = ast::rev_dict(x, &self.arena);
+                Ok(self.arena.lazy(Lazy::Return(self.arena.ast(AST::Dict(dict)))))
             }
             &AST::Cons(x, y) => {
-                let mut rev = ast::rev_dict(x, &self.arena);
-                let mut rev2 = ast::rev_dict(y, &self.arena);
+                let mut head = ast::rev_dict(x, &self.arena);
+                let mut tail = ast::rev_dict(y, &self.arena);
                 Ok(self.arena
                     .lazy(Lazy::Return(self.arena
-                        .ast(AST::Dict(self.arena.ast(AST::Cons(rev2, rev)))))))
+                        .ast(AST::Dict(self.arena.ast(AST::Cons(tail, head)))))))
             }
             x => Ok(self.arena.lazy(Lazy::Return(x))),
         }
@@ -355,7 +352,7 @@ impl<'a> Interpreter<'a> {
                 }
             }
             x => {
-                self.parse_return(val, con)
+                self.emit_return(val, con)
                 // println!("Return: {:?} {:?}", cont, val);
             }
         }
