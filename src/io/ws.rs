@@ -68,8 +68,8 @@ impl WsServer {
     }
 
     #[inline]
-    fn read_incoming(&mut self) {
-        let mut c = self.clients.last_mut().unwrap();
+    fn read_incoming(&mut self, id: usize) {
+        let mut c = self.clients.get_mut(id - 1).unwrap();
         Self::handshake(c)
     }
 
@@ -81,7 +81,7 @@ impl WsServer {
             for event in s1.events.iter() {
                 match event.token() {
                     Token(0) => s2.reg_incoming(),
-                    _ => s2.read_incoming(),
+                    Token(id) => s2.read_incoming(id),
                 }
             }
         }
