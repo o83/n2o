@@ -47,6 +47,10 @@ path = "src/apps/iter_stream.rs"
 name = "fac"
 path = "src/apps/fac.rs"
 
+[[bin]]
+name = "wserver"
+path = "src/apps/wserver.rs"
+
 [dependencies]
 net2         = "0.2.19"
 log          = "0.3"

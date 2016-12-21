@@ -11,3 +11,4 @@ pub mod unix;
 pub mod tcp;
 pub mod stdio;
 pub mod tele;
+pub mod ws;
