@@ -4,25 +4,44 @@ use io::poll::{Poll, Events};
 use io::token::Token;
 use io::ready::Ready;
 use io::options::PollOpt;
-use std::io::Read;
+use std::io::{Read, Write};
 use http_muncher::{Parser, ParserHandler};
+use std::collections::HashMap;
 use std::str;
+use std::fmt;
+use rustc_serialize::base64::{ToBase64, STANDARD};
+use sha1;
 
 #[derive(Debug)]
 pub enum Error {
     RuntimeError,
 }
 
-struct HttpHandler;
+struct HttpHandler {
+    current_key: Option<String>,
+    headers: HashMap<String, String>,
+}
 
 impl ParserHandler for HttpHandler {
-    fn on_header_field(&mut self, parser: &mut Parser, header: &[u8]) -> bool {
-        println!("{}: ", str::from_utf8(header).unwrap());
+    fn on_header_field(&mut self, parser: &mut Parser, s: &[u8]) -> bool {
+        match str::from_utf8(s) {
+            Ok(s) => self.current_key = Some(s.to_string()),
+            Err(_) => {}
+        }
         true
     }
 
-    fn on_header_value(&mut self, parser: &mut Parser, value: &[u8]) -> bool {
-        println!("\t{}", str::from_utf8(value).unwrap());
+    fn on_header_value(&mut self, parser: &mut Parser, s: &[u8]) -> bool {
+        if self.current_key.is_some() {
+            match str::from_utf8(s) {
+                Ok(s) => {
+                    let key = self.current_key.clone().unwrap();
+                    self.headers.insert(key, s.to_string());
+                }
+                Err(_) => {}
+            }
+        }
+        self.current_key = None;
         true
     }
 }
@@ -36,18 +55,26 @@ impl HttpParser {
     pub fn new() -> Self {
         HttpParser {
             parser: Parser::request(),
-            handler: HttpHandler,
+            handler: HttpHandler {
+                current_key: None,
+                headers: HashMap::new(),
+            },
         }
     }
 
     pub fn parse(&mut self, data: &[u8]) -> usize {
         self.parser.parse(&mut self.handler, data)
     }
+
+    pub fn get<'a>(&self, k: &'a str) -> Option<&String> {
+        self.handler.headers.get(&String::from(k))
+    }
 }
 
 pub struct WsClient {
     sock: TcpStream,
     addr: SocketAddr,
+    key: Option<String>,
 }
 
 pub struct WsServer {
@@ -82,14 +109,37 @@ impl WsServer {
         (uf, us)
     }
 
+    #[inline]
+    fn gen_key(key: &String) -> String {
+        let mut m = sha1::Sha1::new();
+        m.update(key.as_bytes());
+        m.update("258EAFA5-E914-47DA-95CA-C5AB0DC85B11".as_bytes());
+
+        let b = m.digest().bytes();
+        return b.to_base64(STANDARD);
+    }
+
+    #[inline]
+    fn handshake_response(&mut self) {
+        // let headers = self.headers.borrow();
+        // let response_key = gen_key(&headers.get("Sec-WebSocket-Key").unwrap());
+        // let response = fmt::format(format_args!("HTTP/1.1 101 Switching Protocols\r\nConnection: \
+        //                                          Upgrade\r\nSec-WebSocket-Accept: {}\r\nUpgrade: websocket\r\n\r\n",
+        //                                         response_key));
+        // self.socket.try_write(response.as_bytes()).unwrap();
+        // self.state.update_open();
+    }
+
+    #[inline]
     fn handshake(&mut self, c: &mut WsClient) {
         let mut buf = [0u8; 2048];
         c.sock.read(&mut buf);
         self.parser.parse(&buf);
-        println!("Handshake");
-        for b in buf.iter() {
-            println!("{}", b);
-        }
+        let key = Self::gen_key(self.parser.get("Sec-WebSocket-Key").unwrap());
+        let response = fmt::format(format_args!("HTTP/1.1 101 Switching Protocols\r\nConnection: \
+                                                 Upgrade\r\nSec-WebSocket-Accept: {}\r\nUpgrade: websocket\r\n\r\n",
+                                                key));
+        c.sock.write(response.as_bytes());
     }
 
     #[inline]
@@ -98,7 +148,11 @@ impl WsServer {
             Ok((mut s, a)) => {
                 self.tokens += 1;
                 self.poll.register(&s, Token(self.tokens), Ready::readable(), PollOpt::edge());
-                self.clients.push(WsClient { sock: s, addr: a });
+                self.clients.push(WsClient {
+                    sock: s,
+                    addr: a,
+                    key: None,
+                });
             }
             Err(e) => println!("WsError: {:?}", e),
         }
@@ -112,7 +166,7 @@ impl WsServer {
     }
 
     pub fn listen(&mut self) -> Result<(), Error> {
-        println!("Listening on {:?}...\n>", self.tcp.local_addr().unwrap());
+        println!("Listening on {:?}...", self.tcp.local_addr().unwrap());
         loop {
             self.poll.poll(&mut self.events, None).unwrap();
             let (s1, s2) = self.split();
