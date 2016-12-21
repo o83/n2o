@@ -43,6 +43,7 @@ impl<'a> Interpreter<'a> {
 
     pub fn run(&'a self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
         let mut counter = 0;
+        // println!("Input: {:?}", ast);
         let mut tick = try!(self.evaluate_expr(self.env.last(), ast, self.arena.cont(Cont::Return)));
         loop {
             match tick {
@@ -52,7 +53,10 @@ impl<'a> Interpreter<'a> {
                         self.handle_defer(node, ast, cont)
                     })
                 }
-                &Lazy::Return(ast) => return Ok(ast),
+                &Lazy::Return(ast) => {
+                    // println!("Result: {:?}", ast);
+                    return Ok(ast);
+                }
             }
         }
         Err(Error::EvalError {
@@ -76,13 +80,8 @@ impl<'a> Interpreter<'a> {
                 Ok(self.arena.lazy(Lazy::Defer(node, body, self.arena.cont(Cont::Assign(name, cont)))))
             }
             &AST::Cond(val, left, right) => {
-                match val {
-                    &AST::Number(x) => self.run_cont(node, val, cont),
-                    x => {
-                        Ok(self.arena
-                            .lazy(Lazy::Defer(node, x, self.arena.cont(Cont::Cond(left, right, cont)))))
-                    }
-                }
+                Ok(self.arena
+                    .lazy(Lazy::Defer(node, val, self.arena.cont(Cont::Cond(left, right, cont)))))
             }
             &AST::List(x) => self.evaluate_expr(node, x, cont),
             &AST::Dict(x) => self.evaluate_dict(node, self.arena.ast(AST::Nil), x, cont),
