@@ -52,7 +52,7 @@ impl<'a> Interpreter<'a> {
                     b = try!(self.handle_defer(f, x, t))
                 }
                 &Lazy::Return(a) => {
-                    println!("Res: {:?}", a);
+                    // println!("Res: {:?}", a);
                     return Ok(a);
                 }
 

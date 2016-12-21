@@ -105,9 +105,11 @@ fn fac_mul(b: &mut Bencher) {
 #[bench]
 fn akkerman_k(b: &mut Bencher) {
     let mut i = Interpreter::new().unwrap();
-    let f = i.parse(&"f:{[x;y]$[0=x;1+y;$[0=y;f[x-1;1];f[x-1;f[x;y-1]]]]};f[3;4]".to_string());
+    let akk = i.parse(&"f:{[x;y]$[0=x;1+y;$[0=y;f[x-1;1];f[x-1;f[x;y-1]]]]}".to_string());
+    i.run(akk).unwrap();
+    let call = i.parse(&"f[3;4]".to_string());
     b.iter(|| {
-        i.run(f);
+        i.run(call);
         i.gc();
     })
 }
