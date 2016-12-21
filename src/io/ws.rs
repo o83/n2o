@@ -5,10 +5,44 @@ use io::token::Token;
 use io::ready::Ready;
 use io::options::PollOpt;
 use std::io::Read;
+use http_muncher::{Parser, ParserHandler};
+use std::str;
 
 #[derive(Debug)]
 pub enum Error {
     RuntimeError,
+}
+
+struct HttpHandler;
+
+impl ParserHandler for HttpHandler {
+    fn on_header_field(&mut self, parser: &mut Parser, header: &[u8]) -> bool {
+        println!("{}: ", str::from_utf8(header).unwrap());
+        true
+    }
+
+    fn on_header_value(&mut self, parser: &mut Parser, value: &[u8]) -> bool {
+        println!("\t{}", str::from_utf8(value).unwrap());
+        true
+    }
+}
+
+struct HttpParser {
+    parser: Parser,
+    handler: HttpHandler,
+}
+
+impl HttpParser {
+    pub fn new() -> Self {
+        HttpParser {
+            parser: Parser::request(),
+            handler: HttpHandler,
+        }
+    }
+
+    pub fn parse(&mut self, data: &[u8]) -> usize {
+        self.parser.parse(&mut self.handler, data)
+    }
 }
 
 pub struct WsClient {
@@ -22,6 +56,7 @@ pub struct WsServer {
     events: Events,
     tcp: TcpListener,
     clients: Vec<WsClient>,
+    parser: HttpParser,
 }
 
 impl WsServer {
@@ -35,6 +70,7 @@ impl WsServer {
             events: Events::with_capacity(1024),
             tcp: t,
             clients: Vec::with_capacity(256),
+            parser: HttpParser::new(),
         }
     }
 
@@ -46,9 +82,10 @@ impl WsServer {
         (uf, us)
     }
 
-    fn handshake(c: &mut WsClient) {
+    fn handshake(&mut self, c: &mut WsClient) {
         let mut buf = [0u8; 2048];
         c.sock.read(&mut buf);
+        self.parser.parse(&buf);
         println!("Handshake");
         for b in buf.iter() {
             println!("{}", b);
@@ -69,8 +106,9 @@ impl WsServer {
 
     #[inline]
     fn read_incoming(&mut self, id: usize) {
-        let mut c = self.clients.get_mut(id - 1).unwrap();
-        Self::handshake(c)
+        let (s1, s2) = self.split();
+        let mut c = s1.clients.get_mut(id - 1).unwrap();
+        s2.handshake(c)
     }
 
     pub fn listen(&mut self) -> Result<(), Error> {
