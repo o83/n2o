@@ -158,16 +158,10 @@ impl<'a> Interpreter<'a> {
                               body,
                               self.arena.cont(Cont::Func(names, rev, cont)))
             }
-            &AST::NameInt(s) => {
-                let v = self.env.get(s, node);
-                match v {
-                    Some((v, f)) => self.evaluate_fun(f, v, args, cont),
-                    None => {
-                        Err(Error::EvalError {
-                            desc: "Unknown variable".to_string(),
-                            ast: format!("{:?}", AST::NameInt(s)),
-                        })
-                    }
+            &AST::NameInt(name) => {
+                match self.lookup(node, name, &self.env) {
+                    Ok((v, f)) => self.evaluate_fun(f, v, args, cont),
+                    Err(x) => Err(x),
                 }
             }
             x => {
@@ -272,64 +266,6 @@ impl<'a> Interpreter<'a> {
                 }
                 self.evaluate_expr(f, val, cont)
             }
-            &Cont::Dict(acc, rest, cont) => {
-                // println!("Cont Dict: rest {:?} val {:?} acc {:?}", rest, val, acc);
-                let new_acc;
-                match val {
-                    &AST::Cons(x, y) => new_acc = self.arena.ast(AST::Cons(self.arena.ast(AST::Dict(val)), acc)),
-                    _ => {
-                        // println!("Acc: {:?}", val);
-                        new_acc = self.arena.ast(AST::Cons(val, acc))
-                    }
-                }
-                match rest {
-                    &AST::Cons(head, tail) => {
-                        match head {
-                            &AST::Number(_) => {
-                                self.run_cont(node,
-                                              head,
-                                              self.arena
-                                                  .cont(Cont::Dict(new_acc, tail, cont)))
-                            }
-                            x => {
-                                self.evaluate_dict(node,
-                                                   self.arena.ast(AST::Nil),
-                                                   head,
-                                                   self.arena
-                                                       .cont(Cont::Dict(new_acc, tail, cont)))
-                            }
-                        }
-                    }
-                    &AST::Number(s) => {
-                        // println!("Number: {:?} -- {:?}", acc, val);
-                        self.run_cont(node, self.arena.ast(AST::Cons(rest, new_acc)), cont)
-                    }
-                    &AST::Nil => {
-                        // println!("Nil: {:?} -- {:?}", acc, val);
-                        self.run_cont(node, new_acc, cont)
-                    }
-                    &AST::NameInt(name) => {
-                        let l = self.env.get(name, node);
-                        match l {
-                            Some((v, f)) => self.run_cont(f, self.arena.ast(AST::Cons(v, new_acc)), cont),
-                            None => {
-                                Err(Error::EvalError {
-                                    desc: "".to_string(),
-                                    ast: "".to_string(),
-                                })
-                            }
-                        }
-                    }
-                    x => {
-                        Ok(self.arena.lazy(Lazy::Defer(node,
-                                                       x,
-                                                       self.arena
-                                                           .cont(Cont::Dict(new_acc, self.arena.ast(AST::Nil), cont)))))
-                    }
-
-                }
-
-            }
             &Cont::Cond(if_expr, else_expr, cont) => {
                 match val {
                     &AST::Number(0) => Ok(self.arena.lazy(Lazy::Defer(node, else_expr, cont))),
@@ -355,6 +291,36 @@ impl<'a> Interpreter<'a> {
                         })
                     }
 
+                }
+            }
+            &Cont::Dict(acc, rest, cont) => {
+                let new_acc;
+                match val {
+                    &AST::Cons(x, y) => new_acc = self.arena.ast(AST::Cons(self.arena.ast(AST::Dict(val)), acc)),
+                    _ => new_acc = self.arena.ast(AST::Cons(val, acc)), 
+                };
+                match rest {
+                    &AST::Cons(head, tail) => {
+                        self.evaluate_dict(node,
+                                           self.arena.ast(AST::Nil),
+                                           head,
+                                           self.arena
+                                               .cont(Cont::Dict(new_acc, tail, cont)))
+                    }
+                    &AST::Number(s) => self.run_cont(node, self.arena.ast(AST::Cons(rest, new_acc)), cont),
+                    &AST::Nil => self.run_cont(node, new_acc, cont),
+                    &AST::NameInt(name) => {
+                        match self.lookup(node, name, &self.env) {
+                            Ok((v, f)) => self.run_cont(f, self.arena.ast(AST::Cons(v, new_acc)), cont),
+                            Err(x) => Err(x),
+                        }
+                    }
+                    x => {
+                        Ok(self.arena.lazy(Lazy::Defer(node,
+                                                       x,
+                                                       self.arena
+                                                           .cont(Cont::Dict(new_acc, self.arena.ast(AST::Nil), cont)))))
+                    }
                 }
             }
             &Cont::Verb(ref verb, right, swap, cont) => {
