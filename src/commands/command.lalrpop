@@ -24,10 +24,10 @@ Noun:      &'ast AST<'ast> = { Name, Number, Hexlit, Bool, Symbol, List, Dict, S
 Expr:      &'ast AST<'ast> = { Noun, Call, Verbs, Adverbs, };
 
 Verbs:     &'ast AST<'ast> = {           <v:Verb>   => verb(v,nil(arena),nil(arena), arena),
-                   <l:Call>  <v:Verb>               => verb(v,l,nil(arena), arena),
+                   <l:Call>  <v:Verb>     <r:Expr>  => verb(v,l,r, arena),
+                    <l:Call> <v:Verb>               => verb(v,l,nil(arena), arena),
                    <l:Noun>  <v:Verb>               => verb(v,l,nil(arena), arena),
                              <v:Verb>     <r:Expr>  => verb(v,nil(arena),r, arena),
-                   <l:Call>  <v:Verb>     <r:Expr>  => verb(v,l,r, arena),
                    <l:Noun>  <v:Verb>     <r:Expr>  => verb(v,l,r, arena), };
 
 Adverbs:   &'ast AST<'ast> = {<a:Adverb>            => adverb(a,nil(arena),nil(arena), arena),

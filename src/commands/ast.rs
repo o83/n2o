@@ -140,6 +140,9 @@ impl fmt::Display for Verb {
         match *self {
             Verb::Plus => write!(f, "+"),
             Verb::Minus => write!(f, "-"),
+            Verb::Equal => write!(f, "="),
+            Verb::Dot => write!(f, "."),
+            Verb::Cast => write!(f, "$"),
             Verb::Times => write!(f, "*"),
             Verb::Divide => write!(f, "%"),
             _ => write!(f, "{:?}", self),
@@ -218,6 +221,30 @@ pub struct Arena<'a> {
     lazys: UnsafeCell<Vec<Lazy<'a>>>,
 }
 
+impl<'a> fmt::Display for Cont<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Cont::Call(callee, cont) => write!(f, "call {}", callee),
+            &Cont::Func(names, args, cont) => write!(f, "func {} {}", names, args),
+            &Cont::Cond(if_expr, else_expr, cont) => write!(f, "cond {} {}", if_expr, else_expr),
+            &Cont::Assign(name, cont) => write!(f, "assign {}", name),
+            &Cont::Dict(acc, rest, cont) => write!(f, "dict {} {}", acc, rest),
+            &Cont::Verb(ref verb, right, swap, cont) => write!(f, "verb {} {}", verb, right),
+            &Cont::Expressions(rest, cont) => write!(f, "expr {}", rest),
+            x => write!(f, "return"),
+        }
+    }
+}
+
+impl<'a> fmt::Display for Lazy<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Lazy::Defer(node, ast, cont) => write!(f, "defer {} {} {}", node, ast, cont),
+            x => write!(f, "return"),
+        }
+    }
+}
+
 impl<'a> Arena<'a> {
     pub fn new() -> Arena<'a> {
         Arena {
@@ -227,6 +254,22 @@ impl<'a> Arena<'a> {
             asts: UnsafeCell::new(Vec::with_capacity(2048 * 2048)),
             conts: UnsafeCell::new(Vec::with_capacity(2048 * 2048)),
             lazys: UnsafeCell::new(Vec::with_capacity(2048 * 2048)),
+        }
+    }
+
+
+    pub fn dump(&'a self) {
+        let x = unsafe { &mut *self.asts.get() };
+        for i in x[0..x.len()].iter() {
+            println!("ast {}", i);
+        }
+        let x = unsafe { &mut *self.conts.get() };
+        for i in x[0..x.len()].iter() {
+            println!("cont {}", i);
+        }
+        let x = unsafe { &mut *self.lazys.get() };
+        for i in x[0..x.len()].iter() {
+            println!("lazy {}", i);
         }
     }
 
