@@ -17,6 +17,7 @@ Features
 * Session Types and π-calculus semantics
 * 10-40ns latency
 * Zero-Copy Interpreter
+* BERT protocol for VM stats
 
 Prerequisites
 -------------
@@ -29,7 +30,7 @@ Test The O Language
 -------------------
 
 ```
-$ cargo build ; rlwrap ./target/debug/console 
+$ cargo build ; rlwrap ./target/debug/console
     Finished debug [unoptimized + debuginfo] target(s) in 0.0 secs
 Welcome to O-CPS Interpreter v0.11.0!
 > fac:{$[x=1;1;x*fac[x-1]]};fac[20]
@@ -134,8 +135,12 @@ Credits
 
 * Viktor Sovietov, Core Suggestions
 * Anton Kundenko, Stream Processing
-* Ievgenii Lysiuchenko, Optimizations
+* Ievgenii Lysiuchenko, Optimizations, System Programming
 * Mykola Oleksiienko, K expertise
 * Maxim Sokhatsky, General View
+
+Inspiration
+-----------
 * Ken Pratt, Rusty Scheme
 * Carl Lerche, MIO
+
