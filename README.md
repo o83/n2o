@@ -113,7 +113,7 @@ Message: [129, 132, 23, 14, 207, 245, 71, 71, 129, 178]
 Open Browser:
 
 ```
-$ open http://127.0.0.1:8001/etc/ws/index.htm
+$ open http://127.0.0.1:8001/etc/status/index.htm
 ```
 
 Test Session Types
