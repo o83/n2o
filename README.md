@@ -88,14 +88,23 @@ In another process:
 $ ./target/debug/client
 ```
 
-Test Console Server
+Test WebSocket Server
 -------------------
 
+Start Server:
+
 ```
-$ rlwrap ./target/debug/console
-Console is listening...
-ENSO
-Message: "ENSO"
+$ rlwrap ./target/debug/wserver
+Listening on V4(127.0.0.1:9001)...
+Message: [129, 132, 131, 146, 194, 183, 205, 160, 141, 155]
+Message: [129, 132, 193, 71, 215, 107, 143, 117, 152, 71]
+Message: [129, 132, 23, 14, 207, 245, 71, 71, 129, 178]
+```
+
+Open Browser:
+
+```
+$ open http://localhost:8001/etc/ws/index.htm
 ```
 
 Test Session Types

@@ -2,7 +2,7 @@
 // WebSocket Transport
 
 $ws = { heart: true, interval: 4000,
-        creator: function(url) { return window.WebSocket ? new window.WebSocket(url) : false; },
+        creator: function(url) { console.log(url); return window.WebSocket ? new window.WebSocket(url) : false; },
         onheartbeat: function() { this.channel.send('PING'); } };
 
 // N2O Reliable Connection

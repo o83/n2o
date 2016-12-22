@@ -1,4 +1,3 @@
-try { module.exports = {dec:utf8_dec,enc:utf8_toByteArray}; } catch (e) { }
 
 // N2O UTF-8 Support
 
