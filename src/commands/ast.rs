@@ -204,6 +204,7 @@ pub enum AST<'a> {
     Lambda(Option<&'a otree::Node<'a>>, &'a AST<'a>, &'a AST<'a>),
     Verb(Verb, &'a AST<'a>, &'a AST<'a>),
     Adverb(Adverb, &'a AST<'a>, &'a AST<'a>),
+    Table(&'a AST<'a>, &'a AST<'a>),
     Ioverb(String),
     Number(i64),
     NameInt(u16),
@@ -427,6 +428,7 @@ impl<'a> fmt::Display for AST<'a> {
             AST::Cons(ref a, &AST::Nil) => write!(f, "{}", a),
             AST::Cons(ref a, ref b) => write!(f, "{} {}", a, b),
             AST::List(ref a) => write!(f, "({})", a),
+            AST::Table(a, b) => write!(f, "([{}]{})", a, b),
             AST::Dict(ref d) => write!(f, "[{}]", d),
             AST::Call(ref a, ref b) => write!(f, "{} {}", a, b),
             AST::Lambda(_, a, b) => {
@@ -488,6 +490,10 @@ pub fn fun<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<
         AST::Nil => arena.ast(AST::Lambda(None, arena.intern("x".to_string()), r)),
         _ => arena.ast(AST::Lambda(None, l, r)),
     }
+}
+
+pub fn table<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
+    arena.ast(AST::Table(l, r))
 }
 
 pub fn dict<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
