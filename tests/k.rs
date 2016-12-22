@@ -196,6 +196,14 @@ pub fn k_tensor2() {
 }
 
 #[test]
+pub fn k_application_order() {
+    let mut i = Interpreter::new().unwrap();
+    let code1 = i.parse(&"a:10;print:{x+1};print[a * 10]".to_string());
+    let code2 = i.parse(&"a:10;print:{x+1};print a * 10".to_string());
+    assert_eq!(format!("{}", i.run(code1).unwrap() == i.run(code2).unwrap()), "true");
+}
+
+#[test]
 pub fn k_akkerman() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"f:{[x;y]$[0=x;1+y;$[0=y;f[x-1;1];f[x-1;f[x;y-1]]]]};f[3;4]".to_string());
