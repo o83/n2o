@@ -9,7 +9,8 @@ function ar(o)     { return o.v instanceof ArrayBuffer ? new Uint8Array(o.v) : o
 function fl(a)     { return a.reduce(function(f,t){ return uc(f, t instanceof Uint8Array ? t :
                      Array.isArray(t) ? fl(t) : new Uint8Array([t]) ); }, new Uint8Array()); }
 function atom(o)   { return {t:100,v:utf8_toByteArray(o).v}; }
-function bin(o)    { return {t:109,v:o instanceof ArrayBuffer ? new Uint8Array(o) : o instanceof Uint8Array ? o : utf8_toByteArray(o).v}; }
+function bin(o)    { return {t:109,v:o instanceof ArrayBuffer ? new Uint8Array(o) : o
+                                       instanceof Uint8Array ? o : utf8_toByteArray(o).v}; }
 function tuple()   { return {t:104,v:Array.apply(null,arguments)}; }
 function list()    { return {t:108,v:Array.apply(null,arguments)}; }
 function number(o) { return {t:98,v:o}; }
