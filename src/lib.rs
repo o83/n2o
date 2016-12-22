@@ -60,3 +60,6 @@ extern crate log;
 extern crate core;
 #[macro_use]
 extern crate bitflags;
+extern crate http_muncher;
+extern crate sha1;
+extern crate rustc_serialize;
