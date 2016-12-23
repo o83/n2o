@@ -19,7 +19,7 @@ impl<'a, E, F> Reception<'a, E, F>
     pub fn register(&'a mut self, e: &'a E, p: PollOpt, f: F) -> io::Result<usize> {
         let id = self.subscribers.len();
         try!(self.poll.register(e, Token(id), Ready::readable(), p));
-        // self.subscribers.push(e);
+        self.subscribers.push((e, f));
         Ok(id)
     }
 }
