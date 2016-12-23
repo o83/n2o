@@ -38,8 +38,8 @@ Call:      &'ast AST<'ast> = {    Noun, <c:Noun>   <a:Call> => call(c, a, arena)
                                <l:Noun> <v:Verb>   <r:Expr> => verb(v, l, r, arena), };
 
 Decimal:   &'ast AST<'ast> = { <n:r"\d+">            => ast(AST::Number(i64::from_str(n).unwrap()), arena), };
-Hex:       &'ast AST<'ast> = { <h:r"0x[a-zA-Z\d]+">  => ast(AST::Number(i64::from_str_radix(&h[2..], 16).unwrap()), arena), };
-Bin:       &'ast AST<'ast> = { <b:r"[01]+b">         => ast(AST::Number(i64::from_str_radix(&b[0..], 2).unwrap()), arena), };
+Hex:       &'ast AST<'ast> = { <h:r"0x[a-zA-Z\d]+">  => ast(AST::Number(i64::from_str_radix(&h[2..], 16).unwrap()), arena) };
+Bin:       &'ast AST<'ast> = { <b:r"[01]+b">         => ast(AST::Number(i64::from_str_radix(&b[0..], 2).unwrap()), arena) };
 Ioverb:    &'ast AST<'ast> = { <i:r"\d+:">           => ast(AST::Ioverb(String::from(i)), arena), };
 
 Name:      &'ast AST<'ast> = { <n:r"[a-zA-Z][a-zA-Z\d]*"> => arena.intern(String::from(n)), };
