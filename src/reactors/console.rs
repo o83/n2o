@@ -29,12 +29,13 @@ pub struct Console<'ast> {
 impl<'ast> Console<'ast> {
     pub fn new() -> Self {
         let tok = 10_000_000;
+        let inter = Interpreter::new().unwrap();
         Console {
             tele: Tele::new(Token(tok)),
             token: Token(tok),
             running: true,
             events: Events::with_capacity(1024),
-            interpreter: UnsafeCell::new(Interpreter::new().unwrap()),
+            interpreter: UnsafeCell::new(inter),
         }
     }
 

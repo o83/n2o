@@ -56,8 +56,7 @@ fn setup_logger() {
                 t.tm_nsec / 1000_000,
                 record.location().__module_path,
                 record.location().__line,
-                record.args()
-               )
+                record.args())
     };
 
     let mut builder = LogBuilder::new();

@@ -3,6 +3,8 @@
 
 use streams::{verb, adverb, env, otree};
 use commands::ast::{self, Error, AST, Verb, Adverb, Arena};
+use streams::intercore::ctx::{Ctx, Ctxs};
+use streams::intercore::internals;
 
 #[derive(Clone, Debug)]
 pub enum Cont<'a> {
@@ -27,17 +29,39 @@ pub enum Lazy<'a> {
 pub struct Interpreter<'a> {
     arena: Arena<'a>,
     env: env::Environment<'a>,
+    ctx: Ctx<u64>,
 }
 
 impl<'a> Interpreter<'a> {
     pub fn new() -> Result<Interpreter<'a>, Error> {
-        Ok(Interpreter {
-            arena: Arena::new(),
-            env: try!(env::Environment::new_root()),
-        })
+        let arena = Arena::new();
+        let env = try!(env::Environment::new_root());
+        let interpreter = Interpreter {
+            arena: arena,
+            env: env,
+            ctx: Ctx::new(),
+        };
+        Ok(interpreter)
+    }
+
+    pub fn define_primitives(&'a self) {
+        // let print = self.arena.intern("print".to_string());
+        // self.env.define(ast::extract_name(print), print);
+        // let id = self.arena.intern("id".to_string());
+        // self.env.define(ast::extract_name(id), id);
+        let publ = self.arena.intern("pub".to_string());
+        self.env.define(ast::extract_name(publ), publ);
+        let subs = self.arena.intern("sub".to_string());
+        self.env.define(ast::extract_name(subs), subs);
+
+        let snd = self.arena.intern("snd".to_string());
+        self.env.define(ast::extract_name(snd), snd);
+        let rcv = self.arena.intern("rcv".to_string());
+        self.env.define(ast::extract_name(rcv), rcv);
     }
 
     pub fn parse(&'a self, s: &String) -> &'a AST<'a> {
+        self.define_primitives();
         ast::parse(&self.arena, s)
     }
 
@@ -154,7 +178,14 @@ impl<'a> Interpreter<'a> {
             &AST::NameInt(s) => {
                 let v = self.env.get(s, node);
                 match v {
-                    Some((v, f)) => self.evaluate_fun(f, v, args, cont), 
+                    Some((c, f)) => {
+                        match c {
+                            &AST::NameInt(n) if n < 4 => {
+                                self.run_cont(f, self.arena.ast(internals(n, args, &self.ctx)), cont)
+                            }
+                            _ => self.evaluate_fun(f, c, args, cont), 
+                        }
+                    }
                     None => {
                         Err(Error::EvalError {
                             desc: "Unknown variable".to_string(),
@@ -243,7 +274,7 @@ impl<'a> Interpreter<'a> {
                     val: &'a AST<'a>,
                     cont: &'a Cont<'a>)
                     -> Result<&'a Lazy<'a>, Error> {
-        // println!("run_cont: val: {:?} #### cont: {:?}\n", val, cont);
+        println!("run_cont: val: {:?} #### cont: {:?}\n", val, cont);
 
         match cont {
             &Cont::Call(callee, cont) => {
