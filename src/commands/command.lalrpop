@@ -5,38 +5,46 @@ use core::str::FromStr;
     grammar<'ast>(arena: &'ast Arena<'ast>);
 pub Mex:   &'ast AST<'ast> = { ExprList };
 
-List:      &'ast AST<'ast> = { "(" ")"                                     => nil(arena),
-                               "(["    <c:NameList> "]" <m:FieldList> ")"  => table(c, m, arena),
-                               "("     <l:ExprList> ")"                    => list(l, arena), };
-Lambda:    &'ast AST<'ast> = { "{" "}"                                     => fun(nil(arena), nil(arena), arena),
-                               "{["    <c:NameList> "]" <m:ExprList> "}"   => fun(c, m, arena),
-                               "{"     <m:ExprList> "}"                    => fun(nil(arena), m, arena), };
 Dict:      &'ast AST<'ast> = { "[" "]"                                     => nil(arena),
                                "["     <l:ExprList> "]"                    => dict(l, arena), };
 
+List:      &'ast AST<'ast> = { "(" ")"                                     => nil(arena),
+                               "(["    <c:NameList> "]" <m:FieldList> ")"  => table(c, m, arena),
+                               "("     <l:ExprList> ")"                    => list(l, arena), };
+
+Lambda:    &'ast AST<'ast> = { "{" "}"                                     => fun(nil(arena), nil(arena), arena),
+                               "{["    <c:NameList> "]" <m:ExprList> "}"   => fun(c, m, arena),
+                               "{"     <m:ExprList> "}"                    => fun(nil(arena), m, arena), };
+
 Noun:      &'ast AST<'ast> = { Name, Decimal, Hex, Bin, Symbol, List, Dict, Sequence, Lambda, Ioverb };
 Expr:      &'ast AST<'ast> = { Verbs, Adverbs, Call };
+
 NameCont:  &'ast AST<'ast> = { ";" => nil(arena), ";" <m:NameList>   => m };
 FieldCont: &'ast AST<'ast> = { ";" => nil(arena), ";" <m:FieldList>  => m };
 ExprCont:  &'ast AST<'ast> = { ";" => nil(arena), ";" <m:ExprList>   => m };
+
 NameList:  &'ast AST<'ast> = { Name, <o:Name> <m:NameCont>           => cons(o, m, arena), };
 FieldList: &'ast AST<'ast> = { Expr, <o:Expr> <m:FieldCont>          => cons(o, m, arena), };
 ExprList:  &'ast AST<'ast> = { Expr, ExprCont, <o:Expr> <m:ExprCont> => cons(o, m, arena), };
-Call:      &'ast AST<'ast> = { Noun, <c:Noun> <a:Call>               => call(c, a, arena),
-                               <l:Noun> <a:Adverb>                   => adverb(a, l, nil(arena), arena),
-                               <l:Noun> <v:Verb>                     => verb(v, l, nil(arena), arena),
-                               <l:Noun> <a:Adverb> <r:Expr>          => adverb(a, l, r, arena),
-                               <l:Noun> <v:Verb> <r:Expr>            => verb(v, l, r, arena), };
-Verbs:     &'ast AST<'ast> = {              <v:Verb>                 => verb(v, nil(arena), nil(arena), arena),
-                               <v:Verb>     <r:Expr>                 => verb(v, nil(arena), r, arena), };
-Adverbs:   &'ast AST<'ast> = {            <a:Adverb>                 => adverb(a, nil(arena), nil(arena), arena),
-                               <v:Adverb>   <r:Expr>                 => adverb(v, nil(arena), r, arena), };
-Decimal:   &'ast AST<'ast> = { <n:r"\d+">                            => ast(AST::Number(i64::from_str(n).unwrap()), arena), };
-Hex:       &'ast AST<'ast> = { <h:r"0x[a-zA-Z\d]+">                  => ast(AST::Number(i64::from_str_radix(&h[2..], 16).unwrap()), arena), };
-Bin:       &'ast AST<'ast> = { <b:r"[01]+b">                         => ast(AST::Number(i64::from_str_radix(&b[0..b.len()-1], 2).unwrap()), arena), };
-Name:      &'ast AST<'ast> = { <n:r"[a-zA-Z][a-zA-Z\d]*">            => arena.intern(String::from(n)), };
-Symbol:    &'ast AST<'ast> = { <s:r"`([a-z][a-z0-9]*)?">             => arena.intern_symbol(String::from(&s[1..s.len()])), };
-Sequence:  &'ast AST<'ast> = { <s:r"\x22(\\.|[^\x5C\x22])*\x22">     => arena.intern_sequence(String::from(&s[1..s.len()-1])), };
-Adverb:             Adverb = { <a:r"[\x27:\x5C\x2F]:?">              => Adverb::from_str(a).unwrap(), };
-Verb:                 Verb = { <v:r"[+\x2D*$%!&|<>=~,^#_?@.]">       => Verb::from_str(v).unwrap(), };
-Ioverb:    &'ast AST<'ast> = { <i:r"\d+:">                           => ast(AST::Ioverb(String::from(i), ), arena), };
+
+Verbs:     &'ast AST<'ast> = {          <v:Verb>            => verb(v, nil(arena), nil(arena), arena),
+                                        <v:Verb> <r:Expr>   => verb(v, nil(arena), r, arena), };
+Adverbs:   &'ast AST<'ast> = {          <a:Adverb>          => adverb(a, nil(arena), nil(arena), arena),
+                                        <v:Adverb> <r:Expr> => adverb(v, nil(arena), r, arena), };
+Call:      &'ast AST<'ast> = {    Noun, <c:Noun>   <a:Call> => call(c, a, arena),
+                               <l:Noun> <a:Adverb>          => adverb(a, l, nil(arena), arena),
+                               <l:Noun> <v:Verb>            => verb(v, l, nil(arena), arena),
+                               <l:Noun> <a:Adverb> <r:Expr> => adverb(a, l, r, arena),
+                               <l:Noun> <v:Verb>   <r:Expr> => verb(v, l, r, arena), };
+
+Decimal:   &'ast AST<'ast> = { <n:r"\d+">            => ast(AST::Number(i64::from_str(n).unwrap()), arena), };
+Hex:       &'ast AST<'ast> = { <h:r"0x[a-zA-Z\d]+">  => ast(AST::Number(i64::from_str_radix(&h[2..], 16).unwrap()), arena), };
+Bin:       &'ast AST<'ast> = { <b:r"[01]+b">         => ast(AST::Number(i64::from_str_radix(&b[0..], 2).unwrap()), arena), };
+Ioverb:    &'ast AST<'ast> = { <i:r"\d+:">           => ast(AST::Ioverb(String::from(i)), arena), };
+
+Name:      &'ast AST<'ast> = { <n:r"[a-zA-Z][a-zA-Z\d]*"> => arena.intern(String::from(n)), };
+Symbol:    &'ast AST<'ast> = { <s:r"`([a-z][a-z0-9]*)?">  => arena.intern_symbol(String::from(&s[1..])), };
+
+Sequence:  &'ast AST<'ast> = { <s:r"\x22(\\.|[^\x5C\x22])*\x22"> => arena.intern_sequence(String::from(&s[1..])), };
+Adverb:             Adverb = { <a:r"[\x27:\x5C\x2F]:?">          => Adverb::from_str(a).unwrap(), };
+Verb:                 Verb = { <v:r"[+\x2D*$%!&|<>=~,^#_?@.]">   => Verb::from_str(v).unwrap(), };
