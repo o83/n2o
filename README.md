@@ -17,6 +17,7 @@ Features
 * Session Types and π-calculus semantics
 * 10-40ns latency
 * Zero-Copy Interpreter
+* BERT protocol for VM stats
 
 Prerequisites
 -------------
@@ -29,7 +30,7 @@ Test The O Language
 -------------------
 
 ```
-$ cargo build ; rlwrap ./target/debug/console 
+$ cargo build ; rlwrap ./target/debug/console
     Finished debug [unoptimized + debuginfo] target(s) in 0.0 secs
 Welcome to O-CPS Interpreter v0.11.0!
 > fac:{$[x=1;1;x*fac[x-1]]};fac[20]
@@ -88,14 +89,31 @@ In another process:
 $ ./target/debug/client
 ```
 
-Test Console Server
+Test WebSocket Server
 -------------------
 
+Prerequisites:
+
 ```
-$ rlwrap ./target/debug/console
-Console is listening...
-ENSO
-Message: "ENSO"
+$ sudo apt-get install webfs
+$ brew install webfs
+$ cd /usr/ports/www/webfs/ && make install clean
+```
+
+Start Server:
+
+```
+$ rlwrap ./target/debug/wserver
+Listening on V4(127.0.0.1:9001)...
+Message: [129, 132, 131, 146, 194, 183, 205, 160, 141, 155]
+Message: [129, 132, 193, 71, 215, 107, 143, 117, 152, 71]
+Message: [129, 132, 23, 14, 207, 245, 71, 71, 129, 178]
+```
+
+Open Browser:
+
+```
+$ open http://127.0.0.1:8001/etc/status/index.htm
 ```
 
 Test Session Types
@@ -117,8 +135,12 @@ Credits
 
 * Viktor Sovietov, Core Suggestions
 * Anton Kundenko, Stream Processing
-* Ievgenii Lysiuchenko, Optimizations
+* Ievgenii Lysiuchenko, Optimizations, System Programming
 * Mykola Oleksiienko, K expertise
 * Maxim Sokhatsky, General View
+
+Inspiration
+-----------
 * Ken Pratt, Rusty Scheme
 * Carl Lerche, MIO
+

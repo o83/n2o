@@ -9,7 +9,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use commands::command;
-use streams::interpreter;
+use streams::{otree, interpreter, env};
 use streams::interpreter::*;
 use std::cell::UnsafeCell;
 use std::{mem, ptr, isize};
@@ -30,26 +30,6 @@ impl fmt::Display for Error {
         }
     }
 }
-
-#[derive(PartialEq,Debug, Clone)]
-pub enum Type {
-    Nil = 0,
-    Number = 1,
-    Char = 2,
-    Symbol = 3,
-    List = 4,
-    Dictionary = 5,
-    Function = 6,
-    View = 7,
-    NameRef = 8,
-    Verb = 9,
-    Adverb = 10,
-    Return = 11,
-    Cond = 12,
-    Native = 13,
-    Quote = 14,
-}
-
 
 // OK LANG
 
@@ -160,6 +140,9 @@ impl fmt::Display for Verb {
         match *self {
             Verb::Plus => write!(f, "+"),
             Verb::Minus => write!(f, "-"),
+            Verb::Equal => write!(f, "="),
+            Verb::Dot => write!(f, "."),
+            Verb::Cast => write!(f, "$"),
             Verb::Times => write!(f, "*"),
             Verb::Divide => write!(f, "%"),
             _ => write!(f, "{:?}", self),
@@ -211,66 +194,83 @@ impl fmt::Display for Adverb {
 
 #[derive(PartialEq,Debug,Clone)]
 pub enum AST<'a> {
-    // 0
     Nil,
-    // 1
     Cons(&'a AST<'a>, &'a AST<'a>),
-    // 2
     List(&'a AST<'a>),
-    // 3
     Dict(&'a AST<'a>),
-    // 4
     Call(&'a AST<'a>, &'a AST<'a>),
-    // 5
-    Lambda(&'a AST<'a>, &'a AST<'a>),
-    // 6
+    Assign(&'a AST<'a>, &'a AST<'a>),
+    Cond(&'a AST<'a>, &'a AST<'a>, &'a AST<'a>),
+    Lambda(Option<&'a otree::Node<'a>>, &'a AST<'a>, &'a AST<'a>),
     Verb(Verb, &'a AST<'a>, &'a AST<'a>),
-    // 7
     Adverb(Adverb, &'a AST<'a>, &'a AST<'a>),
-    // 8
+    Table(&'a AST<'a>, &'a AST<'a>),
     Ioverb(String),
-    // 9
+    Number(i64),
     NameInt(u16),
     SymbolInt(u16),
     SequenceInt(u16),
-    Name(String),
-    // A
-    Number(i64),
-    // B
-    Hexlit(i64),
-    // C
-    Bool(bool),
-    // D
-    Symbol(String),
-    // E
-    Sequence(String),
-    // F
-    Cell(Box<Cell<'a>>),
-    // Syntactic sugar
-    Assign(&'a AST<'a>, &'a AST<'a>),
-    //
-    Cond(&'a AST<'a>, &'a AST<'a>, &'a AST<'a>),
 }
 
 #[derive(Debug)]
 pub struct Arena<'a> {
     pub names: UnsafeCell<HashMap<String, u16>>,
-    pub symbols: HashMap<String, u16>,
-    pub sequences: HashMap<String, u16>,
+    pub symbols: UnsafeCell<HashMap<String, u16>>,
+    pub sequences: UnsafeCell<HashMap<String, u16>>,
     asts: UnsafeCell<Vec<AST<'a>>>,
     conts: UnsafeCell<Vec<Cont<'a>>>,
     lazys: UnsafeCell<Vec<Lazy<'a>>>,
+}
+
+impl<'a> fmt::Display for Cont<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Cont::Call(callee, cont) => write!(f, "call {}", callee),
+            &Cont::Func(names, args, cont) => write!(f, "func {} {}", names, args),
+            &Cont::Cond(if_expr, else_expr, cont) => write!(f, "cond {} {}", if_expr, else_expr),
+            &Cont::Assign(name, cont) => write!(f, "assign {}", name),
+            &Cont::Dict(acc, rest, cont) => write!(f, "dict {} {}", acc, rest),
+            &Cont::Verb(ref verb, right, swap, cont) => write!(f, "verb {} {}", verb, right),
+            &Cont::Expressions(rest, cont) => write!(f, "expr {}", rest),
+            x => write!(f, "return"),
+        }
+    }
+}
+
+impl<'a> fmt::Display for Lazy<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Lazy::Defer(node, ast, cont) => write!(f, "defer {} {} {}", node, ast, cont),
+            x => write!(f, "return"),
+        }
+    }
 }
 
 impl<'a> Arena<'a> {
     pub fn new() -> Arena<'a> {
         Arena {
             names: UnsafeCell::new(HashMap::new()),
-            symbols: HashMap::new(),
-            sequences: HashMap::new(),
-            asts: UnsafeCell::new(Vec::with_capacity(2048)),
-            conts: UnsafeCell::new(Vec::with_capacity(2048)),
-            lazys: UnsafeCell::new(Vec::with_capacity(2048)),
+            symbols: UnsafeCell::new(HashMap::new()),
+            sequences: UnsafeCell::new(HashMap::new()),
+            asts: UnsafeCell::new(Vec::with_capacity(2048 * 2048)),
+            conts: UnsafeCell::new(Vec::with_capacity(2048 * 2048)),
+            lazys: UnsafeCell::new(Vec::with_capacity(2048 * 2048)),
+        }
+    }
+
+
+    pub fn dump(&'a self) {
+        let x = unsafe { &mut *self.asts.get() };
+        for i in x[0..x.len()].iter() {
+            println!("ast {}", i);
+        }
+        let x = unsafe { &mut *self.conts.get() };
+        for i in x[0..x.len()].iter() {
+            println!("cont {}", i);
+        }
+        let x = unsafe { &mut *self.lazys.get() };
+        for i in x[0..x.len()].iter() {
+            println!("lazy {}", i);
         }
     }
 
@@ -303,6 +303,26 @@ impl<'a> Arena<'a> {
         }
     }
 
+    pub fn intern_symbol(&self, s: String) -> &'a AST<'a> {
+        let symbols = unsafe { &mut *self.symbols.get() };
+        if symbols.contains_key(&s) {
+            self.ast(AST::SymbolInt(symbols[&s]))
+        } else {
+            let id = symbols.len() as u16;
+            symbols.insert(s, id);
+            self.ast(AST::SymbolInt(id))
+        }
+    }
+    pub fn intern_sequence(&self, s: String) -> &'a AST<'a> {
+        let sequences = unsafe { &mut *self.sequences.get() };
+        if sequences.contains_key(&s) {
+            self.ast(AST::SequenceInt(sequences[&s]))
+        } else {
+            let id = sequences.len() as u16;
+            sequences.insert(s, id);
+            self.ast(AST::SequenceInt(id))
+        }
+    }
     pub fn to_string(&self) {
         let ast = unsafe { &mut *self.asts.get() };
         println!("AST {}, {:?}", ast.len(), ast);
@@ -408,9 +428,10 @@ impl<'a> fmt::Display for AST<'a> {
             AST::Cons(ref a, &AST::Nil) => write!(f, "{}", a),
             AST::Cons(ref a, ref b) => write!(f, "{} {}", a, b),
             AST::List(ref a) => write!(f, "({})", a),
+            AST::Table(a, b) => write!(f, "([{}]{})", a, b),
             AST::Dict(ref d) => write!(f, "[{}]", d),
             AST::Call(ref a, ref b) => write!(f, "{} {}", a, b),
-            AST::Lambda(a, b) => {
+            AST::Lambda(_, a, b) => {
                 match *a {
                     AST::Nil => write!(f, "{{[x]{}}}", b),
                     _ => {
@@ -423,15 +444,9 @@ impl<'a> fmt::Display for AST<'a> {
             AST::Adverb(ref v, ref a, ref b) => write!(f, "{}{}{}", a, v, b),
             AST::Ioverb(ref v) => write!(f, "{}", v),
             AST::Number(n) => write!(f, "{}", n),
-            AST::Hexlit(h) => write!(f, "0x{}", h),
-            AST::Bool(b) => write!(f, "{:?}", b),
-            AST::Name(ref n) => write!(f, "{}", n),
-            AST::Symbol(ref s) => write!(f, "{}", s),
-            AST::Sequence(ref s) => write!(f, "{:?}", s),
             AST::NameInt(ref n) => write!(f, "^{}", n),
             AST::SymbolInt(ref s) => write!(f, "{}", s),
             AST::SequenceInt(ref s) => write!(f, "{:?}", s),
-            AST::Cell(ref c) => write!(f, "{}", c),
             AST::Assign(ref a, ref b) => write!(f, "{}:{}", a, b),
             AST::Cond(ref c, ref a, ref b) => write!(f, "$[{};{};{}]", c, a, b),
         }
@@ -443,22 +458,6 @@ pub fn extract_name<'a>(a: &'a AST<'a>) -> u16 {
     match a {
         &AST::NameInt(s) => s,
         x => 0,
-    }
-}
-
-#[derive(PartialEq, Debug, Clone)]
-pub struct Cell<'a> {
-    t: Type,
-    v: Vec<AST<'a>>,
-}
-
-impl<'a> fmt::Display for Cell<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "(");
-        for i in &self.v {
-            write!(f, "{}", i);
-        }
-        write!(f, ")")
     }
 }
 
@@ -488,9 +487,13 @@ pub fn cons<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST
 
 pub fn fun<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     match *l {
-        AST::Nil => arena.ast(AST::Lambda(arena.intern("x".to_string()), r)),
-        _ => arena.ast(AST::Lambda(l, r)),
+        AST::Nil => arena.ast(AST::Lambda(None, arena.intern("x".to_string()), r)),
+        _ => arena.ast(AST::Lambda(None, l, r)),
     }
+}
+
+pub fn table<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
+    arena.ast(AST::Table(l, r))
 }
 
 pub fn dict<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
@@ -613,11 +616,16 @@ pub fn rev_dict<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
             }
             &AST::Dict(x) => {
                 let mut rev = rev_dict(x, arena);
-                res = arena.ast(AST::Cons(arena.ast(AST::Dict(rev)), res));
+                // println!("f x: {:?}", res);
+                match res {
+                    &AST::Nil => res = arena.ast(AST::Dict(rev)),
+                    _ => res = arena.ast(AST::Cons(arena.ast(AST::Dict(rev)), res)),
+                }
                 break;
             }
             &AST::Nil => break,
             x => {
+                // println!("x: {:?}", x);
                 res = arena.ast(AST::Cons(x, res));
                 break;
             }

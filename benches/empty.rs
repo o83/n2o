@@ -92,7 +92,7 @@ fn fac_tail(b: &mut Bencher) {
     })
 }
 
-//#[bench]
+#[bench]
 fn fac_mul(b: &mut Bencher) {
     let mut i = Interpreter::new().unwrap();
     let f = i.parse(&"2*3*4*5".to_string());
@@ -100,6 +100,33 @@ fn fac_mul(b: &mut Bencher) {
         i.run(f);
         i.gc();
     })
+}
+
+#[bench]
+fn akkerman_k(b: &mut Bencher) {
+    let mut i = Interpreter::new().unwrap();
+    let akk = i.parse(&"f:{[x;y]$[0=x;1+y;$[0=y;f[x-1;1];f[x-1;f[x;y-1]]]]}".to_string());
+    i.run(akk).unwrap();
+    let call = i.parse(&"f[3;4]".to_string());
+    b.iter(|| {
+        i.run(call);
+        i.gc();
+    })
+}
+
+fn ack(m: isize, n: isize) -> isize {
+    if m == 0 {
+        n + 1
+    } else if n == 0 {
+        ack(m - 1, 1)
+    } else {
+        ack(m - 1, ack(m, n - 1))
+    }
+}
+
+#[bench]
+fn akkerman_rust(b: &mut Bencher) {
+    b.iter(|| { ack(3,4) })
 }
 
 #[derive(Debug,PartialEq,Clone)]

@@ -1,16 +1,26 @@
-use std::{mem, ptr, isize};
+use std::{mem, ptr, fmt, isize};
 use std::fmt::Debug;
 
-#[derive(Debug,Clone)]
+#[derive(PartialEq, Debug)]
 pub struct Node<'a> {
     pub bounds: (usize, usize),
     pub parent: Option<&'a Node<'a>>,
 }
 
+
+impl<'a> fmt::Display for Node<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.parent {
+            Some(parent) => write!(f, "[{:?}—{:?}]", self.bounds, parent.bounds),
+            _ => write!(f, "[{:?}—(root)]", self.bounds),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Tree<'a, T> {
-    nodes: Vec<Node<'a>>,
-    items: Vec<T>,
+    pub nodes: Vec<Node<'a>>,
+    pub items: Vec<T>,
 }
 
 // TODO: Remove T: Debug
@@ -25,6 +35,16 @@ impl<'a, T: Debug> Tree<'a, T> {
             nodes: n,
             items: Vec::with_capacity(cap),
         }
+    }
+
+    pub fn dump(&'a self) {
+        for i in self.items[0..self.items.len()].iter() {
+            println!("item {:?}", i);
+        }
+        for i in self.nodes[0..self.nodes.len()].iter() {
+            println!("node {}", i);
+        }
+
     }
 
     #[inline]

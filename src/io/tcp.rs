@@ -141,22 +141,12 @@ impl<'a> Write for &'a TcpStream {
 }
 
 impl Evented for TcpStream {
-    fn register(&self,
-                poll: &Poll,
-                token: Token,
-                interest: Ready,
-                opts: PollOpt)
-                -> io::Result<()> {
+    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
         try!(self.selector_id.associate_selector(poll));
         self.sys.register(poll, token, interest, opts)
     }
 
-    fn reregister(&self,
-                  poll: &Poll,
-                  token: Token,
-                  interest: Ready,
-                  opts: PollOpt)
-                  -> io::Result<()> {
+    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
         self.sys.reregister(poll, token, interest, opts)
     }
 
@@ -246,22 +236,12 @@ impl TcpListener {
 }
 
 impl Evented for TcpListener {
-    fn register(&self,
-                poll: &Poll,
-                token: Token,
-                interest: Ready,
-                opts: PollOpt)
-                -> io::Result<()> {
+    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
         try!(self.selector_id.associate_selector(poll));
         self.sys.register(poll, token, interest, opts)
     }
 
-    fn reregister(&self,
-                  poll: &Poll,
-                  token: Token,
-                  interest: Ready,
-                  opts: PollOpt)
-                  -> io::Result<()> {
+    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
         self.sys.reregister(poll, token, interest, opts)
     }
 

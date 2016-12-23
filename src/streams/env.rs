@@ -15,7 +15,7 @@ pub struct Entry<'a>(u16, &'a AST<'a>);
 
 #[derive(Debug)]
 pub struct Environment<'a> {
-    tree: UnsafeCell<Tree<'a, Entry<'a>>>,
+    pub tree: UnsafeCell<Tree<'a, Entry<'a>>>,
 }
 
 impl<'a> Environment<'a> {
@@ -27,6 +27,11 @@ impl<'a> Environment<'a> {
     pub fn last(&'a self) -> &'a Node<'a> {
         let tree = unsafe { &*self.tree.get() };
         tree.last_node()
+    }
+
+    pub fn dump(&'a self) {
+        let tree = unsafe { &*self.tree.get() };
+        tree.dump()
     }
 
     pub fn new_child(&'a self, n: &'a Node<'a>) -> &'a Node<'a> {
