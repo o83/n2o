@@ -14,11 +14,11 @@ pub struct Reception {
 
 impl Reception {
     pub fn register<E, F>(&mut self, e: &E, p: PollOpt, f: F) -> io::Result<usize>
-        where E: ?Sized+Evented,
+        where E: ?Sized + Evented,
               F: FnMut(&E)
     {
         let id = self.subscribers.len();
-        try!(self.poll.register(e, Token(id), Ready::readable(), p));
+        try!(self.poll.register(&e, Token(id), Ready::readable(), p));
         // self.subscribers.push(e);
         Ok(id)
     }
