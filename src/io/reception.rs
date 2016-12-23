@@ -6,19 +6,19 @@ use io::options::PollOpt;
 use std::collections::HashMap;
 use io::event::Evented;
 
-pub struct Reception {
+pub struct Reception<'a, E: 'a, F> {
     poll: Poll,
     events: Events,
-    subscribers: Vec<usize>,
+    subscribers: Vec<(&'a E, F)>,
 }
 
-impl Reception {
-    pub fn register<E, F>(&mut self, e: &E, p: PollOpt, f: F) -> io::Result<usize>
-        where E: ?Sized + Evented,
-              F: FnMut(&E)
-    {
+impl<'a, E, F> Reception<'a, E, F>
+    where E: Sized + Evented,
+          F: FnMut(&E)
+{
+    pub fn register(&'a mut self, e: &'a E, p: PollOpt, f: F) -> io::Result<usize> {
         let id = self.subscribers.len();
-        try!(self.poll.register(&e, Token(id), Ready::readable(), p));
+        try!(self.poll.register(e, Token(id), Ready::readable(), p));
         // self.subscribers.push(e);
         Ok(id)
     }
