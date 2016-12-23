@@ -43,7 +43,7 @@ impl<'a> Interpreter<'a> {
 
     pub fn run(&'a self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
         let mut counter = 0;
-        /// println!("Input: {:?}", ast);
+        // println!("Input: {:?}", ast);
         let mut tick = try!(self.evaluate_expr(self.env.last(), ast, self.arena.cont(Cont::Return)));
         loop {
             match tick {

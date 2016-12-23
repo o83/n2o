@@ -39,12 +39,12 @@ Call:      &'ast AST<'ast> = {    Noun, <c:Noun>   <a:Call> => call(c, a, arena)
 
 Decimal:   &'ast AST<'ast> = { <n:r"\d+">            => ast(AST::Number(i64::from_str(n).unwrap()), arena), };
 Hex:       &'ast AST<'ast> = { <h:r"0x[a-zA-Z\d]+">  => ast(AST::Number(i64::from_str_radix(&h[2..], 16).unwrap()), arena), };
-Bin:       &'ast AST<'ast> = { <b:r"[01]+b">         => ast(AST::Number(i64::from_str_radix(&b[0..], 2).unwrap()), arena), };
+Bin:       &'ast AST<'ast> = { <b:r"[01]+b">         => ast(AST::Number(i64::from_str_radix(&b[0..b.len()-1], 2).unwrap()), arena), };
 Ioverb:    &'ast AST<'ast> = { <i:r"\d+:">           => ast(AST::Ioverb(String::from(i)), arena), };
 
 Name:      &'ast AST<'ast> = { <n:r"[a-zA-Z][a-zA-Z\d]*"> => arena.intern(String::from(n)), };
-Symbol:    &'ast AST<'ast> = { <s:r"`([a-z][a-z0-9]*)?">  => arena.intern_symbol(String::from(&s[1..])), };
+Symbol:    &'ast AST<'ast> = { <s:r"`([a-z][a-z0-9]*)?">  => arena.intern_symbol(String::from(&s[1..s.len()])), };
 
-Sequence:  &'ast AST<'ast> = { <s:r"\x22(\\.|[^\x5C\x22])*\x22"> => arena.intern_sequence(String::from(&s[1..])), };
+Sequence:  &'ast AST<'ast> = { <s:r"\x22(\\.|[^\x5C\x22])*\x22"> => arena.intern_sequence(String::from(&s[1..s.len()-1])), };
 Adverb:             Adverb = { <a:r"[\x27:\x5C\x2F]:?">          => Adverb::from_str(a).unwrap(), };
 Verb:                 Verb = { <v:r"[+\x2D*$%!&|<>=~,^#_?@.]">   => Verb::from_str(v).unwrap(), };
