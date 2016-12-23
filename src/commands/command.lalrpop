@@ -48,3 +48,4 @@ Symbol:    &'ast AST<'ast> = { <s:r"`([a-z][a-z0-9]*)?">  => arena.intern_symbol
 Sequence:  &'ast AST<'ast> = { <s:r"\x22(\\.|[^\x5C\x22])*\x22"> => arena.intern_sequence(String::from(&s[1..])), };
 Adverb:             Adverb = { <a:r"[\x27:\x5C\x2F]:?">          => Adverb::from_str(a).unwrap(), };
 Verb:                 Verb = { <v:r"[+\x2D*$%!&|<>=~,^#_?@.]">   => Verb::from_str(v).unwrap(), };
+
