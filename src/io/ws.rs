@@ -88,7 +88,6 @@ const BUF_SIZE: usize = 2048;
 pub struct WsServer<'a> {
     reception: &'a mut Reception,
     tcp: TcpListener,
-    token: Token,
     clients: HashMap<Token, WsClient>,
     parser: HttpParser,
     pub buf: [u8; BUF_SIZE],
@@ -97,14 +96,12 @@ pub struct WsServer<'a> {
 impl<'a> WsServer<'a> {
     pub fn new(r: &'a mut Reception, addr: &SocketAddr) -> Self {
         let t = TcpListener::bind(&addr).unwrap();
-        let tok = r.register(&t,
-                      PollOpt::edge(),
-                      Box::new(|t| println!("Token: {:?}", t)))
-            .unwrap();
+        try!(r.register(&t,
+                        PollOpt::edge(),
+                        Box::new(|t| println!("Token: {:?}", t))));
         WsServer {
             reception: r,
             tcp: t,
-            token: tok,
             clients: HashMap::new(),
             parser: HttpParser::new(),
             buf: [0u8; BUF_SIZE],
@@ -189,21 +186,5 @@ impl<'a> WsServer<'a> {
         where K: FnMut((&mut WsServer, &[u8]))
     {
         println!("Listening on {:?}...", self.tcp.local_addr().unwrap());
-        // loop {
-        //     self.poll.poll(&mut self.events, None).unwrap();
-        //     let (s1, s2) = self.split();
-        //     for event in s1.events.iter() {
-        //         match event.token() {
-        //             Token(0) => s2.reg_incoming(),
-        //             Token(id) => {
-        //                 let sz = s2.read_incoming(id);
-        //                 if sz > 0 {
-        //                     let (mut s3, s4) = s2.split();
-        //                     f((&mut s3, &s4.buf[..sz]));
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
     }
 }
