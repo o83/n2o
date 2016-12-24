@@ -4,6 +4,7 @@
   body { font-family: Geomeria; color: purple; padding: 30px; }
   .block { float:left;width:200px;font-size:16pt; margin-bottom: 20px; margin-right: 20px;}
   #l { float: left; } #lazy, #cont, #ast, #env, #console, #server, #ws, .r { float: right; }
+  .sel { background-color: purple;color:white;padding-left:5px;padding-right:5px; }
 </style>
 </head>
 <body>
@@ -15,11 +16,11 @@
                               <div id="l">Queue task3</div><div id="task3" class="r">200</div><br>
                             </div>
     <div id=cpu class="block">CPU : <span id="cpus">8</span><hr><div id="l">Free</div><div id="cpu0" class="r">&mdash;</div><br>
-                              <div id="l">Reactor [3]</div><div id="cpu1" class="r">200</div><br>
+                              <div id="l" class="sel">Reactor [3]</div><div id="cpu1" class="r">200</div><br>
                               <div id="l">Free</div><div id="cpu2" class="r">&mdash;</div><br>
                               <div id="l">Free</div><div id="cpu3" class="r">&mdash;</div><br>
                               <div id="l">Free</div><div id="cpu0" class="r">&mdash;</div><br>
-                              <div id="l">Reactor [6]</div><div id="cpu1" class="r">200</div><br>
+                              <div id="l" class="sel">Reactor [6]</div><div id="cpu1" class="r">200</div><br>
                               <div id="l">Free</div><div id="cpu2" class="r">&mdash;</div><br>
                               <div id="l">Free</div><div id="cpu3" class="r">&mdash;</div><br>
                             </div>
