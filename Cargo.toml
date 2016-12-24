@@ -12,14 +12,6 @@ Abstract Reactive Streams
 build = "build.rs"
 
 [[bin]]
-name = "sup"
-path = "src/apps/sup.rs"
-
-[[bin]]
-name = "top"
-path = "src/apps/top.rs"
-
-[[bin]]
 name = "mio"
 path = "src/apps/mio.rs"
 
@@ -58,7 +50,6 @@ rand         = "0.3.14"
 bitflags     = "0.4"
 num          = "0.1.36"
 byteorder    = "0.5.3"
-hwloc        = "0.3.0"
 lalrpop-util = "0.12.0"
 num_cpus     = "1.0"
 deque        = "0.3.1"
