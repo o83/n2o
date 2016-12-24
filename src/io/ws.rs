@@ -96,9 +96,9 @@ pub struct WsServer<'a> {
 impl<'a> WsServer<'a> {
     pub fn new(r: &'a mut Reception, addr: &SocketAddr) -> Self {
         let t = TcpListener::bind(&addr).unwrap();
-        try!(r.register(&t,
-                        PollOpt::edge(),
-                        Box::new(|t| println!("Token: {:?}", t))));
+        r.register(&t,
+                   PollOpt::edge(),
+                   Box::new(|t| println!("Token: {:?}", t)));
         WsServer {
             reception: r,
             tcp: t,
@@ -141,7 +141,11 @@ impl<'a> WsServer<'a> {
         match self.tcp.accept() {
             Ok((mut s, a)) => {
                 let t = self.reception
-                    .register(&s, PollOpt::edge(), Box::new(|t| println!("T:: {:?}", t)))
+                    .register(&s,
+                              PollOpt::edge(),
+                              Box::new(|t| {
+                                  println!("T {:?}", t);
+                              }))
                     .unwrap();
                 self.clients.insert(t,
                                     WsClient {
