@@ -5,40 +5,65 @@ use io::ready::Ready;
 use io::options::PollOpt;
 use std::collections::HashMap;
 use io::event::Evented;
+use std::cell::UnsafeCell;
 
-pub struct Reception<'a, E: 'a, F> {
-    poll: Poll,
-    events: Events,
-    subscribers: Vec<(&'a mut E, F)>,
+const EVENTS_CAPACITY: usize = 1024;
+const SUBSCRIBERS_CAPACITY: usize = 256;
+
+pub trait React<'a>
+    where Self: Sized
+{
+    fn react(&mut self, t: Token);
 }
 
-impl<'a, E, F> Reception<'a, E, F>
-    where E: Sized + Evented,
-          F: FnMut(&E)
-{
-    pub fn register(&'a mut self, e: &'a mut E, p: PollOpt, f: F) -> io::Result<usize> {
-        let id = self.subscribers.len();
-        try!(self.poll.register(e, Token(id), Ready::readable(), p));
-        self.subscribers.push((e, f));
-        Ok(id)
+pub struct Reception {
+    poll: Poll,
+    events: Events,
+    tokens: usize,
+    subscribers: HashMap<Token, Box<FnMut(Token)>>,
+}
+
+impl Reception {
+    pub fn new() -> Self {
+        Reception {
+            poll: Poll::new().unwrap(),
+            events: Events::with_capacity(EVENTS_CAPACITY),
+            tokens: 0,
+            subscribers: HashMap::new(),
+        }
+    }
+
+    pub fn register<'a, E>(&'a mut self, e: &'a E, p: PollOpt, f: Box<FnMut(Token)>) -> io::Result<Token>
+        where E: Sized + Evented
+    {
+        let t = Token(self.tokens);
+        try!(self.poll.register(e, t, Ready::readable(), p));
+        self.subscribers.insert(t, f);
+        self.tokens += 1;
+        Ok(t)
+    }
+
+    pub fn select(&mut self) {
+        let sc = UnsafeCell::new(self);
+        loop {
+            let s0 = unsafe { &mut *sc.get() };
+            s0.poll.poll(&mut s0.events, None).unwrap();
+            let s1 = unsafe { &mut *sc.get() };
+            for event in s1.events.iter() {
+                let t = event.token();
+                let s2 = unsafe { &mut *sc.get() };
+                let s3 = unsafe { &mut *sc.get() };
+                let mut f = s2.subscribers.get_mut(&t).unwrap();
+                f(t);
+            }
+        }
     }
 
     #[inline]
     pub fn split(&mut self) -> (&mut Self, &mut Self) {
-        let f: *mut Reception<'a, E, F> = self;
-        let uf: &mut Reception<'a, E, F> = unsafe { &mut *f };
-        let us: &mut Reception<'a, E, F> = unsafe { &mut *f };
+        let f: *mut Reception = self;
+        let uf: &mut Reception = unsafe { &mut *f };
+        let us: &mut Reception = unsafe { &mut *f };
         (uf, us)
-    }
-
-    pub fn select(&mut self) {
-        loop {
-            self.poll.poll(&mut self.events, None).unwrap();
-            let (s1, s2) = self.split();
-            for event in s1.events.iter() {
-                let m = s2.subscribers.get_mut(event.token().0).unwrap();
-                m.1(m.0);
-            }
-        }
     }
 }
