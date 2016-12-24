@@ -1,12 +1,37 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>O-CPS</title>
+<html><head><title>The Kernel</title>
+<style type="text/css">
+  @font-face { font-family: Geomeria; src: url('http://synrc.com/Geometria-Light.otf'); }
+  body { font-family: Geomeria; color: purple; padding: 30px; }
+  .block { float:left;width:200px;font-size:16pt; margin-bottom: 20px; margin-right: 20px;}
+  #l { float: left; } #lazy, #cont, #ast, #env, #console, #server, #ws, .r { float: right; }
+  .sel { background-color: purple;color:white;padding-left:5px;padding-right:5px; }
+</style>
 </head>
 <body>
-    <h1>O-CPS</h1>
-    <div id="main">
-    </div>
+    version 0.12
+    <h1>The Kernel</h1>
+    <div id=ram" class="block" style="width:420px;">RAM<hr><div id="l">Ring 0</div><div id="ring0" class="r">0 &mdash; 200090</div><br>
+                              <div id="l">Queue task1</div><div id="task1" class="r">200</div><br>
+                              <div id="l">Queue task2</div><div id="task2" class="r">200</div><br>
+                              <div id="l">Queue task3</div><div id="task3" class="r">200</div><br>
+                            </div>
+    <div id=cpu class="block">CPU : <span id="cpus">8</span><hr><div id="l">Free</div><div id="cpu0" class="r">&mdash;</div><br>
+                              <div id="l" class="sel">Reactor [3]</div><div id="cpu1" class="r">200</div><br>
+                              <div id="l">Free</div><div id="cpu2" class="r">&mdash;</div><br>
+                              <div id="l">Free</div><div id="cpu3" class="r">&mdash;</div><br>
+                              <div id="l">Free</div><div id="cpu0" class="r">&mdash;</div><br>
+                              <div id="l" class="sel">Reactor [6]</div><div id="cpu1" class="r">200</div><br>
+                              <div id="l">Free</div><div id="cpu2" class="r">&mdash;</div><br>
+                              <div id="l">Free</div><div id="cpu3" class="r">&mdash;</div><br>
+                            </div>
+    <div id=o class="block">O-CPS : <span id="o-cps">9</span><hr><div id="l">Lazy</div><div id="lazy">200</div><br>
+                                <div id="l">Cont</div><div id="cont">200</div><br>
+                                <div id="l">AST</div><div id="ast">200</div><br>
+                                <div id="l">Env</div><div id="env">200</div><br></div>
+    <div id=io class="block">I/O : <span id="poll">3</span><hr><div id="l">Console</div><div id="console">200</div><br>
+                                <div id="l">Server</div><div id="server">200</div><br>
+                                <div id="l">WebSocket</div><div id="ws">200</div><br>
+                                </div>
     <script>var transition = {pid: '', port: 9001}</script>
     <script src='bert.js'></script>
     <script src='bullet.js'></script>
