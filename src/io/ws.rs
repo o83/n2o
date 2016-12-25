@@ -13,9 +13,8 @@ use std::slice;
 use std::mem;
 use rustc_serialize::base64::{ToBase64, STANDARD};
 use sha1;
-use io::event::Evented;
-use io::reception::{React, Reception};
-use std::marker::PhantomData;
+use io::reception::Selected;
+use std::cell::UnsafeCell;
 
 #[derive(Debug)]
 pub enum Error {
@@ -86,23 +85,24 @@ pub struct WsClient {
 const BUF_SIZE: usize = 2048;
 
 pub struct WsServer<'a> {
-    reception: &'a mut Reception,
+    first_token: usize,
+    token_amount: usize,
+    poll: Option<&'a Poll>,
     tcp: TcpListener,
-    clients: HashMap<Token, WsClient>,
+    clients: Vec<WsClient>,
     parser: HttpParser,
     pub buf: [u8; BUF_SIZE],
 }
 
 impl<'a> WsServer<'a> {
-    pub fn new(r: &'a mut Reception, addr: &SocketAddr) -> Self {
+    pub fn new(addr: &SocketAddr) -> Self {
         let t = TcpListener::bind(&addr).unwrap();
-        r.register(&t,
-                   PollOpt::edge(),
-                   Box::new(|t| println!("Token: {:?}", t)));
         WsServer {
-            reception: r,
+            first_token: 0,
+            token_amount: 0,
+            poll: None,
             tcp: t,
-            clients: HashMap::new(),
+            clients: Vec::with_capacity(256),
             parser: HttpParser::new(),
             buf: [0u8; BUF_SIZE],
         }
@@ -110,9 +110,9 @@ impl<'a> WsServer<'a> {
 
     #[inline]
     pub fn split(&mut self) -> (&mut Self, &mut Self) {
-        let f: *mut WsServer<'a> = self;
-        let uf: &mut WsServer<'a> = unsafe { &mut *f };
-        let us: &mut WsServer<'a> = unsafe { &mut *f };
+        let f: *mut WsServer = self;
+        let uf: &mut WsServer = unsafe { &mut *f };
+        let us: &mut WsServer = unsafe { &mut *f };
         (uf, us)
     }
 
@@ -121,6 +121,7 @@ impl<'a> WsServer<'a> {
         let mut m = sha1::Sha1::new();
         m.update(key.as_bytes());
         m.update("258EAFA5-E914-47DA-95CA-C5AB0DC85B11".as_bytes());
+
         let b = m.digest().bytes();
         return b.to_base64(STANDARD);
     }
@@ -140,29 +141,30 @@ impl<'a> WsServer<'a> {
     fn reg_incoming(&mut self) {
         match self.tcp.accept() {
             Ok((mut s, a)) => {
-                let t = self.reception
-                    .register(&s,
-                              PollOpt::edge(),
-                              Box::new(|t| {
-                                  println!("T {:?}", t);
-                              }))
-                    .unwrap();
-                self.clients.insert(t,
-                                    WsClient {
-                                        sock: s,
-                                        addr: a,
-                                        key: None,
-                                        ready: false,
-                                    });
+                let t = self.first_token + self.clients.len() + 1;
+                println!("Reg incoming: {:?}", t);
+                self.poll.unwrap().register(&s, Token(t), Ready::readable(), PollOpt::edge());
+                self.clients.push(WsClient {
+                    sock: s,
+                    addr: a,
+                    key: None,
+                    ready: false,
+                });
+                println!("Clients: {:?}", self.clients.len());
             }
             Err(e) => println!("WsError: {:?}", e),
         }
     }
 
     #[inline]
-    fn read_incoming(&mut self, t: Token) -> usize {
+    fn read_incoming(&mut self, mut id: usize) -> usize {
         let (s1, s2) = self.split();
-        let mut c = s1.clients.get_mut(&t).unwrap();
+        println!("Read incoming: {:?}", id);
+        println!("Clients: {:?}", s1.clients.len());
+        if s2.first_token != 0 {
+            id %= s2.first_token;
+        }
+        let mut c = s1.clients.get_mut(id - 1).unwrap();
         if c.ready {
             match c.sock.read(&mut s2.buf) {
                 Ok(s) => s,
@@ -181,14 +183,47 @@ impl<'a> WsServer<'a> {
         buf.push(130);
         buf.push(sz as u8);
         buf.extend_from_slice(payload);
-        for (t, c) in &mut self.clients {
-            c.sock.write(&buf);
+        let c = self.clients.last_mut().unwrap();
+        c.sock.write(&buf);
+    }
+
+    pub fn listen<F>(&mut self, mut f: F)
+        where F: FnMut((&mut WsServer, &[u8]))
+    {
+        println!("Listening on {:?}...", self.tcp.local_addr().unwrap());
+
+    }
+}
+
+impl<'a> Selected<'a> for WsServer<'a> {
+    fn select(&mut self, events: &Events) {
+        let s = UnsafeCell::new(self);
+        let s1 = unsafe { &*s.get() };
+        let s2 = unsafe { &*s.get() };
+        let s3 = unsafe { &mut *s.get() };
+        let s4 = unsafe { &mut *s.get() };
+        let s5 = unsafe { &*s.get() };
+        for event in events.iter() {
+            let id = event.token().0;
+            println!("Selected token: {:?}", id);
+            if id == s2.first_token {
+                s3.reg_incoming();
+            } else if id > s2.first_token && id < s2.first_token + s2.token_amount {
+                println!("Should Read");
+                let sz = s3.read_incoming(id);
+                if sz > 0 {
+                    println!("READ: {:?}", &s5.buf[..sz]);
+                    // f((&mut s3, &s4.buf[..sz]));
+                }
+            }
         }
     }
 
-    pub fn listen<K>(&mut self, mut f: K)
-        where K: FnMut((&mut WsServer, &[u8]))
-    {
-        println!("Listening on {:?}...", self.tcp.local_addr().unwrap());
+    fn initial(&'a mut self, p: &'a Poll, t: usize, a: usize) {
+        p.register(&self.tcp, Token(t), Ready::readable(), PollOpt::edge()).unwrap();
+        self.poll = Some(p);
+        println!("TCP Tok: {:?}", t);
+        self.first_token = t;
+        self.token_amount = a;
     }
 }
