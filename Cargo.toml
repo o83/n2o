@@ -40,8 +40,8 @@ name = "fac"
 path = "src/apps/fac.rs"
 
 [[bin]]
-name = "wserver"
-path = "src/apps/wserver.rs"
+name = "n2o"
+path = "src/apps/protocols/n2o.rs"
 
 [dependencies]
 net2         = "0.2.19"
