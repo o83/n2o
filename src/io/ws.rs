@@ -142,7 +142,6 @@ impl<'a> WsServer<'a> {
         match self.tcp.accept() {
             Ok((mut s, a)) => {
                 let t = self.first_token + self.clients.len() + 1;
-                println!("Reg incoming: {:?}", t);
                 self.poll.unwrap().register(&s, Token(t), Ready::readable(), PollOpt::edge());
                 self.clients.push(WsClient {
                     sock: s,
@@ -159,8 +158,6 @@ impl<'a> WsServer<'a> {
     #[inline]
     fn read_incoming(&mut self, mut id: usize) -> usize {
         let (s1, s2) = self.split();
-        println!("Read incoming: {:?}", id);
-        println!("Clients: {:?}", s1.clients.len());
         if s2.first_token != 0 {
             id %= s2.first_token;
         }
@@ -196,7 +193,7 @@ impl<'a> WsServer<'a> {
 }
 
 impl<'a> Selected<'a> for WsServer<'a> {
-    fn select(&mut self, events: &Events) {
+    fn select(&mut self, events: &Events) -> usize {
         let s = UnsafeCell::new(self);
         let s1 = unsafe { &*s.get() };
         let s2 = unsafe { &*s.get() };
@@ -205,11 +202,9 @@ impl<'a> Selected<'a> for WsServer<'a> {
         let s5 = unsafe { &*s.get() };
         for event in events.iter() {
             let id = event.token().0;
-            println!("Selected token: {:?}", id);
             if id == s2.first_token {
                 s3.reg_incoming();
             } else if id > s2.first_token && id < s2.first_token + s2.token_amount {
-                println!("Should Read");
                 let sz = s3.read_incoming(id);
                 if sz > 0 {
                     println!("READ: {:?}", &s5.buf[..sz]);
@@ -217,13 +212,15 @@ impl<'a> Selected<'a> for WsServer<'a> {
                 }
             }
         }
+        1
     }
 
     fn initial(&'a mut self, p: &'a Poll, t: usize, a: usize) {
         p.register(&self.tcp, Token(t), Ready::readable(), PollOpt::edge()).unwrap();
         self.poll = Some(p);
-        println!("TCP Tok: {:?}", t);
         self.first_token = t;
         self.token_amount = a;
     }
+
+    fn finalize(&mut self) {}
 }
