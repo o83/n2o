@@ -33,7 +33,7 @@ impl Tele {
         }
     }
 
-    pub fn register(&mut self, poll: &mut Poll) -> io::Result<()> {
+    pub fn register(&mut self, poll: &Poll) -> io::Result<()> {
         trace!("connection register; token={:?}", self.token);
 
         self.interest.insert(Ready::readable());
@@ -51,7 +51,7 @@ impl Tele {
             })
     }
 
-    pub fn reregister(&mut self, poll: &mut Poll) -> io::Result<()> {
+    pub fn reregister(&mut self, poll: &Poll) -> io::Result<()> {
         trace!("connection reregister; token={:?}", self.token);
 
         poll.reregister(

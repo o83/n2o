@@ -48,8 +48,8 @@ name = "fac"
 path = "src/apps/fac.rs"
 
 [[bin]]
-name = "n2o"
-path = "src/apps/protocols/n2o.rs"
+name = "onion"
+path = "src/apps/protocols/onion.rs"
 
 [dependencies]
 net2         = "0.2.19"

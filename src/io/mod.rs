@@ -13,3 +13,4 @@ pub mod stdio;
 pub mod tele;
 pub mod ws;
 pub mod reception;
+pub mod console;
