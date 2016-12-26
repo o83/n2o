@@ -26,7 +26,7 @@ pub struct Select<S> {
 impl<'a, S> Select<S>
     where S: Selected<'a> + 'a
 {
-    pub fn new() -> Self {
+    pub fn new() -> Select<S> {
         Select {
             poll: Poll::new().unwrap(),
             events: Events::with_capacity(1024),
