@@ -110,7 +110,7 @@ impl<'a> Interpreter<'a> {
                     .lazy(Lazy::Defer(node, val, self.arena.cont(Cont::Cond(left, right, cont)))))
             }
             &AST::List(x) => self.evaluate_expr(node, x, cont),
-            &AST::Dict(x) => self.evaluate_dict(node, self.arena.ast(AST::Nil), x, cont),
+            &AST::Dict(x) => self.evaluate_dict(node, self.arena.nil(), x, cont),
             &AST::Call(c, a) => Ok(self.arena.lazy(Lazy::Defer(node, a, self.arena.cont(Cont::Call(c, cont))))),
             &AST::Verb(ref verb, left, right) => {
                 match (left, right) {
@@ -333,7 +333,7 @@ impl<'a> Interpreter<'a> {
                 match rest {
                     &AST::Cons(head, tail) => {
                         self.evaluate_dict(node,
-                                           self.arena.ast(AST::Nil),
+                                           self.arena.nil(),
                                            head,
                                            self.arena
                                                .cont(Cont::Dict(new_acc, tail, cont)))
@@ -350,7 +350,7 @@ impl<'a> Interpreter<'a> {
                         Ok(self.arena.lazy(Lazy::Defer(node,
                                                        x,
                                                        self.arena
-                                                           .cont(Cont::Dict(new_acc, self.arena.ast(AST::Nil), cont)))))
+                                                           .cont(Cont::Dict(new_acc, self.arena.nil(), cont)))))
                     }
                 }
             }

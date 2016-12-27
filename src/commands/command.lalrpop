@@ -5,35 +5,35 @@ use core::str::FromStr;
     grammar<'ast>(arena: &'ast Arena<'ast>);
 pub Mex:   &'ast AST<'ast> = { ExprList };
 
-Dict:      &'ast AST<'ast> = { "[" "]"                                     => nil(arena),
+Dict:      &'ast AST<'ast> = { "[" "]"                                     => arena.nil(),
                                "["     <l:ExprList> "]"                    => dict(l, arena), };
 
-List:      &'ast AST<'ast> = { "(" ")"                                     => nil(arena),
+List:      &'ast AST<'ast> = { "(" ")"                                     => arena.nil(),
                                "(["    <c:NameList> "]" <m:FieldList> ")"  => table(c, m, arena),
                                "("     <l:ExprList> ")"                    => list(l, arena), };
 
-Lambda:    &'ast AST<'ast> = { "{" "}"                                     => fun(nil(arena), nil(arena), arena),
+Lambda:    &'ast AST<'ast> = { "{" "}"                                     => fun(arena.nil(), arena.nil(), arena),
                                "{["    <c:NameList> "]" <m:ExprList> "}"   => fun(c, m, arena),
-                               "{"     <m:ExprList> "}"                    => fun(nil(arena), m, arena), };
+                               "{"     <m:ExprList> "}"                    => fun(arena.nil(), m, arena), };
 
 Noun:      &'ast AST<'ast> = { Name, Decimal, Hex, Bin, Symbol, List, Dict, Sequence, Lambda, Ioverb };
 Expr:      &'ast AST<'ast> = { Verbs, Adverbs, Call };
 
-NameCont:  &'ast AST<'ast> = { ";" => nil(arena), ";" <m:NameList>   => m };
-FieldCont: &'ast AST<'ast> = { ";" => nil(arena), ";" <m:FieldList>  => m };
-ExprCont:  &'ast AST<'ast> = { ";" => nil(arena), ";" <m:ExprList>   => m };
+NameCont:  &'ast AST<'ast> = { ";" => arena.nil(), ";" <m:NameList>   => m };
+FieldCont: &'ast AST<'ast> = { ";" => arena.nil(), ";" <m:FieldList>  => m };
+ExprCont:  &'ast AST<'ast> = { ";" => arena.nil(), ";" <m:ExprList>   => m };
 
 NameList:  &'ast AST<'ast> = { Name, <o:Name> <m:NameCont>           => cons(o, m, arena), };
 FieldList: &'ast AST<'ast> = { Expr, <o:Expr> <m:FieldCont>          => cons(o, m, arena), };
 ExprList:  &'ast AST<'ast> = { Expr, ExprCont, <o:Expr> <m:ExprCont> => cons(o, m, arena), };
 
-Verbs:     &'ast AST<'ast> = {          <v:Verb>            => verb(v, nil(arena), nil(arena), arena),
-                                        <v:Verb> <r:Expr>   => verb(v, nil(arena), r, arena), };
-Adverbs:   &'ast AST<'ast> = {          <a:Adverb>          => adverb(a, nil(arena), nil(arena), arena),
-                                        <v:Adverb> <r:Expr> => adverb(v, nil(arena), r, arena), };
+Verbs:     &'ast AST<'ast> = {          <v:Verb>            => verb(v, arena.nil(), arena.nil(), arena),
+                                        <v:Verb> <r:Expr>   => verb(v, arena.nil(), r, arena), };
+Adverbs:   &'ast AST<'ast> = {          <a:Adverb>          => adverb(a, arena.nil(), arena.nil(), arena),
+                                        <v:Adverb> <r:Expr> => adverb(v, arena.nil(), r, arena), };
 Call:      &'ast AST<'ast> = {    Noun, <c:Noun>   <a:Call> => call(c, a, arena),
-                               <l:Noun> <a:Adverb>          => adverb(a, l, nil(arena), arena),
-                               <l:Noun> <v:Verb>            => verb(v, l, nil(arena), arena),
+                               <l:Noun> <a:Adverb>          => adverb(a, l, arena.nil(), arena),
+                               <l:Noun> <v:Verb>            => verb(v, l, arena.nil(), arena),
                                <l:Noun> <a:Adverb> <r:Expr> => adverb(a, l, r, arena),
                                <l:Noun> <v:Verb>   <r:Expr> => verb(v, l, r, arena), };
 

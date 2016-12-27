@@ -248,18 +248,24 @@ impl<'a> fmt::Display for Lazy<'a> {
 
 impl<'a> Arena<'a> {
     pub fn new() -> Arena<'a> {
-        Arena {
+        let x = Arena {
             names: UnsafeCell::new(HashMap::new()),
             symbols: UnsafeCell::new(HashMap::new()),
             sequences: UnsafeCell::new(HashMap::new()),
             asts: UnsafeCell::new(Vec::with_capacity(2048 * 2048)),
             conts: UnsafeCell::new(Vec::with_capacity(2048 * 2048)),
             lazys: UnsafeCell::new(Vec::with_capacity(2048 * 2048)),
-        }
+        };
+        x.init();
+        x
     }
 
 
-    pub fn dump(&'a self) {
+   pub fn nil(&'a self) -> &'a AST<'a> {
+       unsafe { &(*self.asts.get())[0] }
+   }
+
+   pub fn dump(&'a self) {
         let x = unsafe { &mut *self.asts.get() };
         for i in x[0..x.len()].iter() {
             println!("ast {}", i);
@@ -328,6 +334,10 @@ impl<'a> Arena<'a> {
         println!("AST {}, {:?}", ast.len(), ast);
     }
 
+    pub fn init(&self) {
+        self.ast(AST::Nil);
+    }
+
     pub fn clean(&self) -> usize {
         let asts = unsafe { &mut *self.asts.get() };
         let lazys = unsafe { &mut *self.lazys.get() };
@@ -338,6 +348,7 @@ impl<'a> Arena<'a> {
             conts.set_len(0);
             lazys.set_len(0);
         };
+        self.init();
         l
     }
 }
