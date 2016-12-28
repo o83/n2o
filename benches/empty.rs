@@ -67,67 +67,49 @@ fn factorial(value: i64) -> i64 {
 
 #[bench]
 fn fac_rec<'a>(b: &'a mut Bencher) {
-    let uc = UnsafeCell::new(Interpreter::new().unwrap());
-    let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-    let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-    let se3: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-
+    let h = handle();
     let eval = &"fac:{$[x=1;1;x*fac[x-1]]}".to_string();
-    let mut code = se1.parse(eval);
-    se2.run(code).unwrap();
-    let f = se3.parse(&"fac[5]".to_string());
+    let mut code = h.borrow().parse(eval);
+    h.borrow_mut().run(code).unwrap();
+    let f = h.borrow_mut().parse(&"fac[5]".to_string());
     b.iter(|| {
-        let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-        let se5: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-        se4.run(f);
-        se5.gc();
+        h.borrow_mut().run(f);
+        h.borrow_mut().gc();
     })
 }
 
 #[bench]
 fn fac_tail<'a>(b: &'a mut Bencher) {
-    let uc = UnsafeCell::new(Interpreter::new().unwrap());
-    let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-    let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-    let se3: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-    let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+    let h = handle();
     let eval = &"fac:{[a;b]$[a=1;b;fac[a-1;a*b]]}".to_string();
-    let code = se1.parse(eval);
-    se2.run(code).unwrap();
-    let f = se3.parse(&"fac[4;5]".to_string());
-    let code = se4.parse(eval);
+    let code = h.borrow().parse(eval);
+    h.borrow_mut().run(code).unwrap();
+    let f = h.borrow().parse(&"fac[4;5]".to_string());
     b.iter(|| {
-        let se5: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-        let se6: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-        se5.run(f);
-        se6.gc();
+        h.borrow_mut().run(f);
+        h.borrow_mut().gc();
     })
 }
 
 #[bench]
 fn fac_mul<'a>(b: &'a mut Bencher) {
-    let hdl = handle();
-    let f = hdl.borrow().parse(&"2*3*4*5".to_string());
+    let h = handle();
+    let f = h.borrow().parse(&"2*3*4*5".to_string());
     b.iter(|| {
-        hdl.borrow_mut().run(f);
-        hdl.borrow_mut().gc();
+        h.borrow_mut().run(f);
+        h.borrow_mut().gc();
     })
 }
 
 #[bench]
 fn akkerman_k<'a>(b: &'a mut Bencher) {
-    let uc = UnsafeCell::new(Interpreter::new().unwrap());
-    let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-    let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-    let se3: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-    let akk = se1.parse(&"f:{[x;y]$[0=x;1+y;$[0=y;f[x-1;1];f[x-1;f[x;y-1]]]]}".to_string());
-    se2.run(akk).unwrap();
-    let call = se3.parse(&"f[3;4]".to_string());
+    let h = handle();
+    let akk = h.borrow().parse(&"f:{[x;y]$[0=x;1+y;$[0=y;f[x-1;1];f[x-1;f[x;y-1]]]]}".to_string());
+    h.borrow_mut().run(akk).unwrap();
+    let call = h.borrow().parse(&"f[3;4]".to_string());
     b.iter(|| {
-        let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-        let se5: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-        se4.run(call);
-        se5.gc();
+        h.borrow_mut().run(call);
+        h.borrow_mut().gc();
     })
 }
 
