@@ -7,6 +7,7 @@ use kernel::commands::*;
 use kernel::commands::ast::*;
 use kernel::streams::interpreter::*;
 use kernel::streams::stack::Stack;
+use std::cell::UnsafeCell;
 
 #[bench]
 fn empty(b: &mut Bencher) {
@@ -66,50 +67,71 @@ fn factorial(value: i64) -> i64 {
 
 #[bench]
 fn fac_rec<'a>(b: &'a mut Bencher) {
-    let mut i = Interpreter::new().unwrap();
+    let uc = UnsafeCell::new(Interpreter::new().unwrap());
+    let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+    let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+    let se3: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+
     let eval = &"fac:{$[x=1;1;x*fac[x-1]]}".to_string();
-    let mut code = i.parse(eval);
-    i.run(code).unwrap();
-    let f = i.parse(&"fac[5]".to_string());
+    let mut code = se1.parse(eval);
+    se2.run(code).unwrap();
+    let f = se3.parse(&"fac[5]".to_string());
     b.iter(|| {
-        i.run(f);
-        i.gc();
+        let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+        let se5: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+        se4.run(f);
+        se5.gc();
     })
 }
 
 #[bench]
-fn fac_tail(b: &mut Bencher) {
-    let mut i = Interpreter::new().unwrap();
+fn fac_tail<'a>(b: &'a mut Bencher) {
+    let uc = UnsafeCell::new(Interpreter::new().unwrap());
+    let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+    let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+    let se3: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+    let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
     let eval = &"fac:{[a;b]$[a=1;b;fac[a-1;a*b]]}".to_string();
-    let code = i.parse(eval);
-    i.run(code).unwrap();
-    let f = i.parse(&"fac[4;5]".to_string());
-    let code = i.parse(eval);
+    let code = se1.parse(eval);
+    se2.run(code).unwrap();
+    let f = se3.parse(&"fac[4;5]".to_string());
+    let code = se4.parse(eval);
     b.iter(|| {
-        i.run(f);
-        i.gc();
+        let se5: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+        let se6: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+        se5.run(f);
+        se6.gc();
     })
 }
 
 #[bench]
-fn fac_mul(b: &mut Bencher) {
-    let mut i = Interpreter::new().unwrap();
-    let f = i.parse(&"2*3*4*5".to_string());
+fn fac_mul<'a>(b: &'a mut Bencher) {
+    let uc = UnsafeCell::new(Interpreter::new().unwrap());
+    let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+
+    let f = se1.parse(&"2*3*4*5".to_string());
     b.iter(|| {
-        i.run(f);
-        i.gc();
+        let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+        let se3: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+        se2.run(f);
+        se3.gc();
     })
 }
 
 #[bench]
-fn akkerman_k(b: &mut Bencher) {
-    let mut i = Interpreter::new().unwrap();
-    let akk = i.parse(&"f:{[x;y]$[0=x;1+y;$[0=y;f[x-1;1];f[x-1;f[x;y-1]]]]}".to_string());
-    i.run(akk).unwrap();
-    let call = i.parse(&"f[3;4]".to_string());
+fn akkerman_k<'a>(b: &'a mut Bencher) {
+    let uc = UnsafeCell::new(Interpreter::new().unwrap());
+    let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+    let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+    let se3: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+    let akk = se1.parse(&"f:{[x;y]$[0=x;1+y;$[0=y;f[x-1;1];f[x-1;f[x;y-1]]]]}".to_string());
+    se2.run(akk).unwrap();
+    let call = se3.parse(&"f[3;4]".to_string());
     b.iter(|| {
-        i.run(call);
-        i.gc();
+        let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+        let se5: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+        se4.run(call);
+        se5.gc();
     })
 }
 
@@ -125,7 +147,7 @@ fn ack(m: isize, n: isize) -> isize {
 
 #[bench]
 fn akkerman_rust(b: &mut Bencher) {
-    b.iter(|| { ack(3,4) })
+    b.iter(|| ack(3, 4))
 }
 
 #[derive(Debug,PartialEq,Clone)]
