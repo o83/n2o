@@ -106,15 +106,11 @@ fn fac_tail<'a>(b: &'a mut Bencher) {
 
 #[bench]
 fn fac_mul<'a>(b: &'a mut Bencher) {
-    let uc = UnsafeCell::new(Interpreter::new().unwrap());
-    let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-
-    let f = se1.parse(&"2*3*4*5".to_string());
+    let hdl = handle();
+    let f = hdl.borrow().parse(&"2*3*4*5".to_string());
     b.iter(|| {
-        let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-        let se3: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-        se2.run(f);
-        se3.gc();
+        hdl.borrow_mut().run(f);
+        hdl.borrow_mut().gc();
     })
 }
 

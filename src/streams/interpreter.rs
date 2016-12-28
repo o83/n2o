@@ -6,6 +6,7 @@ use commands::ast::{self, Error, AST, Verb, Adverb, Arena};
 use streams::intercore::ctx::{Ctx, Ctxs};
 use streams::intercore::internals;
 use std::cell::UnsafeCell;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Debug)]
 pub enum Cont<'a> {
@@ -410,15 +411,29 @@ impl<'a> Interpreter<'a> {
 pub struct Handle<'a>(UnsafeCell<Interpreter<'a>>);
 
 impl<'a> Handle<'a> {
-    pub fn get(&self) -> &Interpreter<'a> {
+    pub fn borrow(&self) -> &Interpreter<'a> {
         unsafe { &*self.0.get() }
     }
 
-    pub fn get_mut(&self) -> &mut Interpreter<'a> {
+    pub fn borrow_mut(&self) -> &mut Interpreter<'a> {
         unsafe { &mut *self.0.get() }
     }
 }
 
 pub fn handle<'a>() -> Handle<'a> {
     Handle(UnsafeCell::new(Interpreter::new().unwrap()))
+}
+
+impl<'a> Deref for Handle<'a> {
+    type Target = Interpreter<'a>;
+
+    fn deref(&self) -> &Interpreter<'a> {
+        self.borrow()
+    }
+}
+
+impl<'a> DerefMut for Handle<'a> {
+    fn deref_mut(&mut self) -> &mut Interpreter<'a> {
+        self.borrow_mut()
+    }
 }
