@@ -40,7 +40,7 @@ pub fn snd_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
                                 println!("{:?}", v);
                                 p.commit();
                             }
-                            None => {}
+                            None => return AST::Retry,
                         }
                     }
                 }

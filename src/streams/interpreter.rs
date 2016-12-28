@@ -5,6 +5,7 @@ use streams::{verb, adverb, env, otree};
 use commands::ast::{self, Error, AST, Verb, Adverb, Arena};
 use streams::intercore::ctx::{Ctx, Ctxs};
 use streams::intercore::internals;
+use std::cell::UnsafeCell;
 
 #[derive(Clone, Debug)]
 pub enum Cont<'a> {
@@ -23,12 +24,12 @@ pub enum Cont<'a> {
 #[derive(Clone, Debug)]
 pub enum Lazy<'a> {
     Defer(&'a otree::Node<'a>, &'a AST<'a>, &'a Cont<'a>),
+    Continuation(&'a otree::Node<'a>, &'a AST<'a>, &'a Cont<'a>),
     Return(&'a AST<'a>),
 }
 
 pub struct Interpreter<'a> {
-    arena: Arena<'a>,
-    env: env::Environment<'a>,
+    arena: UnsafeCell<Arena<'a>>,
     ctx: Ctx<u64>,
 }
 
@@ -37,7 +38,7 @@ impl<'a> Interpreter<'a> {
         let arena = Arena::new();
         let env = try!(env::Environment::new_root());
         let interpreter = Interpreter {
-            arena: arena,
+            arena: UnsafeCell::new(arena),
             env: env,
             ctx: Ctx::new(),
         };
@@ -76,6 +77,9 @@ impl<'a> Interpreter<'a> {
                         counter = counter + 1;
                         self.handle_defer(node, ast, cont)
                     })
+                }
+                &Lazy::Continuation(node, ast, cont) => {
+                    return Ok(self.arena.ast(AST::Retry));
                 }
                 &Lazy::Return(ast) => {
                     // println!("Result: {:?}", ast);

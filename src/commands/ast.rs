@@ -206,6 +206,7 @@ pub enum AST<'a> {
     Adverb(Adverb, &'a AST<'a>, &'a AST<'a>),
     Table(&'a AST<'a>, &'a AST<'a>),
     Ioverb(String),
+    Retry,
     Number(i64),
     NameInt(u16),
     SymbolInt(u16),
@@ -262,11 +263,11 @@ impl<'a> Arena<'a> {
     }
 
 
-   pub fn nil(&'a self) -> &'a AST<'a> {
-       unsafe { &(*self.asts.get())[0] }
-   }
+    pub fn nil(&'a self) -> &'a AST<'a> {
+        unsafe { &(*self.asts.get())[0] }
+    }
 
-   pub fn dump(&'a self) {
+    pub fn dump(&'a self) {
         let x = unsafe { &mut *self.asts.get() };
         for i in x[0..x.len()].iter() {
             println!("ast {}", i);
@@ -335,7 +336,7 @@ impl<'a> Arena<'a> {
         println!("AST {}, {:?}", ast.len(), ast);
     }
 
-    pub fn init(asts: UnsafeCell<Vec<AST<'a>>>) -> (u16,UnsafeCell<Vec<AST<'a>>>) {
+    pub fn init(asts: UnsafeCell<Vec<AST<'a>>>) -> (u16, UnsafeCell<Vec<AST<'a>>>) {
         let a = unsafe { &mut *asts.get() };
         a.push(AST::Nil);
         (a.len() as u16, asts)
