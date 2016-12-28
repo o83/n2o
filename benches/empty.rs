@@ -65,13 +65,12 @@ fn factorial(value: i64) -> i64 {
 }
 
 #[bench]
-fn fac_rec(b: &mut Bencher) {
+fn fac_rec<'a>(b: &'a mut Bencher) {
     let mut i = Interpreter::new().unwrap();
     let eval = &"fac:{$[x=1;1;x*fac[x-1]]}".to_string();
-    let code = i.parse(eval);
+    let mut code = i.parse(eval);
     i.run(code).unwrap();
     let f = i.parse(&"fac[5]".to_string());
-    let code = i.parse(eval);
     b.iter(|| {
         i.run(f);
         i.gc();

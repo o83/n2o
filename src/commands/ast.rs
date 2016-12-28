@@ -217,9 +217,10 @@ pub struct Arena<'a> {
     pub names: UnsafeCell<HashMap<String, u16>>,
     pub symbols: UnsafeCell<HashMap<String, u16>>,
     pub sequences: UnsafeCell<HashMap<String, u16>>,
-    asts: UnsafeCell<Vec<AST<'a>>>,
-    conts: UnsafeCell<Vec<Cont<'a>>>,
-    lazys: UnsafeCell<Vec<Lazy<'a>>>,
+    pub builtins: u16,
+    pub asts: UnsafeCell<Vec<AST<'a>>>,
+    pub conts: UnsafeCell<Vec<Cont<'a>>>,
+    pub lazys: UnsafeCell<Vec<Lazy<'a>>>,
 }
 
 impl<'a> fmt::Display for Cont<'a> {
@@ -248,16 +249,16 @@ impl<'a> fmt::Display for Lazy<'a> {
 
 impl<'a> Arena<'a> {
     pub fn new() -> Arena<'a> {
-        let x = Arena {
+        let (builtins, asts) = Arena::init(UnsafeCell::new(Vec::with_capacity(2048 * 2048)));
+        Arena {
+            asts: asts,
             names: UnsafeCell::new(HashMap::new()),
             symbols: UnsafeCell::new(HashMap::new()),
             sequences: UnsafeCell::new(HashMap::new()),
-            asts: UnsafeCell::new(Vec::with_capacity(2048 * 2048)),
             conts: UnsafeCell::new(Vec::with_capacity(2048 * 2048)),
             lazys: UnsafeCell::new(Vec::with_capacity(2048 * 2048)),
-        };
-        x.init();
-        x
+            builtins: builtins,
+        }
     }
 
 
@@ -334,8 +335,10 @@ impl<'a> Arena<'a> {
         println!("AST {}, {:?}", ast.len(), ast);
     }
 
-    pub fn init(&self) {
-        self.ast(AST::Nil);
+    pub fn init(asts: UnsafeCell<Vec<AST<'a>>>) -> (u16,UnsafeCell<Vec<AST<'a>>>) {
+        let a = unsafe { &mut *asts.get() };
+        a.push(AST::Nil);
+        (a.len() as u16, asts)
     }
 
     pub fn clean(&self) -> usize {
@@ -344,11 +347,10 @@ impl<'a> Arena<'a> {
         let conts = unsafe { &mut *self.conts.get() };
         let l = conts.len() + asts.len() + lazys.len();
         unsafe {
-            asts.set_len(0);
+            asts.set_len(self.builtins as usize);
             conts.set_len(0);
             lazys.set_len(0);
         };
-        self.init();
         l
     }
 }

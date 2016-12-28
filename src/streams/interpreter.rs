@@ -186,10 +186,10 @@ impl<'a> Interpreter<'a> {
                 match v {
                     Ok((c, f)) => {
                         match c {
-                            &AST::NameInt(n) if n < 4 => {
+                            &AST::NameInt(n) if n < self.arena.builtins => {
                                 self.run_cont(f, self.arena.ast(internals(n, args, &self.ctx)), cont)
                             }
-                            _ => self.evaluate_fun(f, c, args, cont), 
+                            _ => self.evaluate_fun(f, c, args, cont),
                         }
                     }
                     Err(x) => Err(x),

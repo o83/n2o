@@ -36,10 +36,6 @@ name = "streams"
 path = "src/apps/iter_stream.rs"
 
 [[bin]]
-name = "fac"
-path = "src/apps/fac.rs"
-
-[[bin]]
 name = "onion"
 path = "src/apps/protocols/onion.rs"
 
