@@ -29,16 +29,16 @@ pub enum Lazy<'a> {
 }
 
 pub struct Interpreter<'a> {
-    arena: UnsafeCell<Arena<'a>>,
+    env: env::Environment<'a>,
+    arena: Arena<'a>,
     ctx: Ctx<u64>,
 }
 
 impl<'a> Interpreter<'a> {
     pub fn new() -> Result<Interpreter<'a>, Error> {
-        let arena = Arena::new();
         let env = try!(env::Environment::new_root());
         let interpreter = Interpreter {
-            arena: UnsafeCell::new(arena),
+            arena: Arena::new(),
             env: env,
             ctx: Ctx::new(),
         };
@@ -395,4 +395,20 @@ impl<'a> Interpreter<'a> {
             }
         }
     }
+}
+
+pub struct Handle<'a>(UnsafeCell<Interpreter<'a>>);
+
+impl<'a> Handle<'a> {
+    pub fn get(&self) -> &Interpreter<'a> {
+        unsafe { &*self.0.get() }
+    }
+
+    pub fn get_mut(&self) -> &mut Interpreter<'a> {
+        unsafe { &mut *self.0.get() }
+    }
+}
+
+pub fn handle<'a>() -> Handle<'a> {
+    Handle(UnsafeCell::new(Interpreter::new().unwrap()))
 }

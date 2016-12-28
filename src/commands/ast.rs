@@ -463,6 +463,7 @@ impl<'a> fmt::Display for AST<'a> {
             AST::SequenceInt(ref s) => write!(f, "{:?}", s),
             AST::Assign(ref a, ref b) => write!(f, "{}:{}", a, b),
             AST::Cond(ref c, ref a, ref b) => write!(f, "$[{};{};{}]", c, a, b),
+            _ => write!(f, "Not implemented yet."),
         }
 
     }
