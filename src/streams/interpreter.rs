@@ -66,20 +66,28 @@ impl<'a> Interpreter<'a> {
         ast::parse(&self.arena, s)
     }
 
-    pub fn run(&'a self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
+    pub fn run(&'a mut self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
+
         let mut counter = 0;
         // println!("Input: {:?}", ast);
-        let mut tick = try!(self.evaluate_expr(self.env.last(), ast, self.arena.cont(Cont::Return)));
+        let uc = UnsafeCell::new(self);
+        let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+        let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+        let se3: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+
+
+        let mut tick = try!(se1.evaluate_expr(se2.env.last(), ast, se3.arena.cont(Cont::Return)));
         loop {
+            let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
             match tick {
                 &Lazy::Defer(node, ast, cont) => {
                     tick = try!({
                         counter = counter + 1;
-                        self.handle_defer(node, ast, cont)
+                        se4.handle_defer(node, ast, cont)
                     })
                 }
                 &Lazy::Continuation(node, ast, cont) => {
-                    return Ok(self.arena.ast(AST::Retry));
+                    return Ok(se4.arena.ast(AST::Retry));
                 }
                 &Lazy::Return(ast) => {
                     // println!("Result: {:?}", ast);
@@ -99,12 +107,14 @@ impl<'a> Interpreter<'a> {
         self.env.clean() + self.arena.clean()
     }
 
-    fn handle_defer(&'a self,
+    fn handle_defer(&'a mut self,
                     node: &'a otree::Node<'a>,
                     a: &'a AST<'a>,
                     cont: &'a Cont<'a>)
                     -> Result<&'a Lazy<'a>, Error> {
         // println!("handle_defer: val: {:?} #### cont: {:?}\n", a, cont);
+        // let se = UnsafeCell::new(self);
+        // let s1 = unsafe {&mut *se.get()};
         match a {
             &AST::Assign(name, body) => {
                 Ok(self.arena.lazy(Lazy::Defer(node, body, self.arena.cont(Cont::Assign(name, cont)))))

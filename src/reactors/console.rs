@@ -106,9 +106,10 @@ impl<'ast> Console<'ast> {
     }
 
     fn interpreter_run(&mut self, text: String) {
-        let i: &mut Interpreter = unsafe { &mut *self.interpreter.get() };
-        let x = i.parse(&text);
-        match i.run(x) {
+        let i1: &mut Interpreter = unsafe { &mut *self.interpreter.get() };
+        let i2: &mut Interpreter = unsafe { &mut *self.interpreter.get() };
+        let x = i1.parse(&text);
+        match i2.run(x) {
             Ok(r) => println!("{}", r),
             Err(e) => print!("{}", e),
         }
