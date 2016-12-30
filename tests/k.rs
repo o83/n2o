@@ -200,7 +200,8 @@ pub fn k_application_order() {
     let mut i = Interpreter::new().unwrap();
     let code1 = i.parse(&"a:10;print:{x+1};print[a * 10]".to_string());
     let code2 = i.parse(&"a:10;print:{x+1};print a * 10".to_string());
-    assert_eq!(format!("{}", i.run(code1).unwrap() == i.run(code2).unwrap()), "true");
+    assert_eq!(format!("{}", i.run(code1).unwrap() == i.run(code2).unwrap()),
+               "true");
 }
 
 #[test]
@@ -216,4 +217,12 @@ pub fn k_tensor3() {
     let code = i.parse(&"a:10;[[[[a;2;3];[[a;4];[3;0]]];[1;2]];1]".to_string());
     assert_eq!(format!("{}", i.run(code).unwrap()),
                "[[[[10 2 3] [[10 4] [3 0]]] [1 2]] 1]");
+}
+
+#[test]
+pub fn k_pubsub() {
+    let mut i = Interpreter::new().unwrap();
+    let code =
+        i.parse(&"p0: pub 0; s1: sub 0; s2: sub 0; snd[p0;41]; snd[p0;42]; rcv s1; rcv s2; rcv s1; rcv s2".to_string());
+    assert_eq!(format!("{}", i.run(code).unwrap()), "42");
 }
