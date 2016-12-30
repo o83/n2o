@@ -46,7 +46,7 @@ impl<'a> Interpreter<'a> {
         Ok(interpreter)
     }
 
-    pub fn define_primitives(&'a self) {
+    pub fn define_primitives(&'a mut self) {
         // let print = self.arena.intern("print".to_string());
         // self.env.define(ast::extract_name(print), print);
         // let id = self.arena.intern("id".to_string());
@@ -62,9 +62,11 @@ impl<'a> Interpreter<'a> {
         self.env.define(ast::extract_name(rcv), rcv);
     }
 
-    pub fn parse(&'a self, s: &String) -> &'a AST<'a> {
-        self.define_primitives();
-        ast::parse(&self.arena, s)
+    pub fn parse(&'a mut self, s: &String) -> &'a AST<'a> {
+        let (s1, s2) = split(self);
+        s1.arena.builtins = 5;
+        s1.define_primitives();
+        ast::parse(&s2.arena, s)
     }
 
     pub fn run(&'a mut self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
@@ -436,4 +438,11 @@ impl<'a> DerefMut for Handle<'a> {
     fn deref_mut(&mut self) -> &mut Interpreter<'a> {
         self.borrow_mut()
     }
+}
+
+pub fn split<T>(t: &mut T) -> (&mut T, &mut T) {
+    let f: *mut T = t;
+    let uf: &mut T = unsafe { &mut *f };
+    let us: &mut T = unsafe { &mut *f };
+    (uf, us)
 }
