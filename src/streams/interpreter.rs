@@ -64,8 +64,7 @@ impl<'a> Interpreter<'a> {
         let (s1, s2) = split(self);
         let x = unsafe { &mut *s2.arena.asts.get() };
         s1.define_primitives();
-        // s2.arena.builtins = x.len() as u16;
-        // println!("Primitives: {:?}", s2.arena.builtins);
+        s2.arena.builtins = 5;
         ast::parse(&s2.arena, s)
     }
 
@@ -195,6 +194,7 @@ impl<'a> Interpreter<'a> {
                               self.arena.cont(Cont::Func(names, rev, cont)))
             }
             &AST::NameInt(s) => {
+                // println!("{:?}", s);
                 let v = self.lookup(node, s, &self.env);
                 match v {
                     Ok((c, f)) => {
