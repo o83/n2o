@@ -410,32 +410,32 @@ impl<'a> Interpreter<'a> {
     }
 }
 
-pub struct Handle<'a>(UnsafeCell<Interpreter<'a>>);
+pub struct Handle<T>(UnsafeCell<T>);
 
-impl<'a> Handle<'a> {
-    pub fn borrow(&self) -> &Interpreter<'a> {
+impl<T> Handle<T> {
+    pub fn borrow(&self) -> &T {
         unsafe { &*self.0.get() }
     }
 
-    pub fn borrow_mut(&self) -> &mut Interpreter<'a> {
+    pub fn borrow_mut(&self) -> &mut T {
         unsafe { &mut *self.0.get() }
     }
 }
 
-pub fn handle<'a>() -> Handle<'a> {
-    Handle(UnsafeCell::new(Interpreter::new().unwrap()))
+pub fn handle<T>(t: T) -> Handle<T> {
+    Handle(UnsafeCell::new(t))
 }
 
-impl<'a> Deref for Handle<'a> {
-    type Target = Interpreter<'a>;
+impl<T> Deref for Handle<T> {
+    type Target = T;
 
-    fn deref(&self) -> &Interpreter<'a> {
+    fn deref(&self) -> &T {
         self.borrow()
     }
 }
 
-impl<'a> DerefMut for Handle<'a> {
-    fn deref_mut(&mut self) -> &mut Interpreter<'a> {
+impl<T> DerefMut for Handle<T> {
+    fn deref_mut(&mut self) -> &mut T {
         self.borrow_mut()
     }
 }
