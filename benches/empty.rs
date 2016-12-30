@@ -104,6 +104,7 @@ fn fac_mul<'a>(b: &'a mut Bencher) {
 #[bench]
 fn akkerman_k<'a>(b: &'a mut Bencher) {
     let h = handle(Interpreter::new().unwrap());
+    h.borrow_mut().define_primitives();
     let akk = h.borrow_mut().parse(&"f:{[x;y]$[0=x;1+y;$[0=y;f[x-1;1];f[x-1;f[x;y-1]]]]}".to_string());
     h.borrow_mut().run(akk).unwrap();
     let call = h.borrow_mut().parse(&"f[3;4]".to_string());
