@@ -9,7 +9,7 @@ use std::cell::UnsafeCell;
 
 #[test]
 pub fn k_ariph() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"1+2".to_string());
     assert_eq!(*code,
                AST::Verb(Verb::Plus, &AST::Number(1), &AST::Number(2)));
@@ -23,8 +23,8 @@ pub fn k_ariph() {
 
 #[test]
 pub fn k_list() {
-    let h = handle();
-    let code = h.borrow_mut().parse(&"(1;2;3;4)".to_string());
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"(1;2;3;4)".to_string());
     assert_eq!(*code,
                AST::List(&AST::Cons(&AST::Number(1),
                                     &AST::Cons(&AST::Number(2),
@@ -33,8 +33,8 @@ pub fn k_list() {
 
 #[test]
 pub fn k_symbols() {
-    let h = handle();
-    let code = h.borrow_mut().parse(&"`a`b`c;`1`1`1".to_string());
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"`a`b`c;`1`1`1".to_string());
     assert_eq!(*code,
                AST::Cons(&AST::Call(&AST::SymbolInt(0),
                                     &AST::Call(&AST::SymbolInt(1), &AST::SymbolInt(2))),
@@ -48,8 +48,8 @@ pub fn k_symbols() {
 
 #[test]
 pub fn k_assign() {
-    let h = handle();
-    let code = h.borrow_mut().parse(&"a:b:c:1".to_string());
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"a:b:c:1".to_string());
     assert_eq!(*code,
                AST::Assign(&AST::NameInt(0),
                            &AST::Assign(&AST::NameInt(1),
@@ -103,7 +103,7 @@ pub fn k_repl() {
 
 #[test]
 pub fn k_nested_dict() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"a:10;[1;2;[a+a;[4+a;3];2];5]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
                "[1 2 [20 [14 3] 2] 5]");
@@ -112,14 +112,14 @@ pub fn k_nested_dict() {
 
 #[test]
 pub fn k_repl2() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"xo:{1};z:{[x]xo x};d:{[x]z x};e:{[x]d x};e[3]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "1");
 }
 
 #[test]
 pub fn k_factorial() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"fac:{$[x=0;1;x*fac[x-1]]};fac 20".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
                "2432902008176640000");
@@ -127,21 +127,21 @@ pub fn k_factorial() {
 
 #[test]
 pub fn k_tail_factorial() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"x:5;fac:{[a;b]$[a=1;b;fac[a-1;a*b]]};fac[x-1;x]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "120");
 }
 
 #[test]
 pub fn k_cond() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"a:{[x;y]$[x y;20;10]};a[{x};10]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "20");
 }
 
 #[test]
 pub fn k_cond2() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"a:{[x;y]$[x y;20;10]};a[{x};0]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "10");
 
@@ -149,7 +149,7 @@ pub fn k_cond2() {
 
 #[test]
 pub fn k_14() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"f:{a:9};a:14;k:{[x] a}; k 3".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "14");
 }
@@ -157,28 +157,28 @@ pub fn k_14() {
 
 #[test]
 pub fn k_multiargs2() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"b:2;a:3;fac:{[x;y]x*y};fac[b*a;a+1]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "24");
 }
 
 #[test]
 pub fn k_multiargs() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"xa:9;f:{[x;y;z]x+y*z};f[1;xa+11;3]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "61");
 }
 
 #[test]
 pub fn k_repl1() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"y:3;addy:{y};f:{[g;y]g y};f[addy;1]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "3");
 }
 
 #[test]
 pub fn k_tensor() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"g:1;b:1;[[g;g*b;1;0];[g*b;g;180;0];[0;0;270;0];[0;0;0;1]]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
                "[[1 1 1 0] [1 1 180 0] [0 0 270 0] [0 0 0 1]]");
@@ -186,7 +186,7 @@ pub fn k_tensor() {
 
 #[test]
 pub fn k_tensor1() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"a:10;[[[a;2;3];[1;[a;4];3]];[1;2]]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
                "[[[10 2 3] [1 [10 4] 3]] [1 2]]");
@@ -194,7 +194,7 @@ pub fn k_tensor1() {
 
 #[test]
 pub fn k_tensor2() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"a:10;[[[a;2;3];[[a;4];[3;0]]];[1;2]]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
                "[[[10 2 3] [[10 4] [3 0]]] [1 2]]");
@@ -202,7 +202,7 @@ pub fn k_tensor2() {
 
 #[test]
 pub fn k_application_order() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code1 = h.borrow_mut().parse(&"a:10;print:{x+1};print[a * 10]".to_string());
     let code2 = h.borrow_mut().parse(&"a:10;print:{x+1};print a * 10".to_string());
     assert_eq!(format!("{}",
@@ -212,14 +212,14 @@ pub fn k_application_order() {
 
 #[test]
 pub fn k_akkerman() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"f:{[x;y]$[0=x;1+y;$[0=y;f[x-1;1];f[x-1;f[x;y-1]]]]};f[3;4]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "125");
 }
 
 #[test]
 pub fn k_tensor3() {
-    let h = handle();
+    let h = handle(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"a:10;[[[[a;2;3];[[a;4];[3;0]]];[1;2]];1]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
                "[[[[10 2 3] [[10 4] [3 0]]] [1 2]] 1]");
