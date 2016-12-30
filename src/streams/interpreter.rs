@@ -38,7 +38,7 @@ pub struct Interpreter<'a> {
 impl<'a> Interpreter<'a> {
     pub fn new() -> Result<Interpreter<'a>, Error> {
         let env = try!(env::Environment::new_root());
-        let interpreter = Interpreter {
+        let mut interpreter = Interpreter {
             arena: Arena::new(),
             env: env,
             ctx: Ctx::new(),
@@ -64,15 +64,15 @@ impl<'a> Interpreter<'a> {
         let (s1, s2) = split(self);
         let x = unsafe { &mut *s2.arena.asts.get() };
         s1.define_primitives();
-        s2.arena.builtins = x.len() as u16;
-        println!("Primitives: {:?}", s2.arena.builtins);
+        // s2.arena.builtins = x.len() as u16;
+        // println!("Primitives: {:?}", s2.arena.builtins);
         ast::parse(&s2.arena, s)
     }
 
     pub fn run(&'a mut self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
 
         let mut counter = 0;
-        println!("Input: {:?}", ast);
+        // println!("Input: {:?}", ast);
         let uc = UnsafeCell::new(self);
         let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
         let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
@@ -115,9 +115,6 @@ impl<'a> Interpreter<'a> {
                     a: &'a AST<'a>,
                     cont: &'a Cont<'a>)
                     -> Result<&'a Lazy<'a>, Error> {
-        // println!("handle_defer: val: {:?} #### cont: {:?}\n", a, cont);
-        // let se = UnsafeCell::new(self);
-        // let s1 = unsafe {&mut *se.get()};
         match a {
             &AST::Assign(name, body) => {
                 Ok(self.arena.lazy(Lazy::Defer(node, body, self.arena.cont(Cont::Assign(name, cont)))))
@@ -198,7 +195,6 @@ impl<'a> Interpreter<'a> {
                               self.arena.cont(Cont::Func(names, rev, cont)))
             }
             &AST::NameInt(s) => {
-                println!("lookup: {:?}", s);
                 let v = self.lookup(node, s, &self.env);
                 match v {
                     Ok((c, f)) => {
