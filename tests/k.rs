@@ -228,6 +228,7 @@ pub fn k_tensor3() {
 #[test]
 pub fn k_pubsub() {
     let h = handle(Interpreter::new().unwrap());
+    h.borrow_mut().define_primitives();
     let code = h.borrow_mut()
         .parse(&"p0: pub 0; s1: sub 0; s2: sub 0; snd[p0;41]; snd[p0;42]; [rcv s1; rcv s2; rcv s1; rcv s2]"
             .to_string());
