@@ -38,7 +38,7 @@ pub struct Interpreter<'a> {
 impl<'a> Interpreter<'a> {
     pub fn new() -> Result<Interpreter<'a>, Error> {
         let env = try!(env::Environment::new_root());
-        let interpreter = Interpreter {
+        let mut interpreter = Interpreter {
             arena: Arena::new(),
             env: env,
             ctx: Ctx::new(),
@@ -47,25 +47,25 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn define_primitives(&'a mut self) {
-        // let print = self.arena.intern("print".to_string());
-        // self.env.define(ast::extract_name(print), print);
-        // let id = self.arena.intern("id".to_string());
-        // self.env.define(ast::extract_name(id), id);
+        let print = self.arena.intern("print".to_string());
         let publ = self.arena.intern("pub".to_string());
-        self.env.define(ast::extract_name(publ), publ);
         let subs = self.arena.intern("sub".to_string());
-        self.env.define(ast::extract_name(subs), subs);
-
         let snd = self.arena.intern("snd".to_string());
-        self.env.define(ast::extract_name(snd), snd);
         let rcv = self.arena.intern("rcv".to_string());
+
+        self.env.define(ast::extract_name(print), print);
+        self.env.define(ast::extract_name(publ), publ);
+        self.env.define(ast::extract_name(subs), subs);
+        self.env.define(ast::extract_name(snd), snd);
         self.env.define(ast::extract_name(rcv), rcv);
     }
 
     pub fn parse(&'a mut self, s: &String) -> &'a AST<'a> {
         let (s1, s2) = split(self);
-        s1.arena.builtins = 5;
+        let x = unsafe { &mut *s2.arena.asts.get() };
         s1.define_primitives();
+        // s2.arena.builtins = x.len() as u16;
+        // println!("Primitives: {:?}", s2.arena.builtins);
         ast::parse(&s2.arena, s)
     }
 
@@ -115,9 +115,6 @@ impl<'a> Interpreter<'a> {
                     a: &'a AST<'a>,
                     cont: &'a Cont<'a>)
                     -> Result<&'a Lazy<'a>, Error> {
-        // println!("handle_defer: val: {:?} #### cont: {:?}\n", a, cont);
-        // let se = UnsafeCell::new(self);
-        // let s1 = unsafe {&mut *se.get()};
         match a {
             &AST::Assign(name, body) => {
                 Ok(self.arena.lazy(Lazy::Defer(node, body, self.arena.cont(Cont::Assign(name, cont)))))
@@ -198,7 +195,6 @@ impl<'a> Interpreter<'a> {
                               self.arena.cont(Cont::Func(names, rev, cont)))
             }
             &AST::NameInt(s) => {
-                // let v = self.env.get(s, node);
                 let v = self.lookup(node, s, &self.env);
                 match v {
                     Ok((c, f)) => {
