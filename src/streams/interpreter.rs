@@ -47,26 +47,23 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn define_primitives(&'a mut self) {
-        let print = self.arena.intern("print".to_string());
-        let publ = self.arena.intern("pub".to_string());
-        let subs = self.arena.intern("sub".to_string());
-        let snd = self.arena.intern("snd".to_string());
-        let rcv = self.arena.intern("rcv".to_string());
-
-        self.env.define(ast::extract_name(print), print);
-        self.env.define(ast::extract_name(publ), publ);
-        self.env.define(ast::extract_name(subs), subs);
-        self.env.define(ast::extract_name(snd), snd);
-        self.env.define(ast::extract_name(rcv), rcv);
+        let (s1, s2) = split(self);
+        let print = s1.arena.intern("print".to_string());
+        let publ = s1.arena.intern("pub".to_string());
+        let subs = s1.arena.intern("sub".to_string());
+        let snd = s1.arena.intern("snd".to_string());
+        let rcv = s1.arena.intern("rcv".to_string());
+        s1.env.define(ast::extract_name(print), print);
+        s1.env.define(ast::extract_name(publ), publ);
+        s1.env.define(ast::extract_name(subs), subs);
+        s1.env.define(ast::extract_name(snd), snd);
+        s1.env.define(ast::extract_name(rcv), rcv);
+        let x = unsafe { &mut *s1.arena.asts.get() };
+        s2.arena.builtins = x.len() as u16;
     }
 
     pub fn parse(&'a mut self, s: &String) -> &'a AST<'a> {
-        let (s1, s2) = split(self);
-        let x = unsafe { &mut *s2.arena.asts.get() };
-        s1.define_primitives();
-        // s2.arena.builtins = x.len() as u16;
-        // println!("Primitives: {:?}", s2.arena.builtins);
-        ast::parse(&s2.arena, s)
+        ast::parse(&self.arena, s)
     }
 
     pub fn run(&'a mut self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
@@ -195,6 +192,7 @@ impl<'a> Interpreter<'a> {
                               self.arena.cont(Cont::Func(names, rev, cont)))
             }
             &AST::NameInt(s) => {
+                // println!("{:?}", s);
                 let v = self.lookup(node, s, &self.env);
                 match v {
                     Ok((c, f)) => {

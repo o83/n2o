@@ -13,7 +13,7 @@ use io::options::*;
 use io::tele::*;
 use commands::*;
 use commands::ast::*;
-use streams::interpreter::Interpreter;
+use streams::interpreter::{handle, Interpreter};
 use std::cell::UnsafeCell;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -106,10 +106,10 @@ impl<'ast> Console<'ast> {
     }
 
     fn interpreter_run(&mut self, text: String) {
-        let i1: &mut Interpreter = unsafe { &mut *self.interpreter.get() };
-        let i2: &mut Interpreter = unsafe { &mut *self.interpreter.get() };
-        let x = i1.parse(&text);
-        match i2.run(x) {
+        let h = handle(Interpreter::new().unwrap());
+        h.borrow_mut().define_primitives();
+        let x = h.borrow_mut().parse(&text);
+        match h.borrow_mut().run(x) {
             Ok(r) => println!("{}", r),
             Err(e) => print!("{}", e),
         }

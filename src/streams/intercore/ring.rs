@@ -55,7 +55,7 @@ pub fn snd_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
 pub fn rcv_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
     let subs = ctx.subscribers();
     let mut res = 0u64;
-    println!("{:?}", args);
+    println!("RECV {:?}", args);
     match args {
         &AST::Number(n) => {
             if let Some(s) = subs.get_mut(n as usize) {
