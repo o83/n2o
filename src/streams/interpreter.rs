@@ -6,6 +6,7 @@ use commands::ast::{self, Error, AST, Verb, Adverb, Arena};
 use streams::intercore::ctx::{Ctx, Ctxs};
 use streams::intercore::internals;
 use std::cell::UnsafeCell;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Debug)]
 pub enum Cont<'a> {
@@ -45,31 +46,33 @@ impl<'a> Interpreter<'a> {
         Ok(interpreter)
     }
 
-    pub fn define_primitives(&'a self) {
-        // let print = self.arena.intern("print".to_string());
-        // self.env.define(ast::extract_name(print), print);
-        // let id = self.arena.intern("id".to_string());
-        // self.env.define(ast::extract_name(id), id);
+    pub fn define_primitives(&'a mut self) {
+        let print = self.arena.intern("print".to_string());
         let publ = self.arena.intern("pub".to_string());
-        self.env.define(ast::extract_name(publ), publ);
         let subs = self.arena.intern("sub".to_string());
-        self.env.define(ast::extract_name(subs), subs);
-
         let snd = self.arena.intern("snd".to_string());
-        self.env.define(ast::extract_name(snd), snd);
         let rcv = self.arena.intern("rcv".to_string());
+
+        self.env.define(ast::extract_name(print), print);
+        self.env.define(ast::extract_name(publ), publ);
+        self.env.define(ast::extract_name(subs), subs);
+        self.env.define(ast::extract_name(snd), snd);
         self.env.define(ast::extract_name(rcv), rcv);
     }
 
-    pub fn parse(&'a self, s: &String) -> &'a AST<'a> {
-        self.define_primitives();
-        ast::parse(&self.arena, s)
+    pub fn parse(&'a mut self, s: &String) -> &'a AST<'a> {
+        let (s1, s2) = split(self);
+        let x = unsafe { &mut *s2.arena.asts.get() };
+        s1.define_primitives();
+        s2.arena.builtins = x.len() as u16;
+        println!("Primitives: {:?}", s2.arena.builtins);
+        ast::parse(&s2.arena, s)
     }
 
     pub fn run(&'a mut self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
 
         let mut counter = 0;
-        // println!("Input: {:?}", ast);
+        println!("Input: {:?}", ast);
         let uc = UnsafeCell::new(self);
         let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
         let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
@@ -195,7 +198,7 @@ impl<'a> Interpreter<'a> {
                               self.arena.cont(Cont::Func(names, rev, cont)))
             }
             &AST::NameInt(s) => {
-                // let v = self.env.get(s, node);
+                println!("lookup: {:?}", s);
                 let v = self.lookup(node, s, &self.env);
                 match v {
                     Ok((c, f)) => {
@@ -407,18 +410,39 @@ impl<'a> Interpreter<'a> {
     }
 }
 
-pub struct Handle<'a>(UnsafeCell<Interpreter<'a>>);
+pub struct Handle<T>(UnsafeCell<T>);
 
-impl<'a> Handle<'a> {
-    pub fn get(&self) -> &Interpreter<'a> {
+impl<T> Handle<T> {
+    pub fn borrow(&self) -> &T {
         unsafe { &*self.0.get() }
     }
 
-    pub fn get_mut(&self) -> &mut Interpreter<'a> {
+    pub fn borrow_mut(&self) -> &mut T {
         unsafe { &mut *self.0.get() }
     }
 }
 
-pub fn handle<'a>() -> Handle<'a> {
-    Handle(UnsafeCell::new(Interpreter::new().unwrap()))
+pub fn handle<T>(t: T) -> Handle<T> {
+    Handle(UnsafeCell::new(t))
+}
+
+impl<T> Deref for Handle<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        self.borrow()
+    }
+}
+
+impl<T> DerefMut for Handle<T> {
+    fn deref_mut(&mut self) -> &mut T {
+        self.borrow_mut()
+    }
+}
+
+pub fn split<T>(t: &mut T) -> (&mut T, &mut T) {
+    let f: *mut T = t;
+    let uf: &mut T = unsafe { &mut *f };
+    let us: &mut T = unsafe { &mut *f };
+    (uf, us)
 }
