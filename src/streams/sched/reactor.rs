@@ -19,10 +19,10 @@ impl<'a, T> Reactor<'a, T>
         }
     }
 
-    pub fn spawn(&'a mut self, t: T) {
+    pub fn spawn(&'a mut self, t: T, input: Option<&'a str>) {
         self.tasks.push(t);
         self.ctxs.push(Context::Nil);
-        self.tasks.last_mut().unwrap().init();
+        self.tasks.last_mut().unwrap().init(input);
     }
 
     pub fn run(&'a mut self) {

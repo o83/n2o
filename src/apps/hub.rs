@@ -4,6 +4,7 @@ use kernel::ptr::handle;
 
 fn main() {
     let mut h = handle::new(Hub::new());
-    h.borrow_mut().init();
+    let input = "1+2";
+    h.borrow_mut().init(Some(&input));
     h.borrow_mut().boil();
 }

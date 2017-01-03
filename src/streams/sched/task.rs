@@ -21,6 +21,6 @@ pub enum Context<'a> {
 }
 
 pub trait Task<'a> {
-    fn init(&'a mut self);
+    fn init(&'a mut self, input: Option<&'a str>);
     fn poll(&'a mut self, c: Context<'a>) -> Poll<Context<'a>, Error>;
 }

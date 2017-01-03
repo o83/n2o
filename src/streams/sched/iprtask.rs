@@ -1,19 +1,30 @@
 use streams::sched::task::{self, Task, Context, Poll, Error};
 use streams::interpreter::*;
+use commands::ast::AST;
+use ptr::handle;
 
 pub struct IprTask<'a> {
     interpreter: Interpreter<'a>,
+    ast: Option<&'a AST<'a>>,
 }
 
 impl<'a> IprTask<'a> {
     pub fn new() -> Self {
-        IprTask { interpreter: Interpreter::new().unwrap() }
+        IprTask {
+            interpreter: Interpreter::new().unwrap(),
+            ast: None,
+        }
     }
 }
 
 impl<'a> Task<'a> for IprTask<'a> {
-    fn init(&'a mut self) {
-        self.interpreter.define_primitives();
+    fn init(&'a mut self, input: Option<&'a str>) {
+        let (s1, s2) = handle::split(self);
+        s1.interpreter.define_primitives();
+        if input.is_some() {
+            let s = input.unwrap().to_string();
+            s2.ast = Some(s2.interpreter.parse(&s));
+        }
     }
 
     fn poll(&'a mut self, c: Context<'a>) -> Poll<Context<'a>, Error> {
@@ -23,7 +34,13 @@ impl<'a> Task<'a> for IprTask<'a> {
                     Ok(r) => Poll::Yield(Context::Node(r)),
                     Err(e) => Poll::Err(Error::RuntimeError),
                 }
-            }            
+            }
+            Context::Nil => {
+                match self.interpreter.run(self.ast.unwrap()) {
+                    Ok(r) => Poll::Yield(Context::Node(r)),
+                    Err(e) => Poll::Err(Error::RuntimeError),
+                }
+            }
             _ => Poll::Err(Error::WrongContext),
         }
     }
