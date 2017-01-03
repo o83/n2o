@@ -1,9 +1,10 @@
 use streams::sched::task::{Task, Context};
 use std::mem;
+use ptr::handle::{self, Handle};
 
 const TASKS_MAX_CNT: usize = 256;
 
-pub struct Reactor<'a, T> {
+pub struct Reactor<'a, T: 'a> {
     tasks: Vec<T>,
     ctxs: Vec<Context<'a>>,
 }
@@ -24,12 +25,14 @@ impl<'a, T> Reactor<'a, T>
         self.tasks.last_mut().unwrap().init();
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&'a mut self) {
+        let f: *mut Self = self;
         loop {
-            for (i, t) in self.tasks.iter_mut().enumerate() {
-                let mut ctx = mem::replace(self.ctxs.get_mut(i).unwrap(), Context::Nil);
+            let h1: &mut Self = unsafe { &mut *f };
+            for (i, t) in h1.tasks.iter_mut().enumerate() {
+                let mut ctx = mem::replace(h1.ctxs.get_mut(i).unwrap(), Context::Nil);
                 let r = t.poll(ctx);
-                print!("Task Poll: {:?}", r);
+                println!("Task Poll: {:?}", r);
             }
         }
     }

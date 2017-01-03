@@ -36,8 +36,9 @@ name = "streams"
 path = "src/apps/iter_stream.rs"
 
 [[bin]]
-name = "onion"
-path = "src/apps/protocols/onion.rs"
+name = "hub"
+path = "src/apps/hub.rs"
+
 
 [dependencies]
 net2         = "0.2.19"
