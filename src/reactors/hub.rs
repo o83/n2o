@@ -14,7 +14,7 @@ impl<'a> Hub<'a> {
         Hub { reactor: Reactor::new() }
     }
 
-    pub fn init(&'a mut self, input: Option<&'a str>) {
+    pub fn exec(&'a mut self, input: Option<&'a str>) {
         self.reactor.spawn(IprTask::new(), input);
     }
 

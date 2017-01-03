@@ -75,7 +75,6 @@ impl<'a> Interpreter<'a> {
         let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
         let se3: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
 
-
         let mut tick = try!(se1.evaluate_expr(se2.env.last(), ast, se3.arena.cont(Cont::Return)));
         loop {
             let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
