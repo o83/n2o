@@ -1,24 +1,23 @@
-use streams::sched::task::{self, Task};
+use streams::sched::task::{self, Task, Context, Poll, Error};
 use streams::interpreter::*;
 
 pub struct IprTask<'a> {
     interpreter: Interpreter<'a>,
 }
 
-impl IprTask {
+impl<'a> IprTask<'a> {
     pub fn new() -> Self {
-        let mut i = Interpreter::new().unwrap();
-        i.define_primitives();
-        IprTask { interpreter: i }
+        IprTask { interpreter: Interpreter::new().unwrap() }
     }
 }
 
-impl<'a> Task for IprTask<'a> {
-    type Item = usize;
-    type Error = task::Error;
-
-    fn poll(&mut self, i: Self::Item) -> Result<Poll<Self::Item>, Error> {
+impl<'a> Task<'a> for IprTask<'a> {
+    fn init(&'a mut self) {
+        self.interpreter.define_primitives();
+    }
+    fn poll(&mut self, c: Context<'a>) -> Result<Poll<Context<'a>>, Error> {
         // self.interpreter.run();
-        i + 1
+        // i + 1
+        Err(Error::RuntimeError)
     }
 }

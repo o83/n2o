@@ -1,3 +1,4 @@
+use commands::ast::AST;
 
 #[derive(Debug)]
 pub enum Poll<T> {
@@ -10,8 +11,14 @@ pub enum Error {
     RuntimeError,
 }
 
-pub trait Task {
-    type Item;
-    type Error;
-    fn poll(&mut self, i: Self::Item) -> Result<Poll<Self::Item>, Error>;
+#[derive(Debug)]
+pub enum Context<'a> {
+    Cont(usize),
+    Node(&'a AST<'a>),
+    Nil,
+}
+
+pub trait Task<'a> {
+    fn init(&'a mut self);
+    fn poll(&mut self, c: Context<'a>) -> Result<Poll<Context<'a>>, Error>;
 }
