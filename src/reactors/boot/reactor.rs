@@ -52,7 +52,7 @@ impl<'a> Core<'a> {
     pub fn register<E>(&mut self, e: &E) -> Token
         where E: Evented
     {
-        self.poll.register(e, Token(0), Ready::readable(), PollOpt::edge());
+        self.poll.register(e, Token(self.tokens), Ready::readable(), PollOpt::edge());
         self.tokens += 1;
         Token(self.tokens)
     }
@@ -108,15 +108,15 @@ impl<'a> Iterator for CoreIterator<'a> {
         self.poll_if_need();
         match self.i {
             0 => Some(Async::NotReady),
-            x => {
-                let id = self.i - 1;
-                let e = self.c.events.get(id).unwrap();
+            id => {
+                let e = self.c.events.get(id - 1).unwrap();
                 let (s1, s2) = handle::split(&mut self.c);
                 let mut buf = vec![0u8;READ_BUF_SIZE];
-                s1.boils.get_mut(id).unwrap().select(s2, e.token(), &mut buf);
-                self.i -= 1;
+                println!("Event id {:?} token: {:?}", id, e.token());
+                s1.boils.get_mut(e.token().0).unwrap().select(s2, e.token(), &mut buf);
                 let s = unsafe { String::from_utf8_unchecked(buf) };
-                Some(Async::Ready((BoilId(id), s)))
+                self.i -= 1;
+                Some(Async::Ready((BoilId(e.token().0 + 1), s)))
             }
         }
     }

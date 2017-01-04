@@ -15,6 +15,7 @@ use rustc_serialize::base64::{ToBase64, STANDARD};
 use sha1;
 use reactors::boot::reactor::{Boil, Core};
 use std::cell::UnsafeCell;
+use std::fmt::Arguments;
 
 #[derive(Debug)]
 pub enum Error {
@@ -84,20 +85,19 @@ pub struct WsClient {
 
 const BUF_SIZE: usize = 2048;
 
-pub struct WsServer<'a> {
-    ws_token: Token,
+pub struct WsServer {
+    listen_token: Token,
     tcp: TcpListener,
-    clients: HashMap<(Token, WsClient)>,
+    clients: HashMap<Token, WsClient>,
     parser: HttpParser,
     pub buf: [u8; BUF_SIZE],
 }
 
-impl<'a> WsServer<'a> {
+impl WsServer {
     pub fn new(addr: &SocketAddr) -> Self {
         let t = TcpListener::bind(&addr).unwrap();
         WsServer {
-            self_token: 0,
-            poll: None,
+            listen_token: Token(0),
             tcp: t,
             clients: HashMap::with_capacity(256),
             parser: HttpParser::new(),
@@ -175,30 +175,40 @@ impl<'a> WsServer<'a> {
         buf.push(130);
         buf.push(sz as u8);
         buf.extend_from_slice(payload);
-        let c = self.clients.last_mut().unwrap();
-        c.sock.write(&buf);
-    }
-
-    pub fn listen<F>(&mut self, mut f: F)
-        where F: FnMut((&mut WsServer, &[u8]))
-    {
-        println!("Listening on {:?}...", self.tcp.local_addr().unwrap());
-
+        // let c = self.clients.last_mut().unwrap();
+        // c.sock.write(&buf);
     }
 }
 
-impl<'a> Boil<'a> for WsServer<'a> {
+impl<'a> Boil<'a> for WsServer {
     fn init(&mut self, c: &mut Core<'a>) {
-        let t = c.register(self);
-        self.tok
+        let t = c.register(&self.tcp);
+        self.listen_token = t;
     }
 
     fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut Vec<u8>) {
-        //
+        println!("WS SELECT");
     }
 
     fn finalize(&mut self) {
         println!("Bye!");
+    }
+}
+
+impl Write for WsServer {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        // println!("{}", String::from_utf8_lossy(buf));
+        Ok(1)
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn write_all(&mut self, buf: &[u8]) -> io::Result<()> {
+        Ok(())
+    }
+    fn write_fmt(&mut self, fmt: Arguments) -> io::Result<()> {
+        Ok(())
     }
 }
 
