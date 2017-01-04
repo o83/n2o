@@ -7,7 +7,7 @@ use streams::intercore::ctx::{Ctx, Ctxs};
 use streams::intercore::internals;
 use std::cell::UnsafeCell;
 use ptr::handle::split;
-
+use std::rc::Rc;
 #[derive(Clone, Debug)]
 pub enum Cont<'a> {
     Expressions(&'a AST<'a>, &'a Cont<'a>),
@@ -31,21 +31,34 @@ pub enum Lazy<'a> {
     Start,
 }
 
+
 pub struct Interpreter<'a> {
     env: env::Environment<'a>,
     arena: Arena<'a>,
-    ctx: Ctx<u64>,
+    ctx: Rc<Ctx<u64>>,
     registers: Lazy<'a>,
 }
 
 impl<'a> Interpreter<'a> {
+    pub fn new2(ctx: Rc<Ctx<u64>>) -> Result<Interpreter<'a>, Error> {
+        let mut env = try!(env::Environment::new_root());
+        let mut arena = Arena::new();
+        let mut interpreter = Interpreter {
+            arena: arena,
+            env: env,
+            ctx: ctx,
+            registers: Lazy::Start,
+        };
+        Ok(interpreter)
+    }
+
     pub fn new() -> Result<Interpreter<'a>, Error> {
         let mut env = try!(env::Environment::new_root());
         let mut arena = Arena::new();
         let mut interpreter = Interpreter {
             arena: arena,
             env: env,
-            ctx: Ctx::new(),
+            ctx: Rc::new(Ctx::new()),
             registers: Lazy::Start,
         };
         Ok(interpreter)

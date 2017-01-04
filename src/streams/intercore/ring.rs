@@ -28,7 +28,7 @@ pub fn sub_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
 
 pub fn snd_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
     let pubs = ctx.publishers();
-    println!("SND {:?}", args);
+    // println!("SND {:?}", args);
     match args {
         &AST::Cons(&AST::Number(val), tail) => {
             match tail {
@@ -37,7 +37,7 @@ pub fn snd_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
                         match p.next() {
                             Some(v) => {
                                 *v = val as u64;
-                                println!("{:?}", v);
+                                println!("snd_{} {:?}", cursor_id, v);
                                 p.commit();
                             }
                             None => return AST::Yield,
@@ -55,15 +55,15 @@ pub fn snd_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
 pub fn rcv_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
     let subs = ctx.subscribers();
     let mut res = 0u64;
-    println!("RECV {:?}", args);
+    // println!("RECV {:?}", args);
     match args {
         &AST::Number(n) => {
             if let Some(s) = subs.get_mut(n as usize) {
-                println!("SOME {:?}", s);
+                // println!("SOME {:?}", s);
                 match s.recv() {
                     Some(v) => {
                         res = *v;
-                        println!("{:?}", res);
+                        println!("rcv_{} {:?}", n, res);
                         s.commit();
                     }
                     None => return AST::Yield,

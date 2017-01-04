@@ -2,6 +2,8 @@ use streams::sched::task::{self, Task, Context, Poll, Error};
 use streams::interpreter::*;
 use commands::ast::AST;
 use ptr::handle;
+use std::rc::Rc;
+use streams::intercore::ctx::{Ctx, Ctxs};
 
 pub struct IprTask<'a> {
     interpreter: Interpreter<'a>,
@@ -9,9 +11,9 @@ pub struct IprTask<'a> {
 }
 
 impl<'a> IprTask<'a> {
-    pub fn new() -> Self {
+    pub fn new(ctx: Rc<Ctx<u64>>) -> Self {
         IprTask {
-            interpreter: Interpreter::new().unwrap(),
+            interpreter: Interpreter::new2(ctx).unwrap(),
             ast: None,
         }
     }
