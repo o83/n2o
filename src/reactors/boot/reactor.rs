@@ -109,13 +109,12 @@ impl<'a> Iterator for CoreIterator<'a> {
         match self.i {
             0 => Some(Async::NotReady),
             id => {
-                let e = self.c.events.get(id - 1).unwrap();
+                self.i -= 1;
+                let e = self.c.events.get(self.i).unwrap();
                 let (s1, s2) = handle::split(&mut self.c);
                 let mut buf = vec![0u8;READ_BUF_SIZE];
-                println!("Event id {:?} token: {:?}", id, e.token());
                 s1.boils.get_mut(e.token().0).unwrap().select(s2, e.token(), &mut buf);
                 let s = unsafe { String::from_utf8_unchecked(buf) };
-                self.i -= 1;
                 Some(Async::Ready((BoilId(e.token().0 + 1), s)))
             }
         }
