@@ -206,7 +206,7 @@ pub enum AST<'a> {
     Adverb(Adverb, &'a AST<'a>, &'a AST<'a>),
     Table(&'a AST<'a>, &'a AST<'a>),
     Ioverb(String),
-    Retry,
+    Yield,
     Number(i64),
     NameInt(u16),
     SymbolInt(u16),

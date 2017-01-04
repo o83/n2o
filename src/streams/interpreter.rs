@@ -20,6 +20,7 @@ pub enum Cont<'a> {
     Verb(Verb, &'a AST<'a>, u8, &'a Cont<'a>),
     Adverb(Adverb, &'a AST<'a>, &'a Cont<'a>),
     Return,
+    Yield(&'a Cont<'a>),
 }
 
 #[derive(Clone, Debug)]
@@ -27,21 +28,25 @@ pub enum Lazy<'a> {
     Defer(&'a otree::Node<'a>, &'a AST<'a>, &'a Cont<'a>),
     Continuation(&'a otree::Node<'a>, &'a AST<'a>, &'a Cont<'a>),
     Return(&'a AST<'a>),
+    Start,
 }
 
 pub struct Interpreter<'a> {
     env: env::Environment<'a>,
     arena: Arena<'a>,
     ctx: Ctx<u64>,
+    registers: Lazy<'a>,
 }
 
 impl<'a> Interpreter<'a> {
     pub fn new() -> Result<Interpreter<'a>, Error> {
-        let env = try!(env::Environment::new_root());
+        let mut env = try!(env::Environment::new_root());
+        let mut arena = Arena::new();
         let mut interpreter = Interpreter {
-            arena: Arena::new(),
+            arena: arena,
             env: env,
             ctx: Ctx::new(),
+            registers: Lazy::Start,
         };
         Ok(interpreter)
     }
@@ -66,16 +71,29 @@ impl<'a> Interpreter<'a> {
         ast::parse(&self.arena, s)
     }
 
-    pub fn run(&'a mut self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
+    pub fn load(&'a mut self, ast: &'a AST<'a>) {
+        let (s1, s2) = split(self);
+        match s2.registers {
+            Lazy::Continuation(node, _, cont) => {
+                s1.env = env::Environment::new_root().unwrap();
+                s1.registers = Lazy::Continuation(s2.env.last(), ast, s2.arena.cont(Cont::Return))
+            }
+            ref x => (),
+        }
+    }
 
+    pub fn run(&'a mut self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
         let mut counter = 0;
         // println!("Input: {:?}", ast);
         let uc = UnsafeCell::new(self);
         let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
         let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
         let se3: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-
-        let mut tick = try!(se1.evaluate_expr(se2.env.last(), ast, se3.arena.cont(Cont::Return)));
+        let mut tick;
+        match se3.registers {
+            Lazy::Start => tick = try!(se1.evaluate_expr(se2.env.last(), ast, se3.arena.cont(Cont::Return))),
+            _ => tick = &se3.registers,
+        }
         loop {
             let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
             match tick {
@@ -85,8 +103,10 @@ impl<'a> Interpreter<'a> {
                         se4.handle_defer(node, ast, cont)
                     })
                 }
+                &Lazy::Start => break,
                 &Lazy::Continuation(node, ast, cont) => {
-                    return Ok(se4.arena.ast(AST::Retry));
+                    se4.registers = Lazy::Defer(node, ast, cont);
+                    return Ok(se4.arena.ast(AST::Yield));
                 }
                 &Lazy::Return(ast) => {
                     // println!("Result: {:?}", ast);
@@ -197,7 +217,11 @@ impl<'a> Interpreter<'a> {
                     Ok((c, f)) => {
                         match c {
                             &AST::NameInt(n) if n < self.arena.builtins => {
-                                self.run_cont(f, self.arena.ast(internals(n, args, &self.ctx)), cont)
+                                let x = self.arena.ast(internals(n, args, &self.ctx));
+                                match x {
+                                    &AST::Yield => self.run_cont(f, x, self.arena.cont(Cont::Yield(cont))),
+                                    _ => self.run_cont(f, x, cont),
+                                }
                             }
                             _ => self.evaluate_fun(f, c, args, cont),
                         }
@@ -294,11 +318,14 @@ impl<'a> Interpreter<'a> {
                     -> Result<&'a Lazy<'a>, Error> {
         // println!("run_cont: val: {:?} #### cont: {:?}\n", val, cont);
         match con {
+            &Cont::Yield(cc) => Ok(self.arena.lazy(Lazy::Continuation(node, val, cc))),
             &Cont::Call(callee, cont) => {
+                let c;
                 match val {
-                    &AST::Dict(v) => self.evaluate_fun(node, callee, v, cont),
-                    x => self.evaluate_fun(node, callee, x, cont),
-                }
+                    &AST::Dict(v) => c = self.evaluate_fun(node, callee, v, cont),
+                    x => c = self.evaluate_fun(node, callee, x, cont),
+                };
+                c
             }
             &Cont::Func(names, args, cont) => {
                 let f = self.env.new_child(node);

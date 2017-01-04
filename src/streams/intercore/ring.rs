@@ -40,7 +40,7 @@ pub fn snd_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
                                 println!("{:?}", v);
                                 p.commit();
                             }
-                            None => return AST::Retry,
+                            None => return AST::Yield,
                         }
                     }
                 }
@@ -66,7 +66,7 @@ pub fn rcv_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
                         println!("{:?}", res);
                         s.commit();
                     }
-                    None => return AST::Retry,
+                    None => return AST::Yield,
                 }
             }
         }
