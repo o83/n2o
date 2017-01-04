@@ -14,8 +14,9 @@ const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;
 
 pub trait Boil<'a> {
-    fn initial(&'a mut self, p: &'a Poll, t: usize, a: usize);
-    fn select(&mut self, e: &Events) -> usize;
+    type Reactor;
+    fn init(&'a mut self, r: &'a mut Self::Reactor);
+    fn select(&mut self, t: Token);
     fn finalize(&mut self);
 }
 

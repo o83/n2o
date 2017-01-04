@@ -8,6 +8,7 @@ use io::poll::*;
 use io::options::*;
 use io::stdio;
 use io::event::Evented;
+use reactors::boot::reactor::{Boil, Reactor};
 
 pub struct Console {
     stdin: stdio::Stdin,
@@ -36,5 +37,19 @@ impl Evented for Console {
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
         Ok(())
+    }
+}
+
+impl Boil for Console {
+    type Reactor = Reactor;
+
+    fn init(&'a mut self, r: &'a mut Self::Reactor) {
+        //
+    }
+    fn select(&mut self, t: Token) {
+        //
+    }
+    fn finalize(&mut self) {
+        //
     }
 }
