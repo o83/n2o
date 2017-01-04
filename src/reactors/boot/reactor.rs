@@ -82,6 +82,16 @@ pub struct CoreIterator<'a> {
     i: usize,
 }
 
+impl<'a> CoreIterator<'a> {
+    #[inline]
+    fn poll_if_need(&mut self) {
+        if self.i == 0 {
+            self.c.poll.poll(&mut self.c.events, None).unwrap();
+            self.i = self.c.events.len();
+        }
+    }
+}
+
 impl<'a> IntoIterator for Core<'a> {
     type Item = Async<(BoilId, String)>;
     type IntoIter = CoreIterator<'a>;
@@ -95,12 +105,9 @@ impl<'a> Iterator for CoreIterator<'a> {
     type Item = Async<(BoilId, String)>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        self.poll_if_need();
         match self.i {
-            0 => {
-                self.c.poll.poll(&mut self.c.events, None).unwrap();
-                self.i = self.c.events.len();
-                Some(Async::NotReady)
-            }
+            0 => Some(Async::NotReady),
             x => {
                 let id = self.i - 1;
                 let e = self.c.events.get(id).unwrap();

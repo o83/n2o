@@ -45,7 +45,6 @@ impl<'a> Boil<'a> for Console {
     }
 
     fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut Vec<u8>) {
-        println!("Select");
         self.stdin.read(buf);
     }
 
