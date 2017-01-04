@@ -3,4 +3,8 @@ use kernel::reactors::boot::reactor::Core;
 
 fn main() {
     let mut c = Core::new();
+    println!("Starting...");
+    for i in c {
+        println!("Iter: {:?}", i);
+    }
 }

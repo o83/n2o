@@ -20,6 +20,7 @@ pub trait Boil<'a> {
 }
 
 pub struct Core<'a> {
+    tokens: usize,
     events: Events,
     poll: Poll,
     boils: Vec<Box<Boil<'a>>>,
@@ -29,6 +30,7 @@ pub struct Core<'a> {
 impl<'a> Core<'a> {
     pub fn new() -> Self {
         Core {
+            tokens: 0,
             poll: Poll::new().unwrap(),
             events: Events::with_capacity(EVENTS_CAPACITY),
             boils: Vec::with_capacity(SUBSCRIBERS_CAPACITY),
@@ -36,8 +38,12 @@ impl<'a> Core<'a> {
         }
     }
 
-    pub fn register() {
-        //
+    pub fn register<E>(&mut self, e: &E) -> Token
+        where E: Evented + Sized
+    {
+        self.poll.register(e, Token(0), Ready::readable(), PollOpt::edge());
+        self.tokens += 1;
+        Token(self.tokens)
     }
 
     pub fn spawn(&mut self, s: Box<Boil<'a>>) {
@@ -83,6 +89,6 @@ impl<'a> Iterator for CoreIterator<'a> {
         //     }
         // }
         // self.finalize();
-        None
+        Some(Token(0))
     }
 }
