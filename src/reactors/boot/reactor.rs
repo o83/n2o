@@ -22,19 +22,20 @@ pub enum Async<T> {
 }
 
 pub trait Boil<'a>: Write {
-    fn init(&mut self, c: &mut Core<'a>);
+    fn init(&mut self, c: &mut Core<'a>, s: Slot);
     fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut Vec<u8>);
     fn finalize(&mut self);
 }
 
-#[derive(Debug)]
-pub struct BoilId(usize);
+#[derive(Debug,PartialEq,Clone,Copy)]
+pub struct Slot(pub usize);
 
 pub struct Core<'a> {
     tokens: usize,
     events: Events,
     poll: Poll,
     boils: Vec<Box<Boil<'a>>>,
+    slots: Vec<Slot>,
     running: bool,
 }
 
@@ -45,27 +46,31 @@ impl<'a> Core<'a> {
             poll: Poll::new().unwrap(),
             events: Events::with_capacity(EVENTS_CAPACITY),
             boils: Vec::with_capacity(SUBSCRIBERS_CAPACITY),
+            slots: Vec::with_capacity(SUBSCRIBERS_CAPACITY),
             running: true,
         }
     }
 
-    pub fn register<E>(&mut self, e: &E) -> Token
+    pub fn register<E>(&mut self, e: &E, s: Slot) -> Token
         where E: Evented
     {
-        self.poll.register(e, Token(self.tokens), Ready::readable(), PollOpt::edge());
+        let t = self.tokens;
+        self.poll.register(e, Token(t), Ready::readable(), PollOpt::edge());
+        self.slots.push(s);
         self.tokens += 1;
-        Token(self.tokens)
+        Token(t)
     }
 
-    pub fn spawn(&mut self, s: Box<Boil<'a>>) -> BoilId {
+    pub fn spawn(&mut self, s: Box<Boil<'a>>) -> Slot {
         let (s1, s2) = handle::split(self);
         s1.boils.push(s);
-        s1.boils.last_mut().unwrap().init(s2);
-        BoilId(s2.boils.len() - 1)
+        let slot = Slot(s2.boils.len() - 1);
+        s1.boils.last_mut().unwrap().init(s2, slot);
+        slot
     }
 
-    pub fn write(&mut self, b: BoilId, buf: &[u8]) -> io::Result<()> {
-        self.boils.get_mut(b.0).unwrap().write(buf);
+    pub fn write(&mut self, s: Slot, buf: &[u8]) -> io::Result<()> {
+        self.boils.get_mut(s.0).unwrap().write(buf);
         Ok(())
     }
 
@@ -93,7 +98,7 @@ impl<'a> CoreIterator<'a> {
 }
 
 impl<'a> IntoIterator for Core<'a> {
-    type Item = Async<(BoilId, String)>;
+    type Item = Async<(Slot, String)>;
     type IntoIter = CoreIterator<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -102,7 +107,7 @@ impl<'a> IntoIterator for Core<'a> {
 }
 
 impl<'a> Iterator for CoreIterator<'a> {
-    type Item = Async<(BoilId, String)>;
+    type Item = Async<(Slot, String)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.poll_if_need();
@@ -111,11 +116,13 @@ impl<'a> Iterator for CoreIterator<'a> {
             id => {
                 self.i -= 1;
                 let e = self.c.events.get(self.i).unwrap();
+                println!("EVENT TOKEN: {:?}", e.token());
                 let (s1, s2) = handle::split(&mut self.c);
                 let mut buf = vec![0u8;READ_BUF_SIZE];
-                s1.boils.get_mut(e.token().0).unwrap().select(s2, e.token(), &mut buf);
+                let slot = s1.slots.get(e.token().0).unwrap();
+                s1.boils.get_mut(slot.0).unwrap().select(s2, e.token(), &mut buf);
                 let s = unsafe { String::from_utf8_unchecked(buf) };
-                Some(Async::Ready((BoilId(e.token().0 + 1), s)))
+                Some(Async::Ready((Slot(e.token().0), s)))
             }
         }
     }

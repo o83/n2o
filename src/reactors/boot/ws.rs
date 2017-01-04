@@ -13,9 +13,10 @@ use std::slice;
 use std::mem;
 use rustc_serialize::base64::{ToBase64, STANDARD};
 use sha1;
-use reactors::boot::reactor::{Boil, Core};
+use reactors::boot::reactor::{Boil, Core, Slot};
 use std::cell::UnsafeCell;
 use std::fmt::Arguments;
+use ptr::handle;
 
 #[derive(Debug)]
 pub enum Error {
@@ -87,6 +88,7 @@ const BUF_SIZE: usize = 2048;
 
 pub struct WsServer {
     listen_token: Token,
+    slot: Slot,
     tcp: TcpListener,
     clients: HashMap<Token, WsClient>,
     parser: HttpParser,
@@ -98,19 +100,12 @@ impl WsServer {
         let t = TcpListener::bind(&addr).unwrap();
         WsServer {
             listen_token: Token(0),
+            slot: Slot(0),
             tcp: t,
             clients: HashMap::with_capacity(256),
             parser: HttpParser::new(),
             buf: [0u8; BUF_SIZE],
         }
-    }
-
-    #[inline]
-    pub fn split(&mut self) -> (&mut Self, &mut Self) {
-        let f: *mut WsServer = self;
-        let uf: &mut WsServer = unsafe { &mut *f };
-        let us: &mut WsServer = unsafe { &mut *f };
-        (uf, us)
     }
 
     #[inline]
@@ -135,17 +130,18 @@ impl WsServer {
     }
 
     #[inline]
-    fn reg_incoming(&mut self) {
+    fn reg_incoming<'a>(&mut self, c: &mut Core<'a>) {
         match self.tcp.accept() {
             Ok((mut s, a)) => {
-                // let t = self.first_token + self.clients.len() + 1;
-                // self.poll.unwrap().register(&s, Token(t), Ready::readable(), PollOpt::edge());
-                // self.clients.push(WsClient {
-                //     sock: s,
-                //     addr: a,
-                //     key: None,
-                //     ready: false,
-                // });
+                let t = c.register(&s, self.slot);
+                println!("CLIENT TOKEN: {:?}", t);
+                self.clients.insert(t,
+                                    WsClient {
+                                        sock: s,
+                                        addr: a,
+                                        key: None,
+                                        ready: false,
+                                    });
                 println!("Clients: {:?}", self.clients.len());
             }
             Err(e) => println!("WsError: {:?}", e),
@@ -154,19 +150,19 @@ impl WsServer {
 
     #[inline]
     fn read_incoming(&mut self, t: Token) -> usize {
-
-        // let mut c = s1.clients.get_mut(id - 1).unwrap();
-        // if c.ready {
-        //     match c.sock.read(&mut s2.buf) {
-        //         Ok(s) => s,
-        //         Err(_) => 0,
-        //     }
-        // } else {
-        //     c.ready = true;
-        //     s2.handshake(c);
-        //     0
-        // }
-        0
+        println!("TOKEN: {:?}", t);
+        let (s1, s2) = handle::split(self);
+        let mut c = s1.clients.get_mut(&t).unwrap();
+        if c.ready {
+            match c.sock.read(&mut s2.buf) {
+                Ok(s) => s,
+                Err(_) => 0,
+            }
+        } else {
+            c.ready = true;
+            s2.handshake(c);
+            0
+        }
     }
 
     pub fn write_message(&mut self, payload: &[u8]) {
@@ -181,13 +177,23 @@ impl WsServer {
 }
 
 impl<'a> Boil<'a> for WsServer {
-    fn init(&mut self, c: &mut Core<'a>) {
-        let t = c.register(&self.tcp);
+    fn init(&mut self, c: &mut Core<'a>, s: Slot) {
+        let t = c.register(&self.tcp, s);
         self.listen_token = t;
+        self.slot = s;
     }
 
     fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut Vec<u8>) {
-        println!("WS SELECT");
+        println!("T: {:?}", self.listen_token == t);
+        if t == self.listen_token {
+            self.reg_incoming(c);
+        } else {
+            let sz = self.read_incoming(t);
+            if sz > 0 {
+                // println!("READ: {:?}", &s5.buf[..sz]);
+                // f((&mut s3, &s4.buf[..sz]));
+            }
+        }
     }
 
     fn finalize(&mut self) {
@@ -211,36 +217,3 @@ impl Write for WsServer {
         Ok(())
     }
 }
-
-// impl<'a> Selected<'a> for WsServer<'a> {
-//     fn select(&mut self, events: &Events) -> usize {
-//         let s = UnsafeCell::new(self);
-//         let s1 = unsafe { &*s.get() };
-//         let s2 = unsafe { &*s.get() };
-//         let s3 = unsafe { &mut *s.get() };
-//         let s4 = unsafe { &mut *s.get() };
-//         let s5 = unsafe { &*s.get() };
-//         for event in events.iter() {
-//             let id = event.token().0;
-//             if id == s2.first_token {
-//                 s3.reg_incoming();
-//             } else if id > s2.first_token && id < s2.first_token + s2.token_amount {
-//                 let sz = s3.read_incoming(id);
-//                 if sz > 0 {
-//                     println!("READ: {:?}", &s5.buf[..sz]);
-//                     // f((&mut s3, &s4.buf[..sz]));
-//                 }
-//             }
-//         }
-//         1
-//     }
-
-//     fn initial(&'a mut self, p: &'a Poll, t: usize, a: usize) {
-//         p.register(&self.tcp, Token(t), Ready::readable(), PollOpt::edge()).unwrap();
-//         self.poll = Some(p);
-//         self.first_token = t;
-//         self.token_amount = a;
-//     }
-
-//     fn finalize(&mut self) {}
-// }
