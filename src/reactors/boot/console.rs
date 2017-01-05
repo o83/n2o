@@ -49,8 +49,8 @@ impl<'a> Select<'a> for Console {
         c.register(self, s);
     }
 
-    fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut Vec<u8>) {
-        self.stdin.read(buf);
+    fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut [u8]) -> usize {
+        self.stdin.read(buf).unwrap()
     }
 
     fn finalize(&mut self) {

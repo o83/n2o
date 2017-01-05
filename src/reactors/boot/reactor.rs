@@ -13,7 +13,7 @@ use handle;
 
 const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;
-const READ_BUF_SIZE: usize = 256;
+const READ_BUF_SIZE: usize = 2048;
 
 #[derive(Debug)]
 pub enum Async<T> {
@@ -23,7 +23,7 @@ pub enum Async<T> {
 
 pub trait Select<'a>: Write {
     fn init(&mut self, c: &mut Core<'a>, s: Slot);
-    fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut Vec<u8>);
+    fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut [u8]) -> usize;
     fn finalize(&mut self);
 }
 
@@ -38,6 +38,7 @@ pub struct Core<'a> {
     slots: Vec<Slot>,
     running: bool,
     i: usize,
+    buf: Vec<u8>,
 }
 
 impl<'a> Core<'a> {
@@ -50,6 +51,7 @@ impl<'a> Core<'a> {
             slots: Vec::with_capacity(SUBSCRIBERS_CAPACITY),
             running: true,
             i: 0,
+            buf: vec![0u8;READ_BUF_SIZE],
         }
     }
 
@@ -84,7 +86,7 @@ impl<'a> Core<'a> {
         }
     }
 
-    pub fn poll(&mut self) -> Async<(Slot, String)> {
+    pub fn poll(&mut self) -> Async<(Slot, &[u8])> {
         self.poll_if_need();
         match self.i {
             0 => Async::NotReady,
@@ -92,11 +94,15 @@ impl<'a> Core<'a> {
                 self.i -= 1;
                 let e = self.events.get(self.i).unwrap();
                 let (s1, s2) = handle::split(self);
-                let mut buf = vec![0u8;READ_BUF_SIZE];
                 let slot = s1.slots.get(e.token().0).unwrap();
-                s1.selectors.get_mut(slot.0).unwrap().select(s2, e.token(), &mut buf);
-                let s = unsafe { String::from_utf8_unchecked(buf) };
-                Async::Ready((Slot(slot.0), s))
+                let buf = &mut s1.buf;
+                let recv = s1.selectors.get_mut(slot.0).unwrap().select(s2, e.token(), buf);
+                println!("Slot: {:?} Read: {:?}", slot, recv);
+                if recv == 0 {
+                    Async::NotReady
+                } else {
+                    Async::Ready((Slot(slot.0), &s2.buf[..recv]))
+                }
             }
         }
     }

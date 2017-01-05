@@ -131,7 +131,6 @@ impl WsServer {
 
     #[inline]
     fn reg_incoming<'a>(&mut self, c: &mut Core<'a>) {
-        println!("REG INCOMING");
         match self.tcp.accept() {
             Ok((mut s, a)) => {
                 let t = c.register(&s, self.slot);
@@ -148,12 +147,11 @@ impl WsServer {
     }
 
     #[inline]
-    fn read_incoming(&mut self, t: Token) -> usize {
-        println!("READ INCOMING");
+    fn read_incoming(&mut self, t: Token, buf: &mut [u8]) -> usize {
         let (s1, s2) = split(self);
         let mut c = s1.clients.get_mut(&t).unwrap();
         if c.ready {
-            match c.sock.read(&mut s2.buf) {
+            match c.sock.read(buf) {
                 Ok(s) => s,
                 Err(_) => 0,
             }
@@ -165,7 +163,6 @@ impl WsServer {
     }
 
     pub fn write_to_clients(&mut self, payload: &[u8]) {
-        println!("WRITE TO CLIENTS");
         let sz = payload.len();
         let mut buf = Vec::<u8>::with_capacity(sz + 2);
         buf.push(130);
@@ -184,14 +181,12 @@ impl<'a> Select<'a> for WsServer {
         self.slot = s;
     }
 
-    fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut Vec<u8>) {
+    fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut [u8]) -> usize {
         if t == self.listen_token {
             self.reg_incoming(c);
+            0
         } else {
-            let sz = self.read_incoming(t);
-            if sz > 0 {
-                println!("READ: {:?}", &self.buf[0]);
-            }
+            self.read_incoming(t, buf)
         }
     }
 
