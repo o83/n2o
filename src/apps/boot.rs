@@ -12,11 +12,11 @@ fn main() {
     let mut w = Box::new(WsServer::new(&addr));
     c.spawn(o);
     c.spawn(w);
-    for a in c {
-        match a {
+    loop {
+        match c.poll() {
             Async::Ready((i, s)) => {
-                println!("Async: {:?}", i);
-                // c.write(i, s.as_bytes());
+                // println!("Async: {:?}", i);
+                c.write(i, s.as_bytes());
             }
             x => println!("{:?}", x),
         }

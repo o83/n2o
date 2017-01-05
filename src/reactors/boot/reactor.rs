@@ -37,6 +37,7 @@ pub struct Core<'a> {
     selectors: Vec<Box<Select<'a>>>,
     slots: Vec<Slot>,
     running: bool,
+    i: usize,
 }
 
 impl<'a> Core<'a> {
@@ -48,6 +49,7 @@ impl<'a> Core<'a> {
             selectors: Vec::with_capacity(SUBSCRIBERS_CAPACITY),
             slots: Vec::with_capacity(SUBSCRIBERS_CAPACITY),
             running: true,
+            i: 0,
         }
     }
 
@@ -75,54 +77,34 @@ impl<'a> Core<'a> {
     }
 
     #[inline]
-    fn finalize(&mut self) {
-        for s in self.selectors.iter_mut() {
-            s.finalize();
-        }
-    }
-}
-
-pub struct CoreIterator<'a> {
-    c: Core<'a>,
-    i: usize,
-}
-
-impl<'a> CoreIterator<'a> {
-    #[inline]
     fn poll_if_need(&mut self) {
         if self.i == 0 {
-            self.c.poll.poll(&mut self.c.events, None).unwrap();
-            self.i = self.c.events.len();
+            self.poll.poll(&mut self.events, None).unwrap();
+            self.i = self.events.len();
         }
     }
-}
 
-impl<'a> IntoIterator for Core<'a> {
-    type Item = Async<(Slot, String)>;
-    type IntoIter = CoreIterator<'a>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        CoreIterator { c: self, i: 0 }
-    }
-}
-
-impl<'a> Iterator for CoreIterator<'a> {
-    type Item = Async<(Slot, String)>;
-
-    fn next(&mut self) -> Option<Self::Item> {
+    pub fn poll(&mut self) -> Async<(Slot, String)> {
         self.poll_if_need();
         match self.i {
-            0 => Some(Async::NotReady),
+            0 => Async::NotReady,
             id => {
                 self.i -= 1;
-                let e = self.c.events.get(self.i).unwrap();
-                let (s1, s2) = handle::split(&mut self.c);
+                let e = self.events.get(self.i).unwrap();
+                let (s1, s2) = handle::split(self);
                 let mut buf = vec![0u8;READ_BUF_SIZE];
                 let slot = s1.slots.get(e.token().0).unwrap();
                 s1.selectors.get_mut(slot.0).unwrap().select(s2, e.token(), &mut buf);
                 let s = unsafe { String::from_utf8_unchecked(buf) };
-                Some(Async::Ready((Slot(e.token().0), s)))
+                Async::Ready((Slot(e.token().0), s))
             }
+        }
+    }
+
+    #[inline]
+    fn finalize(&mut self) {
+        for s in self.selectors.iter_mut() {
+            s.finalize();
         }
     }
 }

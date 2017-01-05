@@ -13,11 +13,15 @@ use std::fmt::Arguments;
 
 pub struct Console {
     stdin: stdio::Stdin,
+    stdout: io::Stdout,
 }
 
 impl Console {
     pub fn new() -> Self {
-        Console { stdin: stdio::Stdin::new() }
+        Console {
+            stdin: stdio::Stdin::new(),
+            stdout: io::stdout(),
+        }
     }
 }
 
@@ -40,7 +44,8 @@ impl Evented for Console {
 
 impl<'a> Select<'a> for Console {
     fn init(&mut self, c: &mut Core<'a>, s: Slot) {
-        println!("Starting console...");
+        write!(self.stdout, "Starting console...\n>");
+        self.stdout.flush();
         c.register(self, s);
     }
 
@@ -49,7 +54,8 @@ impl<'a> Select<'a> for Console {
     }
 
     fn finalize(&mut self) {
-        println!("Bye!");
+        write!(self.stdout, "Bye!");
+        self.stdout.flush();
     }
 }
 
@@ -73,10 +79,12 @@ impl Read for Console {
 
 impl Write for Console {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        println!("{}", String::from_utf8_lossy(buf));
+        write!(self.stdout, "{}>", String::from_utf8_lossy(buf));
+        self.stdout.flush();
         Ok(1)
     }
     fn flush(&mut self) -> io::Result<()> {
+        self.stdout.flush();
         Ok(())
     }
 
