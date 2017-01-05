@@ -96,7 +96,7 @@ impl<'a> Core<'a> {
                 let slot = s1.slots.get(e.token().0).unwrap();
                 s1.selectors.get_mut(slot.0).unwrap().select(s2, e.token(), &mut buf);
                 let s = unsafe { String::from_utf8_unchecked(buf) };
-                Async::Ready((Slot(e.token().0), s))
+                Async::Ready((Slot(slot.0), s))
             }
         }
     }

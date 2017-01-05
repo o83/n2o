@@ -131,6 +131,7 @@ impl WsServer {
 
     #[inline]
     fn reg_incoming<'a>(&mut self, c: &mut Core<'a>) {
+        println!("REG INCOMING");
         match self.tcp.accept() {
             Ok((mut s, a)) => {
                 let t = c.register(&s, self.slot);
@@ -148,6 +149,7 @@ impl WsServer {
 
     #[inline]
     fn read_incoming(&mut self, t: Token) -> usize {
+        println!("READ INCOMING");
         let (s1, s2) = split(self);
         let mut c = s1.clients.get_mut(&t).unwrap();
         if c.ready {
@@ -162,13 +164,14 @@ impl WsServer {
         }
     }
 
-    pub fn write_message(&mut self, payload: &[u8]) {
+    pub fn write_to_clients(&mut self, payload: &[u8]) {
+        println!("WRITE TO CLIENTS");
         let sz = payload.len();
         let mut buf = Vec::<u8>::with_capacity(sz + 2);
         buf.push(130);
         buf.push(sz as u8);
         buf.extend_from_slice(payload);
-        for c in &mut self.clients {
+        for c in self.clients.iter_mut().filter(|c| c.1.ready) {
             c.1.sock.write(&buf);
         }
     }
@@ -187,8 +190,7 @@ impl<'a> Select<'a> for WsServer {
         } else {
             let sz = self.read_incoming(t);
             if sz > 0 {
-                // println!("READ: {:?}", &s5.buf[..sz]);
-                // f((&mut s3, &s4.buf[..sz]));
+                println!("READ: {:?}", &self.buf[0]);
             }
         }
     }
@@ -200,7 +202,7 @@ impl<'a> Select<'a> for WsServer {
 
 impl Write for WsServer {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        // println!("{}", String::from_utf8_lossy(buf));
+        self.write_to_clients(buf);
         Ok(1)
     }
     fn flush(&mut self) -> io::Result<()> {
