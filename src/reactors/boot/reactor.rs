@@ -9,11 +9,11 @@ use std::cell::UnsafeCell;
 use io::ws::WsServer;
 use io::console::Console;
 use core::borrow::BorrowMut;
-use ptr;
+use handle;
 
 const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;
-const READ_BUF_SIZE: usize = 256;
+const READ_BUF_SIZE: usize = 2048;
 
 #[derive(Debug)]
 pub enum Async<T> {
@@ -23,7 +23,7 @@ pub enum Async<T> {
 
 pub trait Select<'a>: Write {
     fn init(&mut self, c: &mut Core<'a>, s: Slot);
-    fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut Vec<u8>);
+    fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut [u8]) -> usize;
     fn finalize(&mut self);
 }
 
@@ -37,6 +37,8 @@ pub struct Core<'a> {
     selectors: Vec<Box<Select<'a>>>,
     slots: Vec<Slot>,
     running: bool,
+    i: usize,
+    buf: Vec<u8>,
 }
 
 impl<'a> Core<'a> {
@@ -48,6 +50,8 @@ impl<'a> Core<'a> {
             selectors: Vec::with_capacity(SUBSCRIBERS_CAPACITY),
             slots: Vec::with_capacity(SUBSCRIBERS_CAPACITY),
             running: true,
+            i: 0,
+            buf: vec![0u8;READ_BUF_SIZE],
         }
     }
 
@@ -62,7 +66,7 @@ impl<'a> Core<'a> {
     }
 
     pub fn spawn(&mut self, s: Box<Select<'a>>) -> Slot {
-        let (s1, s2) = ptr::split(self);
+        let (s1, s2) = handle::split(self);
         s1.selectors.push(s);
         let slot = Slot(s2.selectors.len() - 1);
         s1.selectors.last_mut().unwrap().init(s2, slot);
@@ -75,54 +79,36 @@ impl<'a> Core<'a> {
     }
 
     #[inline]
+    fn poll_if_need(&mut self) {
+        if self.i == 0 {
+            self.poll.poll(&mut self.events, None).unwrap();
+            self.i = self.events.len();
+        }
+    }
+
+    pub fn poll(&mut self) -> Async<(Slot, &[u8])> {
+        self.poll_if_need();
+        match self.i {
+            0 => Async::NotReady,
+            id => {
+                self.i -= 1;
+                let e = self.events.get(self.i).unwrap();
+                let (s1, s2) = handle::split(self);
+                let slot = s1.slots.get(e.token().0).unwrap();
+                let buf = &mut s1.buf;
+                let recv = s1.selectors.get_mut(slot.0).unwrap().select(s2, e.token(), buf);
+                match recv {
+                    0 => Async::NotReady,
+                    _ => Async::Ready((Slot(slot.0), &s2.buf[..recv])),
+                }
+            }
+        }
+    }
+
+    #[inline]
     fn finalize(&mut self) {
         for s in self.selectors.iter_mut() {
             s.finalize();
-        }
-    }
-}
-
-pub struct CoreIterator<'a> {
-    c: Core<'a>,
-    i: usize,
-}
-
-impl<'a> CoreIterator<'a> {
-    #[inline]
-    fn poll_if_need(&mut self) {
-        if self.i == 0 {
-            self.c.poll.poll(&mut self.c.events, None).unwrap();
-            self.i = self.c.events.len();
-        }
-    }
-}
-
-impl<'a> IntoIterator for Core<'a> {
-    type Item = Async<(Slot, String)>;
-    type IntoIter = CoreIterator<'a>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        CoreIterator { c: self, i: 0 }
-    }
-}
-
-impl<'a> Iterator for CoreIterator<'a> {
-    type Item = Async<(Slot, String)>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.poll_if_need();
-        match self.i {
-            0 => Some(Async::NotReady),
-            id => {
-                self.i -= 1;
-                let e = self.c.events.get(self.i).unwrap();
-                let (s1, s2) = ptr::split(&mut self.c);
-                let mut buf = vec![0u8;READ_BUF_SIZE];
-                let slot = s1.slots.get(e.token().0).unwrap();
-                s1.selectors.get_mut(slot.0).unwrap().select(s2, e.token(), &mut buf);
-                let s = unsafe { String::from_utf8_unchecked(buf) };
-                Some(Async::Ready((Slot(e.token().0), s)))
-            }
         }
     }
 }

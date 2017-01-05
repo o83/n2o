@@ -4,6 +4,7 @@ use kernel::reactors::boot::console::Console;
 use kernel::reactors::boot::ws::WsServer;
 use std::io::Read;
 use std::net::SocketAddr;
+use kernel::handle;
 
 fn main() {
     let mut c = Core::new();
@@ -12,11 +13,12 @@ fn main() {
     let mut w = Box::new(WsServer::new(&addr));
     c.spawn(o);
     c.spawn(w);
-    for a in c {
-        match a {
+    let mut h = handle::new(c);
+    loop {
+        match h.borrow_mut().poll() {
             Async::Ready((i, s)) => {
-                println!("Async: {:?}", i);
-                // c.write(i, s.as_bytes());
+                println!("Received: {:?}", String::from_utf8_lossy(s));
+                h.borrow_mut().write(i, b"170");
             }
             x => println!("{:?}", x),
         }

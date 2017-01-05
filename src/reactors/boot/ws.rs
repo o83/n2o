@@ -16,7 +16,7 @@ use sha1;
 use reactors::boot::reactor::{Select, Core, Slot};
 use std::cell::UnsafeCell;
 use std::fmt::Arguments;
-use ptr::split;
+use handle::split;
 
 #[derive(Debug)]
 pub enum Error {
@@ -147,12 +147,25 @@ impl WsServer {
     }
 
     #[inline]
-    fn read_incoming(&mut self, t: Token) -> usize {
+    fn decode_message(&mut self, buf: &mut [u8]) -> usize {
+        let opcode = self.buf[0];
+        // assume we always have masked message
+        let len = (self.buf[1] - 128) as usize;
+        let key = &self.buf[2..6];
+        for (i, v) in self.buf[6..len + 6].iter().enumerate() {
+            let b: u8 = v ^ key[i & 0x3];
+            buf[i] = b;
+        }
+        len
+    }
+
+    #[inline]
+    fn read_incoming(&mut self, t: Token, buf: &mut [u8]) -> usize {
         let (s1, s2) = split(self);
         let mut c = s1.clients.get_mut(&t).unwrap();
         if c.ready {
             match c.sock.read(&mut s2.buf) {
-                Ok(s) => s,
+                Ok(s) => s2.decode_message(buf),
                 Err(_) => 0,
             }
         } else {
@@ -162,13 +175,13 @@ impl WsServer {
         }
     }
 
-    pub fn write_message(&mut self, payload: &[u8]) {
+    pub fn write_to_clients(&mut self, payload: &[u8]) {
         let sz = payload.len();
         let mut buf = Vec::<u8>::with_capacity(sz + 2);
         buf.push(130);
         buf.push(sz as u8);
         buf.extend_from_slice(payload);
-        for c in &mut self.clients {
+        for c in self.clients.iter_mut().filter(|c| c.1.ready) {
             c.1.sock.write(&buf);
         }
     }
@@ -181,15 +194,12 @@ impl<'a> Select<'a> for WsServer {
         self.slot = s;
     }
 
-    fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut Vec<u8>) {
+    fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut [u8]) -> usize {
         if t == self.listen_token {
             self.reg_incoming(c);
+            0
         } else {
-            let sz = self.read_incoming(t);
-            if sz > 0 {
-                // println!("READ: {:?}", &s5.buf[..sz]);
-                // f((&mut s3, &s4.buf[..sz]));
-            }
+            self.read_incoming(t, buf)
         }
     }
 
@@ -200,7 +210,7 @@ impl<'a> Select<'a> for WsServer {
 
 impl Write for WsServer {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        // println!("{}", String::from_utf8_lossy(buf));
+        self.write_to_clients(buf);
         Ok(1)
     }
     fn flush(&mut self) -> io::Result<()> {

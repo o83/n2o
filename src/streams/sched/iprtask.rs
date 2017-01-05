@@ -1,7 +1,7 @@
 use streams::sched::task::{self, Task, Context, Poll, Error};
 use streams::interpreter::*;
 use commands::ast::AST;
-use ptr::*;
+use handle::*;
 use std::rc::Rc;
 use streams::intercore::ctx::{Ctx, Ctxs};
 
