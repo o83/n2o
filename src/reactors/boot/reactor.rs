@@ -55,7 +55,7 @@ impl<'a> Select<'a> for Selector {
 }
 impl Write for Selector {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        // self.write_to_clients(buf);
+        self.unwrap().write(buf);
         Ok(1)
     }
     fn flush(&mut self) -> io::Result<()> {
