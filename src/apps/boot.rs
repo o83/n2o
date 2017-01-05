@@ -1,5 +1,5 @@
 extern crate kernel;
-use kernel::reactors::boot::reactor::{Async, Core};
+use kernel::reactors::boot::reactor::{Async, Core, Selector};
 use kernel::reactors::boot::console::Console;
 use kernel::reactors::boot::ws::WsServer;
 use std::io::Read;
@@ -8,9 +8,9 @@ use kernel::handle;
 
 fn main() {
     let mut c = Core::new();
-    let mut o = Box::new(Console::new());
+    let mut o = Selector::Rx(Console::new());
     let addr = "0.0.0.0:9001".parse::<SocketAddr>().ok().expect("Parser Error");
-    let mut w = Box::new(WsServer::new(&addr));
+    let mut w = Selector::Ws(WsServer::new(&addr));
     c.spawn(o);
     c.spawn(w);
     let mut h = handle::new(c);

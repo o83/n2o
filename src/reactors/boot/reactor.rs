@@ -6,10 +6,11 @@ use io::options::PollOpt;
 use std::collections::HashMap;
 use io::event::Evented;
 use std::cell::UnsafeCell;
-use io::ws::WsServer;
-use io::console::Console;
+use reactors::boot::ws::WsServer;
+use reactors::boot::console::Console;
 use core::borrow::BorrowMut;
 use handle;
+use std::fmt::Arguments;
 
 const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;
@@ -22,26 +23,68 @@ pub enum Async<T> {
 }
 
 pub trait Select<'a>: Write {
-    fn init(&mut self, c: &mut Core<'a>, s: Slot);
-    fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut [u8]) -> usize;
+    fn init(&mut self, c: &mut Core, s: Slot);
+    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [u8]) -> usize;
     fn finalize(&mut self);
+}
+
+pub enum Selector {
+    Ws(WsServer),
+    Rx(Console),
+}
+
+impl Selector {
+    pub fn unwrap<'a>(&mut self) -> &mut Select<'a> {
+        match *self {
+            Selector::Ws(ref mut w) => w,
+            Selector::Rx(ref mut c) => c, 
+        }
+    }
+}
+
+impl<'a> Select<'a> for Selector {
+    fn init(&mut self, c: &mut Core, s: Slot) {
+        self.unwrap().init(c, s);
+    }
+    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [u8]) -> usize {
+        self.unwrap().select(c, t, buf)
+    }
+    fn finalize(&mut self) {
+        self.unwrap().finalize();
+    }
+}
+impl Write for Selector {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        // self.write_to_clients(buf);
+        Ok(1)
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+
+    fn write_all(&mut self, buf: &[u8]) -> io::Result<()> {
+        Ok(())
+    }
+    fn write_fmt(&mut self, fmt: Arguments) -> io::Result<()> {
+        Ok(())
+    }
 }
 
 #[derive(Debug,PartialEq,Clone,Copy)]
 pub struct Slot(pub usize);
 
-pub struct Core<'a> {
+pub struct Core {
     tokens: usize,
     events: Events,
     poll: Poll,
-    selectors: Vec<Box<Select<'a>>>,
+    selectors: Vec<Selector>,
     slots: Vec<Slot>,
     running: bool,
     i: usize,
     buf: Vec<u8>,
 }
 
-impl<'a> Core<'a> {
+impl Core {
     pub fn new() -> Self {
         Core {
             tokens: 0,
@@ -65,7 +108,7 @@ impl<'a> Core<'a> {
         Token(t)
     }
 
-    pub fn spawn(&mut self, s: Box<Select<'a>>) -> Slot {
+    pub fn spawn(&mut self, s: Selector) -> Slot {
         let (s1, s2) = handle::split(self);
         s1.selectors.push(s);
         let slot = Slot(s2.selectors.len() - 1);

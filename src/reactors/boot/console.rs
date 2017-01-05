@@ -43,13 +43,13 @@ impl Evented for Console {
 }
 
 impl<'a> Select<'a> for Console {
-    fn init(&mut self, c: &mut Core<'a>, s: Slot) {
+    fn init(&mut self, c: &mut Core, s: Slot) {
         write!(self.stdout, "Starting console...\n>");
         self.stdout.flush();
         c.register(self, s);
     }
 
-    fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut [u8]) -> usize {
+    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [u8]) -> usize {
         self.stdin.read(buf).unwrap()
     }
 

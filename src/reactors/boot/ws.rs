@@ -130,7 +130,7 @@ impl WsServer {
     }
 
     #[inline]
-    fn reg_incoming<'a>(&mut self, c: &mut Core<'a>) {
+    fn reg_incoming<'a>(&mut self, c: &mut Core) {
         match self.tcp.accept() {
             Ok((mut s, a)) => {
                 let t = c.register(&s, self.slot);
@@ -188,13 +188,13 @@ impl WsServer {
 }
 
 impl<'a> Select<'a> for WsServer {
-    fn init(&mut self, c: &mut Core<'a>, s: Slot) {
+    fn init(&mut self, c: &mut Core, s: Slot) {
         let t = c.register(&self.tcp, s);
         self.listen_token = t;
         self.slot = s;
     }
 
-    fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut [u8]) -> usize {
+    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [u8]) -> usize {
         if t == self.listen_token {
             self.reg_incoming(c);
             0
