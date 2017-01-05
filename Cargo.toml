@@ -36,8 +36,8 @@ name = "streams"
 path = "src/apps/iter_stream.rs"
 
 [[bin]]
-name = "boot"
-path = "src/apps/boot.rs"
+name = "hub"
+path = "src/apps/hub.rs"
 
 
 [dependencies]
