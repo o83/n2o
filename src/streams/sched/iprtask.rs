@@ -1,7 +1,7 @@
 use streams::sched::task::{self, Task, Context, Poll, Error};
 use streams::interpreter::*;
 use commands::ast::AST;
-use ptr::handle;
+use ptr::*;
 use std::rc::Rc;
 use streams::intercore::ctx::{Ctx, Ctxs};
 
@@ -21,7 +21,7 @@ impl<'a> IprTask<'a> {
 
 impl<'a> Task<'a> for IprTask<'a> {
     fn init(&'a mut self, input: Option<&'a str>) {
-        let (s1, s2) = handle::split(self);
+        let (s1, s2) = split(self);
         s1.interpreter.define_primitives();
         if input.is_some() {
             let s = input.unwrap().to_string();

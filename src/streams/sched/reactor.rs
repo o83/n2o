@@ -1,6 +1,6 @@
 use streams::sched::task::{Task, Context};
 use std::mem;
-use ptr::handle::{self, Handle};
+use ptr::*;
 
 const TASKS_MAX_CNT: usize = 256;
 
