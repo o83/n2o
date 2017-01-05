@@ -97,11 +97,9 @@ impl<'a> Core<'a> {
                 let slot = s1.slots.get(e.token().0).unwrap();
                 let buf = &mut s1.buf;
                 let recv = s1.selectors.get_mut(slot.0).unwrap().select(s2, e.token(), buf);
-                println!("Slot: {:?} Read: {:?}", slot, recv);
-                if recv == 0 {
-                    Async::NotReady
-                } else {
-                    Async::Ready((Slot(slot.0), &s2.buf[..recv]))
+                match recv {
+                    0 => Async::NotReady,
+                    _ => Async::Ready((Slot(slot.0), &s2.buf[..recv])),
                 }
             }
         }

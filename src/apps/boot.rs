@@ -17,7 +17,7 @@ fn main() {
     loop {
         match h.borrow_mut().poll() {
             Async::Ready((i, s)) => {
-                println!("Received: {:?}", s);
+                println!("Received: {:?}", String::from_utf8_lossy(s));
                 h.borrow_mut().write(i, b"170");
             }
             x => println!("{:?}", x),

@@ -147,12 +147,25 @@ impl WsServer {
     }
 
     #[inline]
+    fn decode_message(&mut self, buf: &mut [u8]) -> usize {
+        let opcode = self.buf[0];
+        // assume we always have masked message
+        let len = (self.buf[1] - 128) as usize;
+        let key = &self.buf[2..6];
+        for (i, v) in self.buf[6..len + 6].iter().enumerate() {
+            let b: u8 = v ^ key[i & 0x3];
+            buf[i] = b;
+        }
+        len
+    }
+
+    #[inline]
     fn read_incoming(&mut self, t: Token, buf: &mut [u8]) -> usize {
         let (s1, s2) = split(self);
         let mut c = s1.clients.get_mut(&t).unwrap();
         if c.ready {
-            match c.sock.read(buf) {
-                Ok(s) => s,
+            match c.sock.read(&mut s2.buf) {
+                Ok(s) => s2.decode_message(buf),
                 Err(_) => 0,
             }
         } else {
