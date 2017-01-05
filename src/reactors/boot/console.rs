@@ -8,7 +8,7 @@ use io::poll::*;
 use io::options::*;
 use io::stdio;
 use io::event::Evented;
-use reactors::boot::reactor::{Boil, Core, Slot};
+use reactors::boot::reactor::{Select, Core, Slot};
 use std::fmt::Arguments;
 
 pub struct Console {
@@ -38,7 +38,7 @@ impl Evented for Console {
     }
 }
 
-impl<'a> Boil<'a> for Console {
+impl<'a> Select<'a> for Console {
     fn init(&mut self, c: &mut Core<'a>, s: Slot) {
         println!("Starting console...");
         c.register(self, s);

@@ -13,7 +13,7 @@ use std::slice;
 use std::mem;
 use rustc_serialize::base64::{ToBase64, STANDARD};
 use sha1;
-use reactors::boot::reactor::{Boil, Core, Slot};
+use reactors::boot::reactor::{Select, Core, Slot};
 use std::cell::UnsafeCell;
 use std::fmt::Arguments;
 use ptr::split;
@@ -134,7 +134,6 @@ impl WsServer {
         match self.tcp.accept() {
             Ok((mut s, a)) => {
                 let t = c.register(&s, self.slot);
-                println!("CLIENT TOKEN: {:?}", t);
                 self.clients.insert(t,
                                     WsClient {
                                         sock: s,
@@ -142,7 +141,6 @@ impl WsServer {
                                         key: None,
                                         ready: false,
                                     });
-                println!("Clients: {:?}", self.clients.len());
             }
             Err(e) => println!("WsError: {:?}", e),
         }
@@ -150,7 +148,6 @@ impl WsServer {
 
     #[inline]
     fn read_incoming(&mut self, t: Token) -> usize {
-        println!("TOKEN: {:?}", t);
         let (s1, s2) = split(self);
         let mut c = s1.clients.get_mut(&t).unwrap();
         if c.ready {
@@ -171,12 +168,13 @@ impl WsServer {
         buf.push(130);
         buf.push(sz as u8);
         buf.extend_from_slice(payload);
-        // let c = self.clients.last_mut().unwrap();
-        // c.sock.write(&buf);
+        for c in &mut self.clients {
+            c.1.sock.write(&buf);
+        }
     }
 }
 
-impl<'a> Boil<'a> for WsServer {
+impl<'a> Select<'a> for WsServer {
     fn init(&mut self, c: &mut Core<'a>, s: Slot) {
         let t = c.register(&self.tcp, s);
         self.listen_token = t;
@@ -184,7 +182,6 @@ impl<'a> Boil<'a> for WsServer {
     }
 
     fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut Vec<u8>) {
-        println!("T: {:?}", self.listen_token == t);
         if t == self.listen_token {
             self.reg_incoming(c);
         } else {

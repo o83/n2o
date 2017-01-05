@@ -9,7 +9,7 @@ use std::cell::UnsafeCell;
 use io::ws::WsServer;
 use io::console::Console;
 use core::borrow::BorrowMut;
-use ptr::*;
+use ptr;
 
 const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;
@@ -21,7 +21,7 @@ pub enum Async<T> {
     NotReady,
 }
 
-pub trait Boil<'a>: Write {
+pub trait Select<'a>: Write {
     fn init(&mut self, c: &mut Core<'a>, s: Slot);
     fn select(&mut self, c: &mut Core<'a>, t: Token, buf: &mut Vec<u8>);
     fn finalize(&mut self);
@@ -34,7 +34,7 @@ pub struct Core<'a> {
     tokens: usize,
     events: Events,
     poll: Poll,
-    boils: Vec<Box<Boil<'a>>>,
+    selectors: Vec<Box<Select<'a>>>,
     slots: Vec<Slot>,
     running: bool,
 }
@@ -45,7 +45,7 @@ impl<'a> Core<'a> {
             tokens: 0,
             poll: Poll::new().unwrap(),
             events: Events::with_capacity(EVENTS_CAPACITY),
-            boils: Vec::with_capacity(SUBSCRIBERS_CAPACITY),
+            selectors: Vec::with_capacity(SUBSCRIBERS_CAPACITY),
             slots: Vec::with_capacity(SUBSCRIBERS_CAPACITY),
             running: true,
         }
@@ -61,22 +61,22 @@ impl<'a> Core<'a> {
         Token(t)
     }
 
-    pub fn spawn(&mut self, s: Box<Boil<'a>>) -> Slot {
-        let (s1, s2) = split(self);
-        s1.boils.push(s);
-        let slot = Slot(s2.boils.len() - 1);
-        s1.boils.last_mut().unwrap().init(s2, slot);
+    pub fn spawn(&mut self, s: Box<Select<'a>>) -> Slot {
+        let (s1, s2) = ptr::split(self);
+        s1.selectors.push(s);
+        let slot = Slot(s2.selectors.len() - 1);
+        s1.selectors.last_mut().unwrap().init(s2, slot);
         slot
     }
 
     pub fn write(&mut self, s: Slot, buf: &[u8]) -> io::Result<()> {
-        self.boils.get_mut(s.0).unwrap().write(buf);
+        self.selectors.get_mut(s.0).unwrap().write(buf);
         Ok(())
     }
 
     #[inline]
     fn finalize(&mut self) {
-        for s in self.boils.iter_mut() {
+        for s in self.selectors.iter_mut() {
             s.finalize();
         }
     }
@@ -116,11 +116,10 @@ impl<'a> Iterator for CoreIterator<'a> {
             id => {
                 self.i -= 1;
                 let e = self.c.events.get(self.i).unwrap();
-                println!("EVENT TOKEN: {:?}", e.token());
-                let (s1, s2) = split(&mut self.c);
+                let (s1, s2) = ptr::split(&mut self.c);
                 let mut buf = vec![0u8;READ_BUF_SIZE];
                 let slot = s1.slots.get(e.token().0).unwrap();
-                s1.boils.get_mut(slot.0).unwrap().select(s2, e.token(), &mut buf);
+                s1.selectors.get_mut(slot.0).unwrap().select(s2, e.token(), &mut buf);
                 let s = unsafe { String::from_utf8_unchecked(buf) };
                 Some(Async::Ready((Slot(e.token().0), s)))
             }
