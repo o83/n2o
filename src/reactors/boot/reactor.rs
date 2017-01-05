@@ -9,7 +9,7 @@ use std::cell::UnsafeCell;
 use io::ws::WsServer;
 use io::console::Console;
 use core::borrow::BorrowMut;
-use ptr::handle;
+use ptr::*;
 
 const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;
@@ -62,7 +62,7 @@ impl<'a> Core<'a> {
     }
 
     pub fn spawn(&mut self, s: Box<Boil<'a>>) -> Slot {
-        let (s1, s2) = handle::split(self);
+        let (s1, s2) = split(self);
         s1.boils.push(s);
         let slot = Slot(s2.boils.len() - 1);
         s1.boils.last_mut().unwrap().init(s2, slot);
@@ -117,7 +117,7 @@ impl<'a> Iterator for CoreIterator<'a> {
                 self.i -= 1;
                 let e = self.c.events.get(self.i).unwrap();
                 println!("EVENT TOKEN: {:?}", e.token());
-                let (s1, s2) = handle::split(&mut self.c);
+                let (s1, s2) = split(&mut self.c);
                 let mut buf = vec![0u8;READ_BUF_SIZE];
                 let slot = s1.slots.get(e.token().0).unwrap();
                 s1.boils.get_mut(slot.0).unwrap().select(s2, e.token(), &mut buf);

@@ -16,7 +16,7 @@ use sha1;
 use reactors::boot::reactor::{Boil, Core, Slot};
 use std::cell::UnsafeCell;
 use std::fmt::Arguments;
-use ptr::handle;
+use ptr::split;
 
 #[derive(Debug)]
 pub enum Error {
@@ -151,7 +151,7 @@ impl WsServer {
     #[inline]
     fn read_incoming(&mut self, t: Token) -> usize {
         println!("TOKEN: {:?}", t);
-        let (s1, s2) = handle::split(self);
+        let (s1, s2) = split(self);
         let mut c = s1.clients.get_mut(&t).unwrap();
         if c.ready {
             match c.sock.read(&mut s2.buf) {
