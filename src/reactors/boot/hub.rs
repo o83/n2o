@@ -10,6 +10,7 @@ use reactors::boot::console::Console;
 use reactors::boot::ws::WsServer;
 use std::io::Read;
 use handle;
+use std::str;
 
 pub struct Hub<'a> {
     core: Core,
@@ -48,15 +49,19 @@ impl<'a> Hub<'a> {
     }
 
     pub fn boil(&'a mut self) {
+        let h: *mut Hub<'a> = self;
         loop {
-            match self.core.poll() {
+            let h1: &mut Hub<'a> = unsafe { &mut *h };
+            match h1.core.poll() {
                 Async::Ready((i, s)) => {
-                    println!("Received: {:?}", String::from_utf8_lossy(s));
+                    let h2: &mut Hub<'a> = unsafe { &mut *h };
+                    let h3: &mut Hub<'a> = unsafe { &mut *h };
+                    h2.exec(Some(str::from_utf8(s).unwrap()));
+                    h3.scheduler.run();
                     // h.borrow_mut().write(i, b"170");
                 }
                 x => println!("{:?}", x),
             }
         }
-        self.scheduler.run();
     }
 }
