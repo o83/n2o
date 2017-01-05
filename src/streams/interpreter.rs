@@ -6,8 +6,9 @@ use commands::ast::{self, Error, AST, Verb, Adverb, Arena};
 use streams::intercore::ctx::{Ctx, Ctxs};
 use streams::intercore::internals;
 use std::cell::UnsafeCell;
-use ptr::split;
+use handle::split;
 use std::rc::Rc;
+
 #[derive(Clone, Debug)]
 pub enum Cont<'a> {
     Expressions(&'a AST<'a>, &'a Cont<'a>),

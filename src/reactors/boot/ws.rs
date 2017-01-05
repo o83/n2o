@@ -16,7 +16,7 @@ use sha1;
 use reactors::boot::reactor::{Select, Core, Slot};
 use std::cell::UnsafeCell;
 use std::fmt::Arguments;
-use ptr::split;
+use handle::split;
 
 #[derive(Debug)]
 pub enum Error {

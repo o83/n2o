@@ -9,7 +9,7 @@ use std::cell::UnsafeCell;
 use io::ws::WsServer;
 use io::console::Console;
 use core::borrow::BorrowMut;
-use ptr::handle;
+use handle;
 
 const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;

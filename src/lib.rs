@@ -51,7 +51,7 @@ pub mod args;
 pub mod streams;
 // #[cfg(any(target_os = "linux"))]
 pub mod queues;
-pub mod ptr;
+pub mod handle;
 
 #[macro_use]
 extern crate libc;
