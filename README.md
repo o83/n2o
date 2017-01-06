@@ -77,16 +77,8 @@ Test Network Server
 ```
 $ cargo build
 $ cargo test
-$ ./target/debug/server
-IO Server started
-Console is listening...
-Server run loop starting...
-```
-
-In another process:
-
-```
-$ ./target/debug/client
+$ ./target/debug/hub
+>
 ```
 
 Test WebSocket Server
@@ -98,16 +90,6 @@ Prerequisites:
 $ sudo apt-get install webfs
 $ brew install webfs
 $ cd /usr/ports/www/webfs/ && make install clean
-```
-
-Start Server:
-
-```
-$ rlwrap ./target/debug/wserver
-Listening on V4(127.0.0.1:9001)...
-Message: [129, 132, 131, 146, 194, 183, 205, 160, 141, 155]
-Message: [129, 132, 193, 71, 215, 107, 143, 117, 152, 71]
-Message: [129, 132, 23, 14, 207, 245, 71, 71, 129, 178]
 ```
 
 Open Browser:
