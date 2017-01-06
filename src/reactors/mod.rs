@@ -2,7 +2,6 @@ pub mod console;
 pub mod core;
 pub mod hub;
 pub mod cpstask;
-pub mod reactor;
 pub mod scheduler;
 pub mod selector;
 pub mod sequence;
