@@ -221,7 +221,6 @@ pub struct Arena<'a> {
     pub builtins: u16,
     pub asts: UnsafeCell<Vec<AST<'a>>>,
     pub conts: UnsafeCell<Vec<Cont<'a>>>,
-    pub lazys: UnsafeCell<Vec<Lazy<'a>>>,
 }
 
 impl<'a> fmt::Display for Cont<'a> {
@@ -257,7 +256,6 @@ impl<'a> Arena<'a> {
             symbols: UnsafeCell::new(HashMap::new()),
             sequences: UnsafeCell::new(HashMap::new()),
             conts: UnsafeCell::new(Vec::with_capacity(2048 * 2048)),
-            lazys: UnsafeCell::new(Vec::with_capacity(2048 * 2048)),
             builtins: builtins,
         }
     }
@@ -276,22 +274,12 @@ impl<'a> Arena<'a> {
         for i in x[0..x.len()].iter() {
             println!("cont {}", i);
         }
-        let x = unsafe { &mut *self.lazys.get() };
-        for i in x[0..x.len()].iter() {
-            println!("lazy {}", i);
-        }
     }
 
     pub fn ast(&self, n: AST<'a>) -> &'a AST<'a> {
         let ast = unsafe { &mut *self.asts.get() };
         ast.push(n);
         ast.last().unwrap()
-    }
-
-    pub fn lazy(&self, n: Lazy<'a>) -> &'a Lazy<'a> {
-        let lazys = unsafe { &mut *self.lazys.get() };
-        lazys.push(n);
-        lazys.last().unwrap()
     }
 
     pub fn cont(&self, n: Cont<'a>) -> &'a Cont<'a> {
@@ -344,13 +332,11 @@ impl<'a> Arena<'a> {
 
     pub fn clean(&self) -> usize {
         let asts = unsafe { &mut *self.asts.get() };
-        let lazys = unsafe { &mut *self.lazys.get() };
         let conts = unsafe { &mut *self.conts.get() };
-        let l = conts.len() + asts.len() + lazys.len();
+        let l = conts.len() + asts.len();
         unsafe {
             asts.set_len(self.builtins as usize);
             conts.set_len(0);
-            lazys.set_len(0);
         };
         l
     }
@@ -464,7 +450,7 @@ impl<'a> fmt::Display for AST<'a> {
             AST::Assign(ref a, ref b) => write!(f, "{}:{}", a, b),
             AST::Cond(ref c, ref a, ref b) => write!(f, "$[{};{};{}]", c, a, b),
             AST::Yield => write!(f, "Yield"),
-        //    _ => write!(f, "Not implemented yet."),
+            //    _ => write!(f, "Not implemented yet."),
         }
 
     }
@@ -487,10 +473,6 @@ pub fn ast<'a>(n: AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
 
 pub fn cont<'a>(n: Cont<'a>, arena: &'a Arena<'a>) -> &'a Cont<'a> {
     arena.cont(n)
-}
-
-pub fn lazy<'a>(n: Lazy<'a>, arena: &'a Arena<'a>) -> &'a Lazy<'a> {
-    arena.lazy(n)
 }
 
 pub fn call<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
