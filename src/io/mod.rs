@@ -10,7 +10,3 @@ pub mod connection;
 pub mod unix;
 pub mod tcp;
 pub mod stdio;
-pub mod tele;
-pub mod ws;
-pub mod reception;
-pub mod console;
