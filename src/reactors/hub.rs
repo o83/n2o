@@ -7,7 +7,7 @@ use reactors::core::{Async, Core};
 use reactors::selector::{Selector};
 use reactors::console::Console;
 use reactors::ws::WsServer;
-use reactors::iprtask::IprTask;
+use reactors::cpstask::CpsTask;
 use reactors::scheduler::{self, Scheduler};
 use std::io::Read;
 use handle;
@@ -15,7 +15,7 @@ use std::str;
 
 pub struct Hub<'a> {
     core: Core,
-    scheduler: Scheduler<'a, IprTask<'a>>,
+    scheduler: Scheduler<'a, CpsTask<'a>>,
     ctx: Rc<Ctx<u64>>,
 }
 
@@ -46,7 +46,7 @@ impl<'a> Hub<'a> {
     }
 
     pub fn exec(&'a mut self, input: Option<&'a str>) {
-        self.scheduler.spawn(IprTask::new(self.ctx.clone()), input);
+        self.scheduler.spawn(CpsTask::new(self.ctx.clone()), input);
     }
 
     pub fn boil(&'a mut self) {

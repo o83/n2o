@@ -1,7 +1,7 @@
 pub mod console;
 pub mod core;
 pub mod hub;
-pub mod iprtask;
+pub mod cpstask;
 pub mod reactor;
 pub mod scheduler;
 pub mod selector;

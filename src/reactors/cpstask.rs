@@ -5,21 +5,21 @@ use handle::*;
 use std::rc::Rc;
 use streams::intercore::ctx::{Ctx, Ctxs};
 
-pub struct IprTask<'a> {
+pub struct CpsTask<'a> {
     interpreter: Interpreter<'a>,
     ast: Option<&'a AST<'a>>,
 }
 
-impl<'a> IprTask<'a> {
+impl<'a> CpsTask<'a> {
     pub fn new(ctx: Rc<Ctx<u64>>) -> Self {
-        IprTask {
+        CpsTask {
             interpreter: Interpreter::new2(ctx).unwrap(),
             ast: None,
         }
     }
 }
 
-impl<'a> Task<'a> for IprTask<'a> {
+impl<'a> Task<'a> for CpsTask<'a> {
     fn init(&'a mut self, input: Option<&'a str>) {
         let (s1, s2) = split(self);
         s1.interpreter.define_primitives();
