@@ -1,169 +1,98 @@
 
-//  Console I/O Reactor by Anton
+// Pretty simple mio-based terminal by Anton
 
-#![allow(unused_must_use)]
-
-use std::io::{self, ErrorKind};
-use std::io::prelude::*;
-use std::rc::Rc;
+use std::io::{self, ErrorKind, Error, Read, Write};
 use io::token::Token;
 use io::ready::Ready;
 use io::poll::*;
 use io::options::*;
-use io::tele::*;
-use commands::*;
-use commands::ast::*;
-use streams::interpreter::Interpreter;
-use std::cell::UnsafeCell;
-use handle;
+use io::stdio;
+use io::event::Evented;
+use reactors::selector::{Select, Slot};
+use reactors::core::Core;
+use std::fmt::Arguments;
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
-
-pub struct Console<'ast> {
-    tele: Tele,
-    running: bool,
-    token: Token,
-    events: Events,
-    interpreter: UnsafeCell<Interpreter<'ast>>,
+pub struct Console {
+    stdin: stdio::Stdin,
+    stdout: io::Stdout,
 }
 
-impl<'ast> Console<'ast> {
+impl Console {
     pub fn new() -> Self {
-        let tok = 10_000_000;
-        let inter = Interpreter::new().unwrap();
         Console {
-            tele: Tele::new(Token(tok)),
-            token: Token(tok),
-            running: true,
-            events: Events::with_capacity(1024),
-            interpreter: UnsafeCell::new(inter),
+            stdin: stdio::Stdin::new(),
+            stdout: io::stdout(),
         }
     }
+}
 
-    pub fn prompt() {
-        print!("> ");
-        let _ = io::stdout().flush();
-    }
-
-    pub fn run(&mut self, poll: &mut Poll) -> io::Result<()> {
-        try!(self.register(poll));
-        println!("Welcome to O-CPS Interpreter v{}!", VERSION.to_string());
-        while self.running {
-            Console::prompt();
-            let cnt = try!(poll.poll(&mut self.events, None));
-            let mut i = 0;
-            trace!("processing events... cnt={}; len={}",
-                   cnt,
-                   self.events.len());
-            while i < cnt {
-                let event = self.events.get(i).expect("Failed to get event");
-                trace!("event={:?}; idx={:?}", event, i);
-                self.ready(poll, event.token(), event.kind());
-                i += 1;
-            }
-        }
-        println!("Bye!");
+impl Evented for Console {
+    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+        try!(poll.register(&self.stdin, token, interest, opts));
         Ok(())
     }
 
-    pub fn register(&mut self, poll: &mut Poll) -> io::Result<()> {
-        self.tele
-            .register(poll)
-            .or_else(|e| {
-                println!("Failed to register console {:?}, {:?}", self.token, e);
-                Err(e)
-            })
-    }
-
-    fn ready(&mut self, poll: &mut Poll, token: Token, event: Ready) {
-        trace!("{:?} event = {:?}", token, event);
-
-        if event.is_error() {
-            error!("Error event for {:?}", token);
-            return;
-        }
-
-        if event.is_hup() {
-            trace!("Hup event for {:?}", token);
-            return;
-        }
-
-        if event.is_readable() {
-            trace!("Read event for {:?}", token);
-
-            let res = self.readable(token);
-            match res {
-                Ok(r) => {
-                    if !r {
-                        self.running = false;
-                        return;
-                    }
-                }
-                Err(e) => error!("Read event failed for {:?}: {:?}", token, e),
-            };
-
-            self.tele.reregister(poll);
-        }
-    }
-
-    fn interpreter_run(&mut self, text: String) {
-        let h = handle::new(Interpreter::new().unwrap());
-        h.borrow_mut().define_primitives();
-        let x = h.borrow_mut().parse(&text);
-        match h.borrow_mut().run(x) {
-            Ok(r) => println!("{}", r),
-            Err(e) => print!("{}", e),
-        }
-    }
-
-    fn readable(&mut self, token: Token) -> io::Result<bool> {
-        trace!("console is readable; token={:?}", token);
-        let mut msg = [0u8; 128];
-        let size = self.tele.read(&mut msg);
-        match size {
-            Ok(s) => {
-                trace!("Read size: {:?}", &s);
-                match s {
-                    0 => Ok(false),
-                    _ => {
-                        let mut m = String::from_utf8_lossy(&msg[..s]);
-                        match m.trim() {
-                            "exit" => Ok(false),
-                            "" => {
-                                println!("{}", AST::Nil);
-                                Ok(true)
-                            }
-                            line => {
-                                let _ = self.interpreter_run(line.to_string());
-                                Ok(true)
-                            }
-                        }
-                    }
-                }
-            }
-            Err(e) => {
-                error!("Read error: {:?}.", &e);
-                Err(e)
-            }
-        }
-    }
-
-    pub fn read_lines<R: BufRead>(&'ast mut self, config: R) -> io::Result<()> {
-        for line in config.lines() {
-            match line.unwrap().trim() {
-                "" => {
-                    println!("{}", AST::Nil);
-                }
-                line => self.interpreter_run(line.to_string()),
-            }
-        }
+    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+        try!(poll.reregister(&self.stdin, token, interest, opts));
         Ok(())
     }
 
-    pub fn read_all<R: Read>(&mut self, mut config: R) -> io::Result<()> {
-        let mut text = String::new();
-        try!(config.read_to_string(&mut text));
-        let _ = self.interpreter_run(text.to_string());
+    fn deregister(&self, poll: &Poll) -> io::Result<()> {
+        try!(poll.deregister(&self.stdin));
+        Ok(())
+    }
+}
+
+impl<'a> Select<'a> for Console {
+    fn init(&mut self, c: &mut Core, s: Slot) {
+        write!(self.stdout, "Starting console...\n>");
+        self.stdout.flush();
+        c.register(self, s);
+    }
+
+    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [u8]) -> usize {
+        self.stdin.read(buf).unwrap()
+    }
+
+    fn finalize(&mut self) {
+        write!(self.stdout, "Bye!");
+        self.stdout.flush();
+    }
+}
+
+impl Read for Console {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.stdin.read(buf)
+    }
+
+    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> io::Result<usize> {
+        self.stdin.read_to_end(buf)
+    }
+
+    fn read_to_string(&mut self, buf: &mut String) -> io::Result<usize> {
+        self.stdin.read_to_string(buf)
+    }
+
+    fn read_exact(&mut self, buf: &mut [u8]) -> io::Result<()> {
+        self.stdin.read_exact(buf)
+    }
+}
+
+impl Write for Console {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        write!(self.stdout, "{}>", String::from_utf8_lossy(buf));
+        self.stdout.flush();
+        Ok(1)
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        self.stdout.flush();
+        Ok(())
+    }
+
+    fn write_all(&mut self, buf: &[u8]) -> io::Result<()> {
+        Ok(())
+    }
+    fn write_fmt(&mut self, fmt: Arguments) -> io::Result<()> {
         Ok(())
     }
 }

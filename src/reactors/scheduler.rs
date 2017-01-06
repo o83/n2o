@@ -1,4 +1,4 @@
-use streams::sched::task::{Task, Context};
+use reactors::task::{Task, Context};
 use std::mem;
 use handle::*;
 

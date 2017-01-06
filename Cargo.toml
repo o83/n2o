@@ -23,13 +23,13 @@ path = "src/apps/publisher_bench.rs"
 name = "client"
 path = "src/apps/client.rs"
 
-[[bin]]
-name = "server"
-path = "src/apps/server.rs"
+#[[bin]]
+#name = "server"
+#path = "src/apps/server.rs"
 
-[[bin]]
-name = "console"
-path = "src/apps/console.rs"
+#[[bin]]
+#name = "console"
+#path = "src/apps/console.rs"
 
 [[bin]]
 name = "streams"
