@@ -11,11 +11,17 @@ pub fn internals<'a>(f_id: u16, args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
         2 => sub_(args, ctx),
         3 => snd_(args, ctx),
         4 => rcv_(args, ctx),
+        5 => spawn_(args, ctx), // args should include Host
         _ => panic!("unknown internal func"),
     }
 }
 
 pub fn print<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
+    println!("{:?}", args);
+    AST::Nil
+}
+
+pub fn spawn_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
     println!("{:?}", args);
     AST::Nil
 }
