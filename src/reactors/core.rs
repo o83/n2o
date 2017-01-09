@@ -71,6 +71,13 @@ impl Core {
         Ok(())
     }
 
+    pub fn write_all(&mut self, buf: &[u8]) -> io::Result<()> {
+        for s in &mut self.selectors {
+            s.write(buf);
+        }
+        Ok(())
+    }
+
     #[inline]
     fn poll_if_need(&mut self) {
         if self.i == 0 {
