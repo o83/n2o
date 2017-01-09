@@ -36,10 +36,16 @@ impl<'a, T> Scheduler<'a, T>
                     Poll::Yield(..) => (),
                     Poll::End(v) => {
                         println!("{:?}", v);
+                        let h2: &mut Self = unsafe { &mut *f };
+                        h2.tasks.remove(i);
+                        h2.ctxs.remove(i);
                         return;
                     }
                     Poll::Err(e) => {
                         println!("{:?}", e);
+                        let h2: &mut Self = unsafe { &mut *f };
+                        h2.tasks.remove(i);
+                        h2.ctxs.remove(i);
                         return;
                     }
                 }
