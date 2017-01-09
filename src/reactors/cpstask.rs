@@ -17,6 +17,19 @@ impl<'a> CpsTask<'a> {
             ast: None,
         }
     }
+
+    #[inline]
+    fn run(&'a mut self, n: &'a AST<'a>) -> Poll<Context<'a>, Error> {
+        match self.interpreter.run(n) {
+            Ok(r) => {
+                match *r {
+                    AST::Yield => Poll::Yield(Context::Nil),
+                    _ => Poll::End(Context::Node(r)),
+                }
+            }
+            Err(e) => Poll::Err(Error::RuntimeError),
+        }
+    }
 }
 
 impl<'a> Task<'a> for CpsTask<'a> {
@@ -30,20 +43,15 @@ impl<'a> Task<'a> for CpsTask<'a> {
     }
 
     fn poll(&'a mut self, c: Context<'a>) -> Poll<Context<'a>, Error> {
+        let a = self.ast.unwrap();
         match c {
-            Context::Node(n) => {
-                match self.interpreter.run(n) {
-                    Ok(r) => Poll::Yield(Context::Node(r)),
-                    Err(e) => Poll::Err(Error::RuntimeError),
-                }
-            }
-            Context::Nil => {
-                match self.interpreter.run(self.ast.unwrap()) {
-                    Ok(r) => Poll::Yield(Context::Node(r)),
-                    Err(e) => Poll::Err(Error::RuntimeError),
-                }
-            }
+            Context::Node(n) => self.run(n),
+            Context::Nil => self.run(a),
             _ => Poll::Err(Error::WrongContext),
         }
+    }
+
+    fn finalize(&'a mut self) {
+        //
     }
 }

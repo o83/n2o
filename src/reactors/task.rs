@@ -3,8 +3,8 @@ use commands::ast::AST;
 #[derive(Debug)]
 pub enum Poll<T, E> {
     Yield(T),
+    End(T),
     Err(E),
-    End,
 }
 
 #[derive(Debug)]
@@ -23,4 +23,5 @@ pub enum Context<'a> {
 pub trait Task<'a> {
     fn init(&'a mut self, input: Option<&'a str>);
     fn poll(&'a mut self, c: Context<'a>) -> Poll<Context<'a>, Error>;
+    fn finalize(&'a mut self);
 }
