@@ -8,7 +8,7 @@ use reactors::console::Console;
 use reactors::ws::WsServer;
 use reactors::task::Task;
 use reactors::cpstask::CpsTask;
-use reactors::scheduler::{self, Scheduler, TaskLifetime};
+use reactors::scheduler::{self, Scheduler, TaskTermination};
 use std::io::Read;
 use handle;
 use std::str;
@@ -38,7 +38,7 @@ impl<'a> Hub<'a> {
         let cps = CpsTask::new(self.ctx.clone());
         let h: *mut Hub<'a> = self;
         let h0: &mut Hub<'a> = unsafe { &mut *h };
-        let task_id = h0.scheduler.spawn(cps, TaskLifetime::Immortal, None);
+        let task_id = h0.scheduler.spawn(cps, TaskTermination::Corecursive, None);
         loop {
             let h1: &mut Hub<'a> = unsafe { &mut *h };
             match h1.core.poll() {
