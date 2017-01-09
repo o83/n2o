@@ -9,7 +9,7 @@ use io::readiness::*;
 use io::registration::*;
 use io::poll::*;
 
-use slab;
+use timers::slab;
 use std::{self, cmp, error, fmt, u64, usize, iter, thread, io};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
