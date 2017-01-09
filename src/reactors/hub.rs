@@ -19,24 +19,11 @@ pub struct Hub<'a> {
 }
 
 impl<'a> Hub<'a> {
-    pub fn new() -> Self {
-        let ctx = Ctx::new();
-        {
-            let pubs = ctx.publishers();
-            pubs.push(Publisher::with_capacity(8)); //0
-            pubs.push(Publisher::with_capacity(8)); //1
-            let subs = ctx.subscribers();
-            if let Some(p) = pubs.get_mut(0 as usize) {
-                subs.push(p.subscribe());
-            }
-            if let Some(p) = pubs.get_mut(1 as usize) {
-                subs.push(p.subscribe());
-            }
-        }
+    pub fn new(ctx: Rc<Ctx<u64>>) -> Self {
         Hub {
             core: Core::new(),
             scheduler: Scheduler::new(),
-            ctx: Rc::new(ctx),
+            ctx: ctx,
         }
     }
 

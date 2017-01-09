@@ -43,7 +43,6 @@ impl<'a, T> Scheduler<'a, T>
                         return;
                     }
                 }
-
             }
         }
     }

@@ -12,8 +12,8 @@ Abstract Reactive Streams
 build = "build.rs"
 
 [[bin]]
-name = "hub"
-path = "src/apps/hub.rs"
+name = "host"
+path = "src/apps/host.rs"
 
 
 [dependencies]
