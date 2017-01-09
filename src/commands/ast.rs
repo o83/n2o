@@ -13,6 +13,7 @@ use streams::{otree, interpreter, env};
 use streams::interpreter::*;
 use std::cell::UnsafeCell;
 use std::{mem, ptr, isize};
+use std::intrinsics::size_of;
 
 #[derive(Debug)]
 pub enum Error {
@@ -223,16 +224,30 @@ pub struct Arena<'a> {
     pub conts: UnsafeCell<Vec<Cont<'a>>>,
 }
 
+fn delta<'a>(this: &'a Cont<'a>, next: &'a Cont<'a>) -> usize {
+    let this_ptr = (this as *const Cont<'a>) as usize;
+    let next_ptr = (next as *const Cont<'a>) as usize;
+    unsafe { (this_ptr - next_ptr) / size_of::<Cont<'a>>() }
+}
+
 impl<'a> fmt::Display for Cont<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &Cont::Call(callee, cont) => write!(f, "call {}", callee),
-            &Cont::Func(names, args, cont) => write!(f, "func {} {}", names, args),
-            &Cont::Cond(if_expr, else_expr, cont) => write!(f, "cond {} {}", if_expr, else_expr),
-            &Cont::Assign(name, cont) => write!(f, "assign {}", name),
-            &Cont::Dict(acc, rest, cont) => write!(f, "dict {} {}", acc, rest),
-            &Cont::Verb(ref verb, right, swap, cont) => write!(f, "verb {} {}", verb, right),
-            &Cont::Expressions(rest, cont) => write!(f, "expr {}", rest),
+            &Cont::Call(callee, cont) => write!(f, "call: {} next: {}", callee, delta(self, cont)),
+            &Cont::Func(names, args, cont) => write!(f, "func: {} {} next: {}", names, args, delta(self, cont)),
+            &Cont::Cond(if_expr, else_expr, cont) => {
+                write!(f,
+                       "cond: {} {} next: {}",
+                       if_expr,
+                       else_expr,
+                       delta(self, cont))
+            }
+            &Cont::Assign(name, cont) => write!(f, "assign: {} next: {}", name, delta(self, cont)),
+            &Cont::Dict(acc, rest, cont) => write!(f, "dict: {} {} next: {}", acc, rest, delta(self, cont)),
+            &Cont::Verb(ref verb, right, swap, cont) => {
+                write!(f, "verb: {} {} next: {}", verb, right, delta(self, cont))
+            }
+            &Cont::Expressions(rest, cont) => write!(f, "expr: {} next: {}", rest, delta(self, cont)),
             x => write!(f, "return"),
         }
     }
@@ -267,11 +282,11 @@ impl<'a> Arena<'a> {
 
     pub fn dump(&'a self) {
         let x = unsafe { &mut *self.asts.get() };
-        for i in x[0..x.len()].iter() {
+        for i in x.iter() {
             println!("ast {}", i);
         }
         let x = unsafe { &mut *self.conts.get() };
-        for i in x[0..x.len()].iter() {
+        for i in x.iter() {
             println!("cont {}", i);
         }
     }
