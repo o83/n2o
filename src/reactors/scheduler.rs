@@ -25,6 +25,8 @@ impl<'a, T> Scheduler<'a, T>
         self.tasks.last_mut().unwrap().init(input);
     }
 
+    // pub fn exec(&'a mut self, )
+
     pub fn run(&'a mut self) {
         let f: *mut Self = self;
         loop {

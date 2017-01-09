@@ -3,7 +3,7 @@ use streams::intercore::ctx::{Ctx, Ctxs};
 use queues::publisher::Publisher;
 use queues::publisher::Subscriber;
 use reactors::core::{Async, Core};
-use reactors::selector::Selector;
+use reactors::selector::{Selector, Slot};
 use reactors::console::Console;
 use reactors::ws::WsServer;
 use reactors::cpstask::CpsTask;
@@ -43,9 +43,14 @@ impl<'a> Hub<'a> {
                 Async::Ready((i, s)) => {
                     let h2: &mut Hub<'a> = unsafe { &mut *h };
                     let h3: &mut Hub<'a> = unsafe { &mut *h };
-                    h2.exec(Some(str::from_utf8(s).unwrap()));
-                    h3.scheduler.run();
-                    // h.borrow_mut().write(i, b"170");
+                    if s.len() == 1 && s[0] == 0x0A {
+                        // FIXME:
+                        h2.core.write(Slot(0), &[0u8; 0]);
+                    } else {
+                        let x = str::from_utf8(s).unwrap();
+                        h2.exec(Some(x));
+                        h3.scheduler.run();
+                    }
                 }
                 x => println!("{:?}", x),
             }
