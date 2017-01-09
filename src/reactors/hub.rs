@@ -3,7 +3,7 @@ use streams::intercore::ctx::{Ctx, Ctxs};
 use queues::publisher::Publisher;
 use queues::publisher::Subscriber;
 use reactors::core::{Async, Core};
-use reactors::selector::{Selector};
+use reactors::selector::Selector;
 use reactors::console::Console;
 use reactors::ws::WsServer;
 use reactors::cpstask::CpsTask;

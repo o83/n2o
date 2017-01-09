@@ -8,3 +8,4 @@ pub mod sequence;
 pub mod server;
 pub mod task;
 pub mod ws;
+pub mod host;
