@@ -52,7 +52,8 @@ impl<'a> Hub<'a> {
                     } else {
                         let x = str::from_utf8(s).unwrap();
                         h3.scheduler.exec(task_id, Some(x));
-                        h4.scheduler.run();
+                        let r = h4.scheduler.run();
+                        self.core.write(Slot(0), format!("{:?}\n", r).as_bytes());
                     }
                 }
                 x => println!("{:?}", x),

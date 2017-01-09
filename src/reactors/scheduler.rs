@@ -1,4 +1,4 @@
-use reactors::task::{Task, Context, Poll};
+use reactors::task::{self, Task, Context, Poll};
 use std::mem;
 use handle::*;
 
@@ -40,7 +40,7 @@ impl<'a, T> Scheduler<'a, T>
         self.tasks.get_mut(t.0).unwrap().0.exec(input);
     }
 
-    pub fn run(&'a mut self) {
+    pub fn run(&'a mut self) -> Poll<Context<'a>, task::Error> {
         let f: *mut Self = self;
         loop {
             let h1: &mut Self = unsafe { &mut *f };
@@ -50,22 +50,20 @@ impl<'a, T> Scheduler<'a, T>
                 match t.0.poll(ctx) {
                     Poll::Yield(..) => (),
                     Poll::End(v) => {
-                        println!("END: {:?}", v);
                         let h2: &mut Self = unsafe { &mut *f };
                         if t.1 == TaskLifetime::Mortal {
                             h2.tasks.remove(i);
                             h2.ctxs.remove(i);
                         }
-                        return;
+                        return Poll::End(v);
                     }
                     Poll::Err(e) => {
-                        println!("{:?}", e);
                         let h2: &mut Self = unsafe { &mut *f };
                         if t.1 == TaskLifetime::Mortal {
                             h2.tasks.remove(i);
                             h2.ctxs.remove(i);
                         }
-                        return;
+                        return Poll::Err(e);
                     }
                 }
             }

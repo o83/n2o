@@ -25,7 +25,6 @@ impl<'a> CpsTask<'a> {
             Ok(r) => {
                 match *r {
                     AST::Yield => Poll::Yield(Context::Nil),
-                    // AST::Lambda(..) => Poll::Yield(Context::Nil),
                     _ => Poll::End(Context::Node(r)),
                 }
             }
@@ -58,7 +57,6 @@ impl<'a> Task<'a> for CpsTask<'a> {
     }
 
     fn poll(&'a mut self, c: Context<'a>) -> Poll<Context<'a>, Error> {
-        println!("AST: {:?}", &self.ast);
         match self.ast {
             Some(a) => {
                 match c {
@@ -67,10 +65,7 @@ impl<'a> Task<'a> for CpsTask<'a> {
                     _ => Poll::Err(Error::WrongContext),
                 }
             }
-            None => {
-                println!("AST::Nil");
-                Poll::End(Context::Nil)
-            }
+            None => Poll::End(Context::Nil),
         }
     }
 
