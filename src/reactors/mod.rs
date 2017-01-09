@@ -5,7 +5,6 @@ pub mod cpstask;
 pub mod scheduler;
 pub mod selector;
 pub mod sequence;
-pub mod server;
 pub mod task;
 pub mod ws;
 pub mod host;
