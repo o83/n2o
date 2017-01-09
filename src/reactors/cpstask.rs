@@ -50,4 +50,8 @@ impl<'a> Task<'a> for CpsTask<'a> {
             _ => Poll::Err(Error::WrongContext),
         }
     }
+
+    fn finalize(&'a mut self) {
+        //
+    }
 }
