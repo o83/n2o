@@ -1,4 +1,4 @@
-use reactors::task::{Task, Context};
+use reactors::task::{Task, Context, Poll};
 use std::mem;
 use handle::*;
 
@@ -30,9 +30,20 @@ impl<'a, T> Scheduler<'a, T>
         loop {
             let h1: &mut Self = unsafe { &mut *f };
             for (i, t) in h1.tasks.iter_mut().enumerate() {
-                let mut ctx = mem::replace(h1.ctxs.get_mut(i).unwrap(), Context::Nil);
-                let r = t.poll(ctx);
-                println!("Task Poll: {:?}", r);
+                let c = h1.ctxs.get_mut(i).unwrap();
+                let mut ctx = mem::replace(c, Context::Nil);
+                match t.poll(ctx) {
+                    Poll::Yield(..) => (),
+                    Poll::End(v) => {
+                        println!("{:?}", v);
+                        return;
+                    }
+                    Poll::Err(e) => {
+                        println!("{:?}", e);
+                        return;
+                    }
+                }
+
             }
         }
     }

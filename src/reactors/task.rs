@@ -3,8 +3,8 @@ use commands::ast::AST;
 #[derive(Debug)]
 pub enum Poll<T, E> {
     Yield(T),
+    End(T),
     Err(E),
-    End,
 }
 
 #[derive(Debug)]
