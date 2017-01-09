@@ -52,6 +52,7 @@ impl<'a> Task<'a> for CpsTask<'a> {
     }
 
     fn finalize(&'a mut self) {
+
         //
     }
 }
