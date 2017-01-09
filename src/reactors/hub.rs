@@ -6,8 +6,9 @@ use reactors::core::{Async, Core};
 use reactors::selector::{Selector, Slot};
 use reactors::console::Console;
 use reactors::ws::WsServer;
+use reactors::task::Task;
 use reactors::cpstask::CpsTask;
-use reactors::scheduler::{self, Scheduler};
+use reactors::scheduler::{self, Scheduler, TaskLifetime};
 use std::io::Read;
 use handle;
 use std::str;
@@ -16,6 +17,7 @@ pub struct Hub<'a> {
     core: Core,
     scheduler: Scheduler<'a, CpsTask<'a>>,
     ctx: Rc<Ctx<u64>>,
+    cps: CpsTask<'a>,
 }
 
 impl<'a> Hub<'a> {
@@ -23,7 +25,8 @@ impl<'a> Hub<'a> {
         Hub {
             core: Core::new(),
             scheduler: Scheduler::new(),
-            ctx: ctx,
+            ctx: ctx.clone(),
+            cps: CpsTask::new(ctx.clone()),
         }
     }
 
@@ -31,25 +34,25 @@ impl<'a> Hub<'a> {
         self.core.spawn(s);
     }
 
-    pub fn exec(&'a mut self, input: Option<&'a str>) {
-        self.scheduler.spawn(CpsTask::new(self.ctx.clone()), input);
-    }
-
     pub fn boil(&'a mut self) {
+        let cps = CpsTask::new(self.ctx.clone());
         let h: *mut Hub<'a> = self;
+        let h0: &mut Hub<'a> = unsafe { &mut *h };
+        let task_id = h0.scheduler.spawn(cps, TaskLifetime::Immortal, None);
         loop {
             let h1: &mut Hub<'a> = unsafe { &mut *h };
             match h1.core.poll() {
                 Async::Ready((i, s)) => {
                     let h2: &mut Hub<'a> = unsafe { &mut *h };
                     let h3: &mut Hub<'a> = unsafe { &mut *h };
+                    let h4: &mut Hub<'a> = unsafe { &mut *h };
                     if s.len() == 1 && s[0] == 0x0A {
-                        // FIXME:
+                        // FIXME: Slot can be non-0
                         h2.core.write(Slot(0), &[0u8; 0]);
                     } else {
                         let x = str::from_utf8(s).unwrap();
-                        h2.exec(Some(x));
-                        h3.scheduler.run();
+                        h3.scheduler.exec(task_id, Some(x));
+                        h4.scheduler.run();
                     }
                 }
                 x => println!("{:?}", x),

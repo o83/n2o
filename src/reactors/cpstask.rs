@@ -21,19 +21,17 @@ impl<'a> CpsTask<'a> {
     #[inline]
     fn run(&'a mut self, n: &'a AST<'a>) -> Poll<Context<'a>, Error> {
         let r = self.interpreter.run(n);
-        println!("Interpreter RUN: {:?}", &r);
         match r {
             Ok(r) => {
                 match *r {
                     AST::Yield => Poll::Yield(Context::Nil),
+                    // AST::Lambda(..) => Poll::Yield(Context::Nil),
                     _ => Poll::End(Context::Node(r)),
                 }
             }
             Err(e) => Poll::Err(Error::RuntimeError),
         }
     }
-
-    fn exec(&'a mut self, input: Option<&'a str>) {}
 }
 
 impl<'a> Task<'a> for CpsTask<'a> {
@@ -46,6 +44,16 @@ impl<'a> Task<'a> for CpsTask<'a> {
                 s2.ast = Some(s2.interpreter.parse(&s));
             }
             None => s2.ast = None,
+        }
+    }
+
+    fn exec(&'a mut self, input: Option<&'a str>) {
+        match input {
+            Some(i) => {
+                let s = i.to_string();
+                self.ast = Some(self.interpreter.parse(&s));
+            }
+            None => self.ast = None,
         }
     }
 

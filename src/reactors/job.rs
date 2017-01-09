@@ -19,6 +19,9 @@ impl<'a> Task<'a> for Job<'a> {
     fn init(&'a mut self, input: Option<&'a str>) {
         self.unwrap().init(input)
     }
+    fn exec(&'a mut self, input: Option<&'a str>) {
+        self.unwrap().exec(input)
+    }
     fn poll(&'a mut self, c: Context<'a>) -> Poll<Context<'a>, task::Error> {
         self.unwrap().poll(c)
     }
