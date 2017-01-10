@@ -11,6 +11,15 @@ use std::intrinsics;
 use std::fmt::Formatter;
 use std::fmt::Debug;
 use std::fmt;
+use io::event::Evented;
+use io::poll::{self, Poll, Events};
+use io::options::PollOpt;
+use io::ready::Ready;
+use io::token::Token;
+use std::os::unix::io::RawFd;
+use std::io::{self, Result, Read, Write};
+use std::slice;
+use std::mem;
 
 type Sequence = usize;
 
@@ -28,7 +37,6 @@ pub struct Cursor {
 }
 
 impl Cursor {
-
     pub fn new(value: Sequence) -> Self {
         Cursor {
             padding0: [0; 3],
@@ -70,7 +78,6 @@ pub struct UncheckedUnsafeArc<T> {
 }
 
 impl<T: Send> UncheckedUnsafeArc<T> {
-
     fn new(data: T) -> UncheckedUnsafeArc<T> {
         let arc = Arc::new(UnsafeCell::new(data));
         let data = arc.get();
@@ -92,12 +99,11 @@ impl<T: Send> UncheckedUnsafeArc<T> {
 }
 
 impl<T: Send> Clone for UncheckedUnsafeArc<T> {
-
-    fn clone(&self) -> UncheckedUnsafeArc<T> {    
+    fn clone(&self) -> UncheckedUnsafeArc<T> {
         UncheckedUnsafeArc {
             arc: self.arc.clone(),
             data: self.data,
-        }        
+        }
     }
 }
 
@@ -133,8 +139,10 @@ impl<T> Publisher<T> {
 
     pub fn subscribe(&mut self) -> Subscriber<T> {
         let head = self.head().load();
-        unsafe { self.cursors.get().push(Cursor::new(head));}
-        let token = self.cursors().len() - 1 ;
+        unsafe {
+            self.cursors.get().push(Cursor::new(head));
+        }
+        let token = self.cursors().len() - 1;
         Subscriber::<T>::new(self.ring.clone(), self.cursors.clone(), token)
     }
 
@@ -178,7 +186,6 @@ impl<T> Publisher<T> {
     fn cursors(&self) -> &[Cursor] {
         unsafe { self.cursors.get_immut() }
     }
-
 }
 
 pub struct Subscriber<T> {
@@ -191,11 +198,12 @@ pub struct Subscriber<T> {
 impl<T> Debug for Subscriber<T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let tail = self.tail(self.token);
-        write!(f, "Subscriber {{ token: {}, fail_opers: {}, fail_items: {}, seq: {} }}", 
-            self.token, 
-            tail.fail_opers.get(),
-            tail.fail_items.get(),
-            self.next_seq_cache.get())
+        write!(f,
+               "Subscriber {{ token: {}, fail_opers: {}, fail_items: {}, seq: {} }}",
+               self.token,
+               tail.fail_opers.get(),
+               tail.fail_items.get(),
+               self.next_seq_cache.get())
     }
 }
 
@@ -210,17 +218,16 @@ impl<T> Clone for Subscriber<T> {
     #[inline]
     fn clone(&self) -> Subscriber<T> {
         let tail_seq = self.tail(self.token).load();
-        unsafe { self.cursors.get().push(Cursor::new(tail_seq));}
-        let token = self.cursors().len() - 1 ;
+        unsafe {
+            self.cursors.get().push(Cursor::new(tail_seq));
+        }
+        let token = self.cursors().len() - 1;
         Subscriber::<T>::new(self.ring.clone(), self.cursors.clone(), token)
     }
 }
 
 impl<T> Subscriber<T> {
-    pub fn new(ring: Arc<RingBuffer<T>>,
-               cursors: UncheckedUnsafeArc<Vec<Cursor>>,
-               token: usize)
-               -> Self {
+    pub fn new(ring: Arc<RingBuffer<T>>, cursors: UncheckedUnsafeArc<Vec<Cursor>>, token: usize) -> Self {
         Subscriber::<T> {
             ring: ring,
             token: token,
@@ -230,7 +237,7 @@ impl<T> Subscriber<T> {
     }
 
     pub fn recv(&self) -> Option<&T> {
-      self.recv_n(1).map(|vs| &vs[0])
+        self.recv_n(1).map(|vs| &vs[0])
     }
 
     pub fn recv_n(&self, n: usize) -> Option<&[T]> {
@@ -245,8 +252,8 @@ impl<T> Subscriber<T> {
         if next_seq > tail.get_cache() {
             tail.set_cache(head.load());
             if next_seq > tail.get_cache() {
-                //tail.fail_items.set(tail.fail_items.get() + n as u64);
-                //tail.fail_opers.set(tail.fail_opers.get() + 1 as u64);
+                // tail.fail_items.set(tail.fail_items.get() + n as u64);
+                // tail.fail_opers.set(tail.fail_opers.get() + 1 as u64);
                 return None;
             }
         }
@@ -265,8 +272,8 @@ impl<T> Subscriber<T> {
         let head_seq = head.load();
 
         if tail_seq >= head_seq {
-            //tail.fail_items.set(tail.fail_items.get() + 1 as u64);
-            //tail.fail_opers.set(tail.fail_opers.get() + 1 as u64);
+            // tail.fail_items.set(tail.fail_items.get() + 1 as u64);
+            // tail.fail_opers.set(tail.fail_opers.get() + 1 as u64);
             return None;
         } else {
             self.next_seq_cache.set(head_seq);
@@ -288,7 +295,70 @@ impl<T> Subscriber<T> {
     fn cursors(&self) -> &[Cursor] {
         unsafe { self.cursors.get_immut() }
     }
+}
 
+impl Evented for RawFd {
+    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+        poll.register(self, token, interest, opts)
+    }
+
+    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+        poll.reregister(self, token, interest, opts)
+    }
+
+    fn deregister(&self, poll: &Poll) -> io::Result<()> {
+        poll.deregister(self)
+    }
+}
+
+
+impl<T> Evented for Subscriber<T> {
+    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+        self.ring.fd.unwrap().register(poll, token, interest, opts)
+    }
+
+    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+        self.ring.fd.unwrap().reregister(poll, token, interest, opts)
+    }
+
+    fn deregister(&self, poll: &Poll) -> io::Result<()> {
+        self.ring.fd.unwrap().deregister(poll)
+    }
+}
+
+fn copy_block_memory<T>(src: *const T, dst: &mut [u8]) -> usize {
+    let src = src as *const u8;
+    let size = mem::size_of::<T>();
+    unsafe {
+        let bytes = slice::from_raw_parts(src, size);
+        dst.clone_from_slice(bytes);
+    }
+    size
+}
+
+impl<T> Read for Subscriber<T> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        match self.recv() {
+            Some(v) => {
+                let sz = copy_block_memory::<T>(v as *const T, buf);
+                self.commit();
+                Ok(sz)
+            }
+            _ => Ok(0),
+        }
+    }
+}
+
+impl<T> Write for Subscriber<T> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        //(&self.inner).write(buf)
+        Ok(1)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.commit();
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -313,13 +383,13 @@ mod tests {
     fn test_publisher_next() {
         let mut publisher: Publisher<u64> = Publisher::with_capacity(8);
         let subscriber = publisher.subscribe();
-        
+
         for i in 0..8 {
             match publisher.next() {
                 Some(v) => {
                     *v = i as u64;
                     publisher.commit();
-                },
+                }
                 None => {}
             }
         }
@@ -334,14 +404,14 @@ mod tests {
     fn test_publisher_next_n() {
         let mut publisher: Publisher<u64> = Publisher::with_capacity(8);
         let subscriber = publisher.subscribe();
-        
+
         for i in 0..4 {
             match publisher.next_n(2) {
                 Some(vs) => {
-                    vs[0] = 2*i as u64;
-                    vs[1] = 2*i + 1 as u64;
+                    vs[0] = 2 * i as u64;
+                    vs[1] = 2 * i + 1 as u64;
                     publisher.commit();
-                },
+                }
                 None => {}
             }
         }
@@ -351,7 +421,7 @@ mod tests {
             None => {}
         }
     }
-    
+
 
     #[test]
     fn test_publisher_recv() {
@@ -359,15 +429,15 @@ mod tests {
         let subscriber = publisher.subscribe();
 
         match subscriber.recv() {
-            Some(_) => { assert!(false, "Queue was empty but a value was read!")},
+            Some(_) => assert!(false, "Queue was empty but a value was read!"),
             None => {}
-        } 
-        
+        }
+
         match publisher.next() {
             Some(v) => {
-                        *v = 42u64;
-                        publisher.commit();
-                        },
+                *v = 42u64;
+                publisher.commit();
+            }
             None => {}
         }
 
@@ -375,14 +445,12 @@ mod tests {
             Some(v) => {
                 assert!(*v == 42);
                 subscriber.commit();
-            },
-            None => assert!(false, "Queue was not empty but recv() returned nothing!")
+            }
+            None => assert!(false, "Queue was not empty but recv() returned nothing!"),
         }
 
         match subscriber.recv() {
-            Some(_) => {
-                assert!(false, "Queue was empty but a value was read!")
-            },
+            Some(_) => assert!(false, "Queue was empty but a value was read!"),
             None => {}
         }
 
@@ -392,14 +460,14 @@ mod tests {
     fn test_publisher_recv_n() {
         let mut publisher: Publisher<u64> = Publisher::with_capacity(8);
         let subscriber = publisher.subscribe();
-        
+
         for i in 0..4 {
             match publisher.next_n(2) {
                 Some(vs) => {
-                    vs[0] = 2*i as u64;
-                    vs[1] = 2*i + 1 as u64;
+                    vs[0] = 2 * i as u64;
+                    vs[1] = 2 * i + 1 as u64;
                     publisher.commit();
-                },
+                }
                 None => {}
             }
         }
@@ -407,11 +475,11 @@ mod tests {
         for i in 0..4 {
             match subscriber.recv_n(2) {
                 Some(vs) => {
-                    assert!(vs[0] == 2*i as u64);
-                    assert!(vs[1] == 2*i + 1 as u64);
+                    assert!(vs[0] == 2 * i as u64);
+                    assert!(vs[1] == 2 * i + 1 as u64);
                     subscriber.commit();
-                },
-                None => assert!(false, "Queue was not empty but recv() returned nothing!")
+                }
+                None => assert!(false, "Queue was not empty but recv() returned nothing!"),
             }
         }
     }
@@ -420,14 +488,14 @@ mod tests {
     fn test_publisher_recv_all() {
         let mut publisher: Publisher<u64> = Publisher::with_capacity(8);
         let subscriber = publisher.subscribe();
-        
+
         for i in 0..4 {
             match publisher.next_n(2) {
                 Some(vs) => {
-                    vs[0] = 2*i as u64;
-                    vs[1] = 2*i + 1 as u64;
+                    vs[0] = 2 * i as u64;
+                    vs[1] = 2 * i + 1 as u64;
                     publisher.commit();
-                },
+                }
                 None => {}
             }
         }
@@ -436,14 +504,15 @@ mod tests {
             Some(vs) => {
                 assert_eq!(vs, &[0u64, 1, 2, 3, 4, 5, 6, 7]);
                 subscriber.commit();
-            },
-            None => assert!(false, "Queue was not empty but recv_all() returned nothing!")
+            }
+            None => {
+                assert!(false,
+                        "Queue was not empty but recv_all() returned nothing!")
+            }
         }
 
         match subscriber.recv() {
-            Some(_) => {
-                assert!(false, "Queue was empty but a value was read!")
-            },
+            Some(_) => assert!(false, "Queue was empty but a value was read!"),
             None => {}
         }
     }
@@ -452,17 +521,17 @@ mod tests {
     fn test_publisher_one2one() {
         let mut publisher: Publisher<u64> = Publisher::with_capacity(8);
         let subscriber = publisher.subscribe();
-        
-        thread::spawn(move|| {        
+
+        thread::spawn(move || {
             for i in 0..4 {
                 loop {
                     match publisher.next_n(2) {
                         Some(vs) => {
-                            vs[0] = 2*i as u64;
-                            vs[1] = 2*i + 1 as u64;
+                            vs[0] = 2 * i as u64;
+                            vs[1] = 2 * i + 1 as u64;
                             publisher.commit();
                             break;
-                        },
+                        }
                         None => {}
                     }
                 }
@@ -473,11 +542,11 @@ mod tests {
             loop {
                 match subscriber.recv_n(2) {
                     Some(vs) => {
-                        assert!(vs[0] == 2*i as u64);
-                        assert!(vs[1] == 2*i + 1 as u64);
+                        assert!(vs[0] == 2 * i as u64);
+                        assert!(vs[1] == 2 * i + 1 as u64);
                         subscriber.commit();
                         break;
-                    },
+                    }
                     None => {}
                 }
             }
@@ -490,9 +559,9 @@ mod tests {
         let (tx, rx) = channel::<u64>();
         for t in 0..4 {
             let subscriber = publisher.subscribe();
-            let tx_c = tx.clone();       
-            thread::spawn(move|| {
-                let mut expected = 0u64; 
+            let tx_c = tx.clone();
+            thread::spawn(move || {
+                let mut expected = 0u64;
                 'outer: loop {
                     'inner: loop {
                         match subscriber.recv() {
@@ -501,17 +570,17 @@ mod tests {
                                     let _ = tx_c.send(*v);
                                     subscriber.commit();
                                     break 'outer;
-                                } 
+                                }
                                 assert!(*v == expected);
                                 expected += 1;
                                 subscriber.commit();
                                 break 'inner;
-                            },
+                            }
                             None => {}
                         }
                     }
                 }
-            });            
+            });
         }
 
         for i in 0..8 {
@@ -521,19 +590,19 @@ mod tests {
                         *v = i as u64;
                         publisher.commit();
                         break;
-                    },
+                    }
                     None => {}
                 }
             }
         }
 
-       loop {
+        loop {
             match publisher.next() {
                 Some(v) => {
                     *v = u64::MAX;
                     publisher.commit();
                     break;
-                },
+                }
                 None => {}
             }
         }

@@ -9,12 +9,13 @@ use std::io;
 use std::io::{Result, Error};
 use libc;
 use std::mem;
+use std::os::unix::io::RawFd;
 
 #[repr(C)]
 pub struct RingBuffer<T> {
     buffer: RawVec<T>,
     mask: usize,
-    with_mirror: bool,
+    pub fd: Option<RawFd>,
 }
 
 impl<T> RingBuffer<T> {
@@ -23,13 +24,13 @@ impl<T> RingBuffer<T> {
         RingBuffer {
             buffer: RawVec::with_capacity(adjusted),
             mask: adjusted - 1,
-            with_mirror: false,
+            fd: None,
         }
     }
 
     pub fn with_mirror(name: CString, cap: usize) -> Result<RingBuffer<T>> {
         let adjusted = cap.next_power_of_two();
-        let mask = 4096 - 1; 
+        let mask = 4096 - 1;
         let size = (adjusted * std::mem::size_of::<T>() + mask) & !mask;
 
         let fd_raw = unsafe {
@@ -77,22 +78,22 @@ impl<T> RingBuffer<T> {
             return Err(io::Error::last_os_error());
         }
 
-        let n = unsafe { libc::close(fd_raw) };
-        if n != 0 {
-            println!("error {} when closing file descriptor {}", n, fd_raw);
-            return Err(io::Error::last_os_error());
-        }
-        
+        // let n = unsafe { libc::close(fd_raw) };
+        // if n != 0 {
+        //     println!("error {} when closing file descriptor {}", n, fd_raw);
+        //     return Err(io::Error::last_os_error());
+        // }
+
         if unsafe { libc::shm_unlink(name.as_ptr()) < 0 } {
             return Err(io::Error::last_os_error());
         }
-        
+
         mem::forget(ptr);
 
         Ok(RingBuffer {
             buffer: unsafe { RawVec::from_raw_parts(ptr as *mut T, adjusted) },
             mask: adjusted - 1,
-            with_mirror: false,
+            fd: Some(fd_raw),
         })
     }
 
@@ -100,7 +101,7 @@ impl<T> RingBuffer<T> {
         RingBuffer {
             buffer: unsafe { RawVec::from_raw_parts(ptr, cap) },
             mask: cap - 1,
-            with_mirror: false,
+            fd: None,
         }
     }
 

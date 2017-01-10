@@ -29,7 +29,7 @@ impl<'a> Host<'a> {
         ctxs.push(Rc::new(Ctx::new()));
         Host {
             schedulers: Vec::new(),
-            junk: Hub::new(ctxs.last().unwrap().clone()),
+            junk: handle::new(Hub::new(ctxs.last().unwrap().clone())),
             rings: ctxs,
             cores: Vec::new(),
         }
