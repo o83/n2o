@@ -1,5 +1,8 @@
 #!/bin/bash
 
+LIBS="io queues reactors streams args.rs handle.rs lib.rs 'commands/ast.rs' 'apps/host'"
+cargo count $LIBS
+
 function book {
 printf "Book: \x1b[38;2;74;144;226mAAPL\x1b[0m\n"
 printf "id   side time               vol   price venue\n"

@@ -20,6 +20,8 @@
 #![allow(unreachable_code)]
 #![allow(non_snake_case)]
 #![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_must_use)]
 #![allow(unused_unsafe)]
 #![allow(unused_imports)]
 #![allow(unused_variables)]
