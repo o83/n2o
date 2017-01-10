@@ -8,7 +8,7 @@ use reactors::console::Console;
 use reactors::ws::WsServer;
 use reactors::task::Task;
 use reactors::cpstask::CpsTask;
-use reactors::scheduler::{self, Scheduler, TaskLifetime};
+use reactors::scheduler::{self, Scheduler, TaskTermination};
 use std::io::Read;
 use handle;
 use std::str;
@@ -38,7 +38,7 @@ impl<'a> Hub<'a> {
         let cps = CpsTask::new(self.ctx.clone());
         let h: *mut Hub<'a> = self;
         let h0: &mut Hub<'a> = unsafe { &mut *h };
-        let task_id = h0.scheduler.spawn(cps, TaskLifetime::Immortal, None);
+        let task_id = h0.scheduler.spawn(cps, TaskTermination::Corecursive, None);
         loop {
             let h1: &mut Hub<'a> = unsafe { &mut *h };
             match h1.core.poll() {
@@ -47,16 +47,15 @@ impl<'a> Hub<'a> {
                     let h3: &mut Hub<'a> = unsafe { &mut *h };
                     let h4: &mut Hub<'a> = unsafe { &mut *h };
                     if s.len() == 1 && s[0] == 0x0A {
-                        // FIXME: Slot can be non-0
-                        h2.core.write(Slot(0), &[0u8; 0]);
+                        h2.core.write_all(&[0u8; 0]);
                     } else {
                         let x = str::from_utf8(s).unwrap();
                         h3.scheduler.exec(task_id, Some(x));
                         let r = h4.scheduler.run();
-                        self.core.write(Slot(0), format!("{:?}\n", r).as_bytes());
+                        self.core.write_all(format!("{:?}\n", r).as_bytes());
                     }
                 }
-                x => println!("{:?}", x),
+                Async::NotReady => (),
             }
         }
     }

@@ -12,6 +12,8 @@ use reactors::selector::{Select, Slot};
 use reactors::core::Core;
 use std::fmt::Arguments;
 
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
 pub struct Console {
     stdin: stdio::Stdin,
     stdout: io::Stdout,
@@ -45,7 +47,9 @@ impl Evented for Console {
 
 impl<'a> Select<'a> for Console {
     fn init(&mut self, c: &mut Core, s: Slot) {
-        write!(self.stdout, "Starting console...\n>");
+        write!(self.stdout,
+               "Welcome to O language interpreter {}\no)",
+               VERSION);
         self.stdout.flush();
         c.register(self, s);
     }
@@ -80,7 +84,7 @@ impl Read for Console {
 
 impl Write for Console {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        write!(self.stdout, "{}>", String::from_utf8_lossy(buf));
+        write!(self.stdout, "{}o)", String::from_utf8_lossy(buf));
         self.stdout.flush();
         Ok(1)
     }

@@ -7,14 +7,17 @@ const TASKS_MAX_CNT: usize = 256;
 #[derive(Debug,Clone,Copy)]
 pub struct TaskId(usize);
 
-#[derive(Debug,PartialEq)]
-pub enum TaskLifetime {
-    Mortal,
-    Immortal,
+#[derive(Debug,PartialEq,Clone,Copy)]
+pub enum TaskTermination {
+    Recursive,
+    Corecursive,
 }
 
+#[derive(Debug)]
+struct T3<T>(T, TaskTermination);
+
 pub struct Scheduler<'a, T: 'a> {
-    tasks: Vec<(T, TaskLifetime)>,
+    tasks: Vec<T3<T>>,
     ctxs: Vec<Context<'a>>,
 }
 
@@ -28,9 +31,9 @@ impl<'a, T> Scheduler<'a, T>
         }
     }
 
-    pub fn spawn(&'a mut self, t: T, l: TaskLifetime, input: Option<&'a str>) -> TaskId {
+    pub fn spawn(&'a mut self, t: T, l: TaskTermination, input: Option<&'a str>) -> TaskId {
         let last = self.tasks.len();
-        self.tasks.push((t, l));
+        self.tasks.push(T3(t, l));
         self.ctxs.push(Context::Nil);
         self.tasks.last_mut().unwrap().0.init(input);
         TaskId(last)
@@ -38,6 +41,14 @@ impl<'a, T> Scheduler<'a, T>
 
     pub fn exec(&'a mut self, t: TaskId, input: Option<&'a str>) {
         self.tasks.get_mut(t.0).unwrap().0.exec(input);
+    }
+
+    #[inline]
+    fn terminate(&'a mut self, t: TaskTermination, i: usize) {
+        if t == TaskTermination::Recursive {
+            self.tasks.remove(i);
+            self.ctxs.remove(i);
+        }
     }
 
     pub fn run(&'a mut self) -> Poll<Context<'a>, task::Error> {
@@ -51,18 +62,12 @@ impl<'a, T> Scheduler<'a, T>
                     Poll::Yield(..) => (),
                     Poll::End(v) => {
                         let h2: &mut Self = unsafe { &mut *f };
-                        if t.1 == TaskLifetime::Mortal {
-                            h2.tasks.remove(i);
-                            h2.ctxs.remove(i);
-                        }
+                        h2.terminate(t.1, i);
                         return Poll::End(v);
                     }
                     Poll::Err(e) => {
                         let h2: &mut Self = unsafe { &mut *f };
-                        if t.1 == TaskLifetime::Mortal {
-                            h2.tasks.remove(i);
-                            h2.ctxs.remove(i);
-                        }
+                        h2.terminate(t.1, i);
                         return Poll::Err(e);
                     }
                 }
