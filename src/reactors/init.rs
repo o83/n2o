@@ -15,6 +15,8 @@ use reactors::console::Console;
 use reactors::ws::WsServer;
 use std::net::SocketAddr;
 use reactors::selector::{Select, Selector};
+use queues::publisher::{Publisher, Subscriber};
+use std::ffi::CString;
 
 pub struct Host<'a> {
     schedulers: Vec<Scheduler<'a, Job<'a>>>,
@@ -39,8 +41,11 @@ impl<'a> Host<'a> {
         let mut o = Selector::Rx(Console::new());
         let addr = "0.0.0.0:9001".parse::<SocketAddr>().ok().expect("Parser Error");
         let mut w = Selector::Ws(WsServer::new(&addr));
+        let mut p = Publisher::with_mirror(CString::new("/test").unwrap(), 8);
+        let mut s = Selector::Sb(p.subscribe());
         self.junk.add_selected(o);
         self.junk.add_selected(w);
+        self.junk.add_selected(s);
         self.junk.boil();
     }
 }

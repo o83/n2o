@@ -20,6 +20,8 @@ use std::os::unix::io::RawFd;
 use std::io::{self, Result, Read, Write};
 use std::slice;
 use std::mem;
+use reactors::selector::{Select, Slot};
+use reactors::core::Core;
 
 type Sequence = usize;
 
@@ -323,6 +325,19 @@ impl<T> Evented for Subscriber<T> {
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
         self.ring.fd.unwrap().deregister(poll)
+    }
+}
+
+impl<'a, T> Select<'a> for Subscriber<T> {
+    fn init(&mut self, c: &mut Core, s: Slot) {
+        // self.unwrap().init(c, s);
+    }
+    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [u8]) -> usize {
+        // self.unwrap().select(c, t, buf)
+        0
+    }
+    fn finalize(&mut self) {
+        // self.unwrap().finalize();
     }
 }
 

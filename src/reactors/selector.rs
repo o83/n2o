@@ -12,6 +12,7 @@ use reactors::console::Console;
 use core::borrow::BorrowMut;
 use handle;
 use std::fmt::Arguments;
+use queues::publisher::Subscriber;
 
 const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;
@@ -32,13 +33,15 @@ pub trait Select<'a>: Write {
 pub enum Selector {
     Ws(WsServer),
     Rx(Console),
+    Sb(Subscriber<u64>),
 }
 
 impl Selector {
     pub fn unwrap<'a>(&mut self) -> &mut Select<'a> {
         match *self {
             Selector::Ws(ref mut w) => w,
-            Selector::Rx(ref mut c) => c, 
+            Selector::Rx(ref mut c) => c,
+            Selector::Sb(ref mut s) => s, 
         }
     }
 }
@@ -54,6 +57,7 @@ impl<'a> Select<'a> for Selector {
         self.unwrap().finalize();
     }
 }
+
 impl Write for Selector {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.unwrap().write(buf);
@@ -73,4 +77,3 @@ impl Write for Selector {
 
 #[derive(Debug,PartialEq,Clone,Copy)]
 pub struct Slot(pub usize);
-
