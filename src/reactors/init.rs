@@ -8,6 +8,7 @@ use handle::{self, Handle};
 use reactors::job::Job;
 use std::sync::{Arc, Mutex, Once, ONCE_INIT};
 use core::ops::DerefMut;
+use std::cell::UnsafeCell;
 // TODO: next uses will be removed when Interpreter
 // could create IO's dynamically.
 use reactors::console::Console;
@@ -46,12 +47,12 @@ impl<'a> Host<'a> {
 
 #[derive(Clone)]
 pub struct HostSingleton {
-    pub inner: Arc<Mutex<Host<'static>>>,
+    pub inner: Arc<UnsafeCell<Host<'static>>>,
 }
 
 impl HostSingleton {
-    pub fn run(&mut self) {
-        self.inner.lock().unwrap().run();
+    pub fn borrow_mut(&mut self) -> &mut Host<'static> {
+        unsafe { &mut *self.inner.get() }
     }
 }
 
@@ -61,7 +62,7 @@ pub fn host() -> HostSingleton {
 
     unsafe {
         ONCE.call_once(|| {
-            let singleton = HostSingleton { inner: Arc::new(Mutex::new(Host::new())) };
+            let singleton = HostSingleton { inner: Arc::new(UnsafeCell::new(Host::new())) };
             SINGLETON = mem::transmute(box singleton);
         });
 
