@@ -45,7 +45,9 @@ impl<'a> Host<'a> {
         let mut s = Selector::Sb(p.subscribe());
         self.junk.add_selected(o);
         self.junk.add_selected(w);
-        self.junk.add_selected(s);
+        // self.junk.add_selected(s);
+        // *p.next().unwrap() = 13 as u64;
+        // p.commit();
         self.junk.boil();
     }
 }

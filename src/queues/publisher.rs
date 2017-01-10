@@ -330,11 +330,12 @@ impl<T> Evented for Subscriber<T> {
 
 impl<'a, T> Select<'a> for Subscriber<T> {
     fn init(&mut self, c: &mut Core, s: Slot) {
-        // self.unwrap().init(c, s);
+        println!("Subscriber registered");
+        c.register(self, s);
     }
     fn select(&mut self, c: &mut Core, t: Token, buf: &mut [u8]) -> usize {
-        // self.unwrap().select(c, t, buf)
-        0
+        println!("SELECTED");
+        self.read(buf).unwrap()
     }
     fn finalize(&mut self) {
         // self.unwrap().finalize();
