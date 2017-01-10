@@ -125,9 +125,9 @@ impl<'a> Interpreter<'a> {
                     return Ok(se4.arena.ast(AST::Yield));
                 }
                 Lazy::Return(ast) => {
-                    println!("Result: {:?}", ast);
                     println!("env: {:?}", se3.env.dump());
                     println!("arena: {:?}", se4.arena.dump());
+                    println!("Result: {:?}", ast);
                     return Ok(ast);
                 }
             }
