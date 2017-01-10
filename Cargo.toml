@@ -12,7 +12,7 @@ Abstract Reactive Streams
 build = "build.rs"
 
 [[bin]]
-name = "host"
+name = "o"
 path = "src/apps/host.rs"
 
 
