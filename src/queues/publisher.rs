@@ -301,15 +301,15 @@ impl<T> Subscriber<T> {
 
 impl Evented for RawFd {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll.register(self, token, interest, opts)
+        poll::selector(poll).register(*self, token, interest, opts)
     }
 
     fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll.reregister(self, token, interest, opts)
+        poll::selector(poll).reregister(*self, token, interest, opts)
     }
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        poll.deregister(self)
+        poll::selector(poll).deregister(*self)
     }
 }
 
