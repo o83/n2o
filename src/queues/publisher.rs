@@ -177,6 +177,11 @@ impl<T> Publisher<T> {
 
     pub fn commit(&self) {
         self.head().store(self.next_seq_cache.get());
+        unsafe {
+            ::libc::write(self.ring.fd.unwrap(),
+                          &1u64 as *const _ as *const ::libc::c_void,
+                          ::std::mem::size_of::<u64>() as ::libc::size_t)
+        };
     }
 
     #[inline]
