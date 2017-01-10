@@ -50,7 +50,9 @@ impl<'a> Task<'a> for CpsTask<'a> {
         match input {
             Some(i) => {
                 let s = i.to_string();
-                self.ast = Some(self.interpreter.parse(&s));
+                let parse = self.interpreter.parse(&s);
+                println!("Parser: {:?}", parse);
+                self.ast = Some(parse);
             }
             None => self.ast = None,
         }
