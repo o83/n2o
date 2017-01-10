@@ -1,7 +1,7 @@
 extern crate kernel;
-use kernel::reactors::host::Host;
+use kernel::reactors::init;
 
 fn main() {
-    let mut h = Host::new();
+    let mut h = init::host();
     h.run();
 }
