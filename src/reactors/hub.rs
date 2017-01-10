@@ -28,11 +28,11 @@ impl<'a> Hub<'a> {
         }
     }
 
-    pub fn add_selected(&'a mut self, s: Selector) {
+    pub fn add_selected(&mut self, s: Selector) {
         self.core.spawn(s);
     }
 
-    pub fn boil(&'a mut self) {
+    pub fn boil(&mut self) {
         let cps = CpsTask::new(self.ctx.clone());
         let h: *mut Hub<'a> = self;
         let h0: &mut Hub<'a> = unsafe { &mut *h };

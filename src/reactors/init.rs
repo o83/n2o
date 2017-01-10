@@ -6,6 +6,9 @@ use reactors::hub::Hub;
 use std::mem;
 use handle::{self, Handle};
 use reactors::job::Job;
+use std::sync::{Arc, Mutex, Once, ONCE_INIT};
+use core::ops::DerefMut;
+use std::cell::UnsafeCell;
 // TODO: next uses will be removed when Interpreter
 // could create IO's dynamically.
 use reactors::console::Console;
@@ -26,18 +29,43 @@ impl<'a> Host<'a> {
         ctxs.push(Rc::new(Ctx::new()));
         Host {
             schedulers: Vec::new(),
-            junk: handle::new(Hub::new(ctxs.last().unwrap().clone())),
+            junk: Hub::new(ctxs.last().unwrap().clone()),
             rings: ctxs,
             cores: Vec::new(),
         }
     }
 
-    pub fn run(&'a mut self) {
+    pub fn run(&mut self) {
         let mut o = Selector::Rx(Console::new());
         let addr = "0.0.0.0:9001".parse::<SocketAddr>().ok().expect("Parser Error");
         let mut w = Selector::Ws(WsServer::new(&addr));
-        self.junk.borrow_mut().add_selected(o);
-        self.junk.borrow_mut().add_selected(w);
-        self.junk.borrow_mut().boil()
+        self.junk.add_selected(o);
+        self.junk.add_selected(w);
+        self.junk.boil();
+    }
+}
+
+#[derive(Clone)]
+pub struct HostSingleton {
+    pub inner: Arc<UnsafeCell<Host<'static>>>,
+}
+
+impl HostSingleton {
+    pub fn borrow_mut(&mut self) -> &mut Host<'static> {
+        unsafe { &mut *self.inner.get() }
+    }
+}
+
+pub fn host() -> HostSingleton {
+    static mut SINGLETON: *const HostSingleton = 0 as *const HostSingleton;
+    static ONCE: Once = ONCE_INIT;
+
+    unsafe {
+        ONCE.call_once(|| {
+            let singleton = HostSingleton { inner: Arc::new(UnsafeCell::new(Host::new())) };
+            SINGLETON = mem::transmute(box singleton);
+        });
+
+        (*SINGLETON).clone()
     }
 }

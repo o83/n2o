@@ -7,5 +7,5 @@ pub mod selector;
 pub mod sequence;
 pub mod task;
 pub mod ws;
-pub mod host;
+pub mod init;
 pub mod job;
