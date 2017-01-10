@@ -4,14 +4,18 @@ use queues::publisher::Publisher;
 use queues::publisher::Subscriber;
 use core::ops::IndexMut;
 
-pub fn pub_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
+pub fn pub_<'a>(args: &'a AST<'a>, ctx: &Ctx) -> AST<'a> {
     println!("publishers {:?}", args);
     let pubs = ctx.publishers();
-    pubs.push(Publisher::with_capacity(8));
+    let cap = match args {
+        &AST::Number(n) => n,
+        _ => 1024,
+    } as usize;
+    pubs.push(Publisher::with_capacity(cap));
     AST::Number(pubs.len() as i64 - 1)
 }
 
-pub fn sub_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
+pub fn sub_<'a>(args: &'a AST<'a>, ctx: &Ctx) -> AST<'a> {
     println!("subscribers {:?}", args);
     let subs = ctx.subscribers();
     let pubs = ctx.publishers();
@@ -26,7 +30,7 @@ pub fn sub_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
     AST::Number(subs.len() as i64 - 1)
 }
 
-pub fn snd_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
+pub fn snd_<'a>(args: &'a AST<'a>, ctx: &Ctx) -> AST<'a> {
     let pubs = ctx.publishers();
     // println!("SND {:?}", args);
     match args {
@@ -52,7 +56,7 @@ pub fn snd_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
     AST::Nil
 }
 
-pub fn rcv_<'a>(args: &'a AST<'a>, ctx: &Ctx<u64>) -> AST<'a> {
+pub fn rcv_<'a>(args: &'a AST<'a>, ctx: &Ctx) -> AST<'a> {
     let subs = ctx.subscribers();
     let mut res = 0u64;
     // println!("RECV {:?}", args);

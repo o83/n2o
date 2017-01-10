@@ -2,12 +2,17 @@ use queues::publisher::Publisher;
 use queues::publisher::Subscriber;
 use std::cell::UnsafeCell;
 
-pub struct Ctx<T> {
-    publishers: UnsafeCell<Vec<Publisher<T>>>,
-    subscribers: UnsafeCell<Vec<Subscriber<T>>>,
+pub enum TypeId {
+    Byte,
+    Int,
+    Float,
+}
+pub struct Ctx {
+    publishers: UnsafeCell<Vec<Publisher<u64>>>,
+    subscribers: UnsafeCell<Vec<Subscriber<u64>>>,
 }
 
-impl<T> Ctx<T> {
+impl Ctx {
     pub fn new() -> Self {
         Ctx {
             publishers: UnsafeCell::new(vec![]),
@@ -15,22 +20,12 @@ impl<T> Ctx<T> {
         }
     }
     #[inline]
-    pub fn publishers(&self) -> &mut Vec<Publisher<T>> {
+    pub fn publishers(&self) -> &mut Vec<Publisher<u64>> {
         unsafe { &mut *self.publishers.get() }
     }
 
     #[inline]
-    pub fn subscribers(&self) -> &mut Vec<Subscriber<T>> {
+    pub fn subscribers(&self) -> &mut Vec<Subscriber<u64>> {
         unsafe { &mut *self.subscribers.get() }
-    }
-}
-
-pub struct Ctxs<T> {
-    ctxs: Vec<Ctx<T>>,
-}
-
-impl<T> Ctxs<T> {
-    pub fn new() -> Self {
-        Ctxs { ctxs: vec![] }
     }
 }

@@ -3,7 +3,7 @@ use streams::interpreter::*;
 use commands::ast::AST;
 use handle::*;
 use std::rc::Rc;
-use streams::intercore::ctx::{Ctx, Ctxs};
+use streams::intercore::ctx::Ctx;
 
 pub struct CpsTask<'a> {
     interpreter: Interpreter<'a>,
@@ -11,7 +11,7 @@ pub struct CpsTask<'a> {
 }
 
 impl<'a> CpsTask<'a> {
-    pub fn new(ctx: Rc<Ctx<u64>>) -> Self {
+    pub fn new(ctx: Rc<Ctx>) -> Self {
         CpsTask {
             interpreter: Interpreter::new2(ctx).unwrap(),
             ast: None,

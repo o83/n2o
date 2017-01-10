@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use streams::intercore::ctx::{Ctx, Ctxs};
+use streams::intercore::ctx::Ctx;
 use queues::publisher::Publisher;
 use queues::publisher::Subscriber;
 use reactors::core::{Async, Core};
@@ -16,17 +16,15 @@ use std::str;
 pub struct Hub<'a> {
     core: Core,
     scheduler: Scheduler<'a, CpsTask<'a>>,
-    ctx: Rc<Ctx<u64>>,
-    cps: CpsTask<'a>,
+    ctx: Rc<Ctx>,
 }
 
 impl<'a> Hub<'a> {
-    pub fn new(ctx: Rc<Ctx<u64>>) -> Self {
+    pub fn new(ctx: Rc<Ctx>) -> Self {
         Hub {
             core: Core::new(),
             scheduler: Scheduler::new(),
-            ctx: ctx.clone(),
-            cps: CpsTask::new(ctx.clone()),
+            ctx: ctx,
         }
     }
 

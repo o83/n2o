@@ -3,7 +3,7 @@
 
 use streams::{verb, adverb, env, otree};
 use commands::ast::{self, Error, AST, Verb, Adverb, Arena};
-use streams::intercore::ctx::{Ctx, Ctxs};
+use streams::intercore::ctx::Ctx;
 use streams::intercore::internals;
 use std::cell::UnsafeCell;
 use handle::split;
@@ -36,12 +36,12 @@ pub enum Lazy<'a> {
 pub struct Interpreter<'a> {
     env: env::Environment<'a>,
     arena: Arena<'a>,
-    ctx: Rc<Ctx<u64>>,
+    ctx: Rc<Ctx>,
     registers: Lazy<'a>,
 }
 
 impl<'a> Interpreter<'a> {
-    pub fn new2(ctx: Rc<Ctx<u64>>) -> Result<Interpreter<'a>, Error> {
+    pub fn new2(ctx: Rc<Ctx>) -> Result<Interpreter<'a>, Error> {
         let mut env = try!(env::Environment::new_root());
         let mut arena = Arena::new();
         let mut interpreter = Interpreter {

@@ -16,7 +16,7 @@ use reactors::selector::{Select, Selector};
 pub struct Host<'a> {
     schedulers: Vec<Scheduler<'a, Job<'a>>>,
     junk: Handle<Hub<'a>>,
-    rings: Vec<Rc<Ctx<u64>>>,
+    rings: Vec<Rc<Ctx>>,
     cores: Vec<Core>,
 }
 
