@@ -513,7 +513,7 @@ pub fn table<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AS
 }
 
 pub fn dict<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
-    // println!("Dict: {:?}", l);
+    println!("Dict: {:?}", l);
     match l {
         //        &AST::Cons(&AST::Nil, b) => arena.ast(AST::Cons(b, arena.nil())),
         &AST::Cons(a, b) => arena.ast(AST::Dict(l)),
