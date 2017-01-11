@@ -44,6 +44,7 @@ extern crate time;
 
 #[macro_use]
 pub mod session_types;
+#[macro_use]
 pub mod reactors;
 pub mod timers;
 pub mod io;

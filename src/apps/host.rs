@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate kernel;
 use kernel::reactors::init;
 

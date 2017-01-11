@@ -6,6 +6,8 @@ use io::options::PollOpt;
 use std::collections::HashMap;
 use io::event::Evented;
 use std::cell::UnsafeCell;
+#[macro_use]
+use reactors::selector;
 use reactors::selector::{Slot, Selector, Select};
 use reactors::ws::WsServer;
 use reactors::console::Console;
@@ -62,6 +64,8 @@ impl Core {
         let (s1, s2) = handle::split(self);
         s1.selectors.push(s);
         let slot = Slot(s2.selectors.len() - 1);
+        // let mut sel = s1.selectors.last_mut().unwrap();
+        // with!(s1.selectors.last_mut().unwrap(), |x| x.init(s2,slot));
         // s1.selectors.last_mut().unwrap().init(s2, slot);
         slot
     }
