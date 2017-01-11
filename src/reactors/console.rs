@@ -45,7 +45,7 @@ impl Evented for Console {
     }
 }
 
-impl<'a> Select<'a> for Console {
+impl<'a> Select<'a, u8> for Console {
     fn init(&mut self, c: &mut Core, s: Slot) {
         write!(self.stdout,
                "Welcome to O language interpreter {}\no)",

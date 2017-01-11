@@ -6,7 +6,9 @@ use io::options::PollOpt;
 use std::collections::HashMap;
 use io::event::Evented;
 use std::cell::UnsafeCell;
-use reactors::selector::{Slot, Selector, Select};
+#[macro_use]
+use reactors::selector;
+use reactors::selector::{Slot, Selector, Select, with_selector};
 use reactors::ws::WsServer;
 use reactors::console::Console;
 use core::borrow::BorrowMut;
@@ -62,12 +64,12 @@ impl Core {
         let (s1, s2) = handle::split(self);
         s1.selectors.push(s);
         let slot = Slot(s2.selectors.len() - 1);
-        s1.selectors.last_mut().unwrap().init(s2, slot);
+        with!(s1.selectors.last_mut().unwrap(), |x| x.init(s2, slot));
         slot
     }
 
     pub fn write(&mut self, s: Slot, buf: &[u8]) -> io::Result<()> {
-        self.selectors.get_mut(s.0).unwrap().write(buf);
+        with!(self.selectors.get_mut(s.0).unwrap(), |x| x.write(buf));
         Ok(())
     }
 
@@ -96,7 +98,8 @@ impl Core {
                 let (s1, s2) = handle::split(self);
                 let slot = s1.slots.get(e.token().0).unwrap();
                 let buf = &mut s1.buf;
-                let recv = s1.selectors.get_mut(slot.0).unwrap().select(s2, e.token(), buf);
+                // let recv = with!(s1.selectors.get_mut(slot.0).unwrap(), |x| x.select(s2, e.token(), buf));
+                let recv = 1;
                 match recv {
                     0 => Async::NotReady,
                     _ => Async::Ready((Slot(slot.0), &s2.buf[..recv])),
@@ -108,7 +111,7 @@ impl Core {
     #[inline]
     fn finalize(&mut self) {
         for s in self.selectors.iter_mut() {
-            s.finalize();
+            with!(s, |x| x.finalize());
         }
     }
 }

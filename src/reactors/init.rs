@@ -2,6 +2,7 @@ use std::rc::Rc;
 use reactors::core::{Async, Core};
 use reactors::scheduler::Scheduler;
 use streams::intercore::ctx::Ctx;
+use streams::intercore::api::{Message, Spawn};
 use reactors::hub::Hub;
 use std::mem;
 use handle::{self, Handle};
@@ -46,7 +47,7 @@ impl<'a> Host<'a> {
         self.junk.add_selected(o);
         self.junk.add_selected(w);
         self.junk.add_intercore(s);
-        *p.next().unwrap() = 0x31 as u64;
+        *p.next().unwrap() = Message::Spawn(Spawn { id: 1, id2: 10 });
         p.commit();
         self.junk.boil();
     }

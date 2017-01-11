@@ -13,6 +13,7 @@ use core::borrow::BorrowMut;
 use handle;
 use std::fmt::Arguments;
 use queues::publisher::Subscriber;
+use streams::intercore::api::Message;
 
 const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;
@@ -24,43 +25,47 @@ pub enum Async<T> {
     NotReady,
 }
 
-pub trait Select<'a>: Write {
+pub trait Select<'a, T>: Write {
     fn init(&mut self, c: &mut Core, s: Slot);
-    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [u8]) -> usize;
+    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [T]) -> usize;
     fn finalize(&mut self);
 }
+
+pub fn with_selector<'a, S, T, F, R>(s: &'a mut S, mut f: F) -> R 
+    where S: Select<'a, T>,
+          F: FnMut(&mut S) -> R 
+    {
+        f(s)
+    }
 
 pub enum Selector {
     Ws(WsServer),
     Rx(Console),
-    Sb(Subscriber<u64>),
+    Sb(Subscriber<Message>),
 }
 
 impl Selector {
-    pub fn unwrap<'a>(&mut self) -> &mut Select<'a> {
-        match *self {
-            Selector::Ws(ref mut w) => w,
-            Selector::Rx(ref mut c) => c,
-            Selector::Sb(ref mut s) => s, 
-        }
+    pub fn with<F,R>(&mut self, mut f: F) -> R 
+    where F: FnMut(&mut Self) -> R 
+    {
+        f(self)
     }
 }
 
-impl<'a> Select<'a> for Selector {
-    fn init(&mut self, c: &mut Core, s: Slot) {
-        self.unwrap().init(c, s);
-    }
-    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [u8]) -> usize {
-        self.unwrap().select(c, t, buf)
-    }
-    fn finalize(&mut self) {
-        self.unwrap().finalize();
-    }
-}
+#[macro_export]
+macro_rules! with(
+    ($x:expr,$e:expr) => ({
+        match *$x {
+            Selector::Ws(ref mut w) => with_selector(w, $e),
+            Selector::Rx(ref mut c) => with_selector(c, $e),
+            Selector::Sb(ref mut s) => with_selector(s, $e), 
+        }
+    })
+);
 
 impl Write for Selector {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.unwrap().write(buf);
+        with!(self, |x| x.write(buf));
         Ok(1)
     }
     fn flush(&mut self) -> io::Result<()> {

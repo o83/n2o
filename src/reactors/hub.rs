@@ -12,6 +12,7 @@ use reactors::scheduler::{self, Scheduler, TaskTermination};
 use std::io::Read;
 use handle;
 use std::str;
+use streams::intercore::api::*;
 
 pub struct Hub<'a> {
     core: Core,

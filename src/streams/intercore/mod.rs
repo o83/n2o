@@ -1,5 +1,6 @@
 pub mod ctx;
 pub mod ring;
+pub mod api;
 use commands::ast::AST;
 use streams::intercore::ctx::Ctx;
 use streams::intercore::ring::{pub_, sub_, snd_, rcv_};
