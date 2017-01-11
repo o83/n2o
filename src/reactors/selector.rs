@@ -26,8 +26,8 @@ pub enum Async<T> {
 }
 
 pub enum Pool<'a> {
-    Raw(usize, &'a [u8]),
-    Msg(usize, &'a [Message]),
+    Raw(&'a [u8]),
+    Msg(&'a [Message]),
 }
 
 pub trait Select<'a>: Write {

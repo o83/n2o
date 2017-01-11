@@ -93,7 +93,7 @@ pub struct WsServer {
     tcp: TcpListener,
     clients: HashMap<Token, WsClient>,
     parser: HttpParser,
-    pub buf: [u8; BUF_SIZE],
+    buf: [u8; BUF_SIZE], // external_buf: [u8; BUF_SIZE],
 }
 
 impl WsServer {
@@ -105,7 +105,7 @@ impl WsServer {
             tcp: t,
             clients: HashMap::with_capacity(256),
             parser: HttpParser::new(),
-            buf: [0u8; BUF_SIZE],
+            buf: [0u8; BUF_SIZE], // external_buf: [0u8; BUF_SIZE],
         }
     }
 

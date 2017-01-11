@@ -58,7 +58,7 @@ impl<'a> Select<'a> for Console {
 
     fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a>> {
         let r = self.stdin.read(&mut self.buffer).unwrap();
-        Async::Ready(Pool::Raw(r, &self.buffer))
+        Async::Ready(Pool::Raw(&self.buffer[..r]))
     }
 
     fn finalize(&mut self) {
