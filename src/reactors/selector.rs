@@ -31,7 +31,7 @@ pub trait Select<'a, T>: Write {
     fn finalize(&mut self);
 }
 
-pub fn with<'a,S,T,F,R>(s: &'a mut S, mut f: F) -> R 
+pub fn with_selector<'a, S, T, F, R>(s: &'a mut S, mut f: F) -> R 
     where S: Select<'a, T>,
           F: FnMut(&mut S) -> R 
     {
@@ -55,11 +55,10 @@ impl Selector {
 #[macro_export]
 macro_rules! with(
     ($x:expr,$e:expr) => ({
-        let (s1,s2) = handle::split($x);
-        match *s1 {
-            Selector::Ws(ref mut w) => with(w, $e),
-            Selector::Rx(ref mut c) => with(c, $e),
-            Selector::Sb(ref mut s) => with(s, $e), 
+        match *$x {
+            Selector::Ws(ref mut w) => with_selector(w, $e),
+            Selector::Rx(ref mut c) => with_selector(c, $e),
+            Selector::Sb(ref mut s) => with_selector(s, $e), 
         }
     })
 );
