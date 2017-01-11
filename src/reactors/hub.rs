@@ -59,7 +59,6 @@ impl<'a> Hub<'a> {
                         self.core.write_all(format!("Intercore msg: {:?}\n", b).as_bytes());
                     } else {
                         let x = str::from_utf8(b).unwrap();
-                        println!("X: {:?}", x);
                         h3.scheduler.exec(t, Some(x));
                         let r = h4.scheduler.run();
                         self.core.write_all(format!("{:?}\n", r).as_bytes());
