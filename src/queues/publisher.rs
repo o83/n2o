@@ -504,6 +504,48 @@ mod tests {
         }
 
     }
+    #[derive(PartialEq)]
+    enum Proto {
+        A,
+        B(u64),
+        C(bool, u8),
+    }
+
+    #[test]
+    fn test_publisher_recv_enum() {
+        let mut publisher: Publisher<Proto> = Publisher::with_capacity(8);
+        let subscriber = publisher.subscribe();
+
+        for i in 0..4 {
+            match publisher.next_n(2) {
+                Some(vs) => {
+                    vs[0] = Proto::A;
+                    vs[1] = Proto::C(false, 13u8);
+                    publisher.commit();
+                }
+                None => {}
+            }
+        }
+
+        for i in 0..4 {
+            match subscriber.recv_n(2) {
+                Some(vs) => {
+                    match vs[0] {
+                        Proto::A => assert!(vs[0] == Proto::A),
+                        Proto::C(bl, bt) => assert!(vs[0] == Proto::C(false, 13u8)),
+                        _ => assert!(false),
+                    }
+                    match vs[1] {
+                        Proto::A => assert!(vs[1] == Proto::A),
+                        Proto::C(bl, bt) => assert!(vs[1] == Proto::C(false, 13u8)),
+                        _ => assert!(false),
+                    }
+                    subscriber.commit();
+                }
+                None => assert!(false, "Queue was not empty but recv() returned nothing!"),
+            }
+        }
+    }
 
     #[test]
     fn test_publisher_recv_n() {
