@@ -58,6 +58,38 @@ pub fn k_assign() {
 }
 
 #[test]
+pub fn k_nilargs1() {
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"[;]".to_string());
+    assert_eq!(*code,
+               AST::Dict(&AST::Cons(&AST::Nil, &AST::Cons(&&AST::Nil, &&AST::Nil))));
+}
+
+#[test]
+pub fn k_nilargs2() {
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"[;;]".to_string());
+    assert_eq!(*code,
+               AST::Dict(&AST::Cons(&AST::Nil, &AST::Cons(&AST::Nil, &AST::Cons(&AST::Nil, &AST::Nil)))));
+}
+
+#[test]
+pub fn k_nilargs3() {
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"[;;3]".to_string());
+    assert_eq!(*code,
+               AST::Dict(&AST::Cons(&AST::Nil, &AST::Cons(&AST::Nil, &AST::Number(3)))));
+}
+
+#[test]
+pub fn k_nilargs4() {
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"[1;;]".to_string());
+    assert_eq!(*code,
+               AST::Dict(&AST::Cons(&AST::Number(1), &AST::Cons(&AST::Nil, &AST::Cons(&AST::Nil, &AST::Nil)))));
+}
+
+#[test]
 pub fn k_plus() {
     let uc = UnsafeCell::new(Interpreter::new().unwrap());
     let i1: &mut Interpreter = unsafe { &mut *uc.get() };

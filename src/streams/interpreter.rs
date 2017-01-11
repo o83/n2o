@@ -100,7 +100,7 @@ impl<'a> Interpreter<'a> {
 
     pub fn run(&'a mut self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
         let mut counter = 0;
-        // println!("Input: {:?}", ast);
+        println!("Input: {:?}", ast);
         let uc = UnsafeCell::new(self);
         let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
         let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
@@ -125,9 +125,9 @@ impl<'a> Interpreter<'a> {
                     return Ok(se4.arena.ast(AST::Yield));
                 }
                 Lazy::Return(ast) => {
-                    println!("env: {:?}", se3.env.dump());
-                    println!("arena: {:?}", se4.arena.dump());
-                    println!("Result: {:?}", ast);
+                    // println!("env: {:?}", se3.env.dump());
+                    // println!("arena: {:?}", se4.arena.dump());
+                    println!("Result: {}", ast);
                     return Ok(ast);
                 }
             }
@@ -292,7 +292,7 @@ impl<'a> Interpreter<'a> {
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
                          -> Result<Lazy<'a>, Error> {
-        // println!("Eval Dict: {:?}", exprs);
+        println!("Eval Dict: {:?}", exprs);
         match exprs {
             &AST::Cons(car, cdr) => {
                 Ok(Lazy::Defer(node,
@@ -306,6 +306,7 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn emit_return(&'a self, val: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<Lazy<'a>, Error> {
+        println!("Emit: {:?}", val);
         match val {
             &AST::Dict(x) => {
                 let mut dict = ast::rev_dict(x, &self.arena);
@@ -372,6 +373,7 @@ impl<'a> Interpreter<'a> {
                 }
             }
             &Cont::Dict(acc, rest, cont) => {
+                println!("Cont Dict: {:?} {:?}", val, rest);
                 let new_acc;
                 match val {
                     &AST::Cons(x, y) => new_acc = self.arena.ast(AST::Cons(self.arena.ast(AST::Dict(val)), acc)),
