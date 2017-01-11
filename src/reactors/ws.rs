@@ -197,7 +197,7 @@ impl<'a> Select<'a> for WsServer {
 
     fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a>> {
         if t == self.listen_token {
-            // self.reg_incoming(c);
+            self.reg_incoming(c);
             Async::NotReady
         } else {
             // self.read_incoming(t, buf);

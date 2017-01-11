@@ -25,7 +25,7 @@ impl Console {
         Console {
             stdin: stdio::Stdin::new(),
             stdout: io::stdout(),
-            buffer: Vec::with_capacity(2048),
+            buffer: vec![0u8;256],
         }
     }
 }
@@ -57,8 +57,8 @@ impl<'a> Select<'a> for Console {
     }
 
     fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a>> {
-        self.stdin.read(&mut self.buffer).unwrap();
-        Async::Ready(Pool::Raw(&self.buffer))
+        let r = self.stdin.read(&mut self.buffer).unwrap();
+        Async::Ready(Pool::Raw(r, &self.buffer))
     }
 
     fn finalize(&mut self) {

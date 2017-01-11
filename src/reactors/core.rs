@@ -6,7 +6,6 @@ use io::options::PollOpt;
 use std::collections::HashMap;
 use io::event::Evented;
 use std::cell::UnsafeCell;
-#[macro_use]
 use reactors::selector;
 use reactors::selector::{Slot, Selector, Select, Async, Pool};
 use reactors::ws::WsServer;
@@ -89,7 +88,7 @@ impl Core {
                 let (s1, s2) = handle::split(self);
                 let slot = s1.slots.get(e.token().0).unwrap();
                 // let recv = with!(s1.selectors.get_mut(slot.0).unwrap(),
-                //                  move |x| x.select(s2, e.token()));
+                //                  |x| x.select(s2, e.token()));
 
                 let recv = match *s1.selectors.get_mut(slot.0).unwrap() {
                     Selector::Ws(ref mut w) => w.select(s2, e.token()),
@@ -97,16 +96,10 @@ impl Core {
                     Selector::Sb(ref mut s) => s.select(s2, e.token()),
                 };
 
-                // match recv {
-                //     Async::Ready(p) => println!("RECV: {:?}", p.0),
-                //     Async::NotReady => print!("Not ready"),
-                // };
-
-                // match recv {
-                //     Async::Ready(p) => Async::Ready((Slot(slot.0), p)),
-                //     Async::NotReady => Async::NotReady,
-                // }
-                Async::NotReady
+                match recv {
+                    Async::Ready(p) => Async::Ready((Slot(slot.0), p)),
+                    Async::NotReady => Async::NotReady,
+                }
             }
         }
     }

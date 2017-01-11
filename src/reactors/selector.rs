@@ -26,8 +26,8 @@ pub enum Async<T> {
 }
 
 pub enum Pool<'a> {
-    Raw(&'a [u8]),
-    Msg(&'a [Message]),
+    Raw(usize, &'a [u8]),
+    Msg(usize, &'a [Message]),
 }
 
 pub trait Select<'a>: Write {
@@ -45,14 +45,6 @@ pub enum Selector {
     Ws(WsServer),
     Rx(Console),
     Sb(Subscriber<u8>),
-}
-
-impl Selector {
-    pub fn with<F, R>(&mut self, mut f: F) -> R
-        where F: FnMut(&mut Self) -> R
-    {
-        f(self)
-    }
 }
 
 #[macro_export]
