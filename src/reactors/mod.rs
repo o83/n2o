@@ -3,6 +3,7 @@ pub mod core;
 pub mod hub;
 pub mod cpstask;
 pub mod scheduler;
+#[macro_use]
 pub mod selector;
 pub mod sequence;
 pub mod task;

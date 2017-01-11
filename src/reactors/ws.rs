@@ -188,7 +188,7 @@ impl WsServer {
     }
 }
 
-impl<'a> Select<'a> for WsServer {
+impl<'a> Select<'a, u8> for WsServer {
     fn init(&mut self, c: &mut Core, s: Slot) {
         let t = c.register(&self.tcp, s);
         self.listen_token = t;

@@ -13,6 +13,7 @@ use core::borrow::BorrowMut;
 use handle;
 use std::fmt::Arguments;
 use queues::publisher::Subscriber;
+use streams::intercore::api::Message;
 
 const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;
@@ -24,43 +25,41 @@ pub enum Async<T> {
     NotReady,
 }
 
-pub trait Select<'a>: Write {
+pub trait Select<'a, T>: Write {
     fn init(&mut self, c: &mut Core, s: Slot);
-    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [u8]) -> usize;
+    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [T]) -> usize;
     fn finalize(&mut self);
 }
 
 pub enum Selector {
     Ws(WsServer),
     Rx(Console),
-    Sb(Subscriber<u64>),
+    Sb(Subscriber<Message>),
 }
 
 impl Selector {
-    pub fn unwrap<'a>(&mut self) -> &mut Select<'a> {
-        match *self {
-            Selector::Ws(ref mut w) => w,
-            Selector::Rx(ref mut c) => c,
-            Selector::Sb(ref mut s) => s, 
-        }
+    pub fn with<F,R>(&mut self, mut f: F) -> R 
+    where F: FnMut(&mut Self) -> R 
+    {
+        f(self)
     }
 }
 
-impl<'a> Select<'a> for Selector {
-    fn init(&mut self, c: &mut Core, s: Slot) {
-        self.unwrap().init(c, s);
-    }
-    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [u8]) -> usize {
-        self.unwrap().select(c, t, buf)
-    }
-    fn finalize(&mut self) {
-        self.unwrap().finalize();
-    }
-}
+#[macro_export]
+macro_rules! with(
+    ($x:ident,$e:expr) => ({
+        let (s1,s2) = handle::split($x);
+        match *s1 {
+            Selector::Ws(ref mut w) => s2.with($e),
+            Selector::Rx(ref mut c) => s2.with($e),
+            Selector::Sb(ref mut s) => s2.with($e), 
+        }
+    })
+);
 
 impl Write for Selector {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.unwrap().write(buf);
+        with!(self, |x| x.write(buf));
         Ok(1)
     }
     fn flush(&mut self) -> io::Result<()> {
