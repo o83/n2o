@@ -123,8 +123,8 @@ impl WsServer {
 
     #[inline]
     fn handshake(&mut self, c: &mut WsClient) {
-        c.sock.read(&mut self.buf);
-        self.parser.parse(&self.buf);
+        c.sock.read(&mut self.internal_buf);
+        self.parser.parse(&self.internal_buf);
         let key = Self::gen_key(self.parser.get("Sec-WebSocket-Key").unwrap());
         let response = fmt::format(format_args!("HTTP/1.1 101 Switching Protocols\r\nConnection: \
                                                  Upgrade\r\nSec-WebSocket-Accept: {}\r\nUpgrade: websocket\r\n\r\n",
@@ -150,25 +150,25 @@ impl WsServer {
     }
 
     #[inline]
-    fn decode_message(&mut self, buf: &mut [u8]) -> usize {
-        let opcode = self.buf[0];
+    fn decode_message(&mut self) -> usize {
+        let opcode = self.internal_buf[0];
         // assume we always have masked message
-        let len = (self.buf[1] - 128) as usize;
-        let key = &self.buf[2..6];
-        for (i, v) in self.buf[6..len + 6].iter().enumerate() {
+        let len = (self.internal_buf[1] - 128) as usize;
+        let key = &self.internal_buf[2..6];
+        for (i, v) in self.internal_buf[6..len + 6].iter().enumerate() {
             let b: u8 = v ^ key[i & 0x3];
-            buf[i] = b;
+            self.external_buf[i] = b;
         }
         len
     }
 
     #[inline]
-    fn read_incoming(&mut self, t: Token, buf: &mut [u8]) -> usize {
+    fn read_incoming(&mut self, t: Token) -> usize {
         let (s1, s2) = split(self);
         let mut c = s1.clients.get_mut(&t).unwrap();
         if c.ready {
-            match c.sock.read(&mut s2.buf) {
-                Ok(s) => s2.decode_message(buf),
+            match c.sock.read(&mut s2.internal_buf) {
+                Ok(s) => s2.decode_message(),
                 Err(_) => 0,
             }
         } else {
@@ -202,8 +202,8 @@ impl<'a> Select<'a> for WsServer {
             self.reg_incoming(c);
             Async::NotReady
         } else {
-            // self.read_incoming(t, buf);
-            Async::NotReady
+            let l = self.read_incoming(t);
+            Async::Ready(Pool::Raw(&self.external_buf[..l]))
         }
     }
 
