@@ -45,9 +45,8 @@ impl<'a> Host<'a> {
         let mut s = Selector::Sb(p.subscribe());
         self.junk.add_selected(o);
         self.junk.add_selected(w);
-        self.junk.add_selected(s);
-        println!("Send from publisher");
-        *p.next().unwrap() = 13 as u64;
+        self.junk.add_intercore(s);
+        *p.next().unwrap() = 0x31 as u64;
         p.commit();
         self.junk.boil();
     }

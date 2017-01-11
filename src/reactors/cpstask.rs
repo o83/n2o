@@ -51,7 +51,6 @@ impl<'a> Task<'a> for CpsTask<'a> {
             Some(i) => {
                 let s = i.to_string();
                 let parse = self.interpreter.parse(&s);
-                println!("Parser: {:?}", parse);
                 self.ast = Some(parse);
             }
             None => self.ast = None,
