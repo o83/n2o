@@ -100,7 +100,7 @@ impl<'a> Interpreter<'a> {
 
     pub fn run(&'a mut self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
         let mut counter = 0;
-        // println!("Input: {:?}", ast);
+        println!("Input: {:?}", ast);
         let uc = UnsafeCell::new(self);
         let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
         let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
@@ -292,7 +292,7 @@ impl<'a> Interpreter<'a> {
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
                          -> Result<Lazy<'a>, Error> {
-        // println!("Eval Dict: {:?}", exprs);
+        println!("Eval Dict: {:?}", exprs);
         match exprs {
             &AST::Cons(car, cdr) => {
                 Ok(Lazy::Defer(node,
@@ -312,11 +312,6 @@ impl<'a> Interpreter<'a> {
                 let mut dict = ast::rev_dict(x, &self.arena);
                 Ok(Lazy::Return(self.arena.ast(AST::Dict(dict))))
             }
-            //&AST::Cons(&AST::Nil, y) => Ok(Lazy::Return(self.arena.ast(AST::Cons(&self.arena.nil(), y)))),
-            //&AST::Cons(&AST::Nil, y) => {
-            //    let mut tail = ast::rev_dict(y, &self.arena);
-            //    Ok(Lazy::Return(tail))
-           // }
             &AST::Cons(x, y) => {
                 let mut head = ast::rev_dict(x, &self.arena);
                 let mut tail = ast::rev_dict(y, &self.arena);
@@ -378,6 +373,7 @@ impl<'a> Interpreter<'a> {
                 }
             }
             &Cont::Dict(acc, rest, cont) => {
+                println!("Cont Dict: {:?} {:?}", val, rest);
                 let new_acc;
                 match val {
                     &AST::Cons(x, y) => new_acc = self.arena.ast(AST::Cons(self.arena.ast(AST::Dict(val)), acc)),
