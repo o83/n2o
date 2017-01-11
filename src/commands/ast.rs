@@ -196,6 +196,7 @@ impl fmt::Display for Adverb {
 #[derive(PartialEq,Debug,Clone)]
 pub enum AST<'a> {
     Nil,
+    Any,
     Cons(&'a AST<'a>, &'a AST<'a>),
     List(&'a AST<'a>),
     Dict(&'a AST<'a>),
@@ -208,6 +209,9 @@ pub enum AST<'a> {
     Table(&'a AST<'a>, &'a AST<'a>),
     Ioverb(String),
     Yield,
+    VecInt(Vec<u64>),
+    VecFloat(Vec<f64>),
+    VecAST(Vec<AST<'a>>),
     Number(i64),
     NameInt(u16),
     SymbolInt(u16),
@@ -465,7 +469,7 @@ impl<'a> fmt::Display for AST<'a> {
             AST::Assign(ref a, ref b) => write!(f, "{}:{}", a, b),
             AST::Cond(ref c, ref a, ref b) => write!(f, "$[{};{};{}]", c, a, b),
             AST::Yield => write!(f, "Yield"),
-            //    _ => write!(f, "Not implemented yet."),
+            _ => write!(f, "Not implemented yet."),
         }
 
     }
