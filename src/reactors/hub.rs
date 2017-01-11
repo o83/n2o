@@ -2,8 +2,8 @@ use std::rc::Rc;
 use streams::intercore::ctx::Ctx;
 use queues::publisher::Publisher;
 use queues::publisher::Subscriber;
-use reactors::core::{Async, Core};
-use reactors::selector::{Selector, Slot};
+use reactors::core::Core;
+use reactors::selector::{Selector, Slot, Async};
 use reactors::console::Console;
 use reactors::ws::WsServer;
 use reactors::task::Task;
@@ -48,23 +48,24 @@ impl<'a> Hub<'a> {
         loop {
             let h1: &mut Hub<'a> = unsafe { &mut *h };
             match h1.core.poll() {
-                Async::Ready((s, b)) => {
-                    let h2: &mut Hub<'a> = unsafe { &mut *h };
-                    let h3: &mut Hub<'a> = unsafe { &mut *h };
-                    let h4: &mut Hub<'a> = unsafe { &mut *h };
-                    if b.len() == 1 && b[0] == 0x0A {
-                        h2.core.write_all(&[0u8; 0]);
-                    } else {
-                        if s == self.intercore {
-                            // Here will be intercore messages handling
-                            self.core.write_all(format!("Intercore msg: {:?}\n", b).as_bytes());
-                        } else {
-                            let x = str::from_utf8(b).unwrap();
-                            h3.scheduler.exec(task_id, Some(x));
-                            let r = h4.scheduler.run();
-                            self.core.write_all(format!("{:?}\n", r).as_bytes());
-                        }
-                    }
+                Async::Ready((s, p)) => {
+                    // println!("POOL: {:?}", p.0);
+                    // let h2: &mut Hub<'a> = unsafe { &mut *h };
+                    // let h3: &mut Hub<'a> = unsafe { &mut *h };
+                    // let h4: &mut Hub<'a> = unsafe { &mut *h };
+                    // if b.len() == 1 && b[0] == 0x0A {
+                    //     h2.core.write_all(&[0u8; 0]);
+                    // } else {
+                    //     if s == self.intercore {
+                    //         // Here will be intercore messages handling
+                    //         self.core.write_all(format!("Intercore msg: {:?}\n", b).as_bytes());
+                    //     } else {
+                    //         let x = str::from_utf8(b).unwrap();
+                    //         h3.scheduler.exec(task_id, Some(x));
+                    //         let r = h4.scheduler.run();
+                    //         self.core.write_all(format!("{:?}\n", r).as_bytes());
+                    //     }
+                    // }
                 }
                 Async::NotReady => (),
             }

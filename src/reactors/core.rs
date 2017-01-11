@@ -8,7 +8,7 @@ use io::event::Evented;
 use std::cell::UnsafeCell;
 #[macro_use]
 use reactors::selector;
-use reactors::selector::{Slot, Selector, Select, with_selector};
+use reactors::selector::{Slot, Selector, Select, Async, Pool};
 use reactors::ws::WsServer;
 use reactors::console::Console;
 use core::borrow::BorrowMut;
@@ -17,12 +17,6 @@ use std::fmt::Arguments;
 
 const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;
-
-#[derive(Debug)]
-pub enum Async<T> {
-    Ready(T),
-    NotReady,
-}
 
 pub struct Core {
     tokens: usize,
@@ -85,7 +79,7 @@ impl Core {
         }
     }
 
-    pub fn poll(&mut self) -> Async<(Slot, &[u8])> {
+    pub fn poll<'a>(&'a mut self) -> Async<(Slot, Pool<'a>)> {
         self.poll_if_need();
         match self.i {
             0 => Async::NotReady,
@@ -94,11 +88,23 @@ impl Core {
                 let e = self.events.get(self.i).unwrap();
                 let (s1, s2) = handle::split(self);
                 let slot = s1.slots.get(e.token().0).unwrap();
-                // let recv = with!(s1.selectors.get_mut(slot.0).unwrap(), |x| x.select(s2, e.token()));
-                // let recv = 1;
+                // let recv = with!(s1.selectors.get_mut(slot.0).unwrap(),
+                //                  move |x| x.select(s2, e.token()));
+
+                let recv = match *s1.selectors.get_mut(slot.0).unwrap() {
+                    Selector::Ws(ref mut w) => w.select(s2, e.token()),
+                    Selector::Rx(ref mut c) => c.select(s2, e.token()),
+                    Selector::Sb(ref mut s) => s.select(s2, e.token()),
+                };
+
                 // match recv {
-                //     0 => Async::NotReady,
-                //     _ => Async::Ready((Slot(slot.0), &s2.buf[..recv])),
+                //     Async::Ready(p) => println!("RECV: {:?}", p.0),
+                //     Async::NotReady => print!("Not ready"),
+                // };
+
+                // match recv {
+                //     Async::Ready(p) => Async::Ready((Slot(slot.0), p)),
+                //     Async::NotReady => Async::NotReady,
                 // }
                 Async::NotReady
             }

@@ -93,7 +93,7 @@ impl<T> RingBuffer<T> {
         Ok(RingBuffer {
             buffer: unsafe { RawVec::from_raw_parts(ptr as *mut T, adjusted) },
             mask: adjusted - 1,
-            fd: Some(unsafe { libc::eventfd(0, libc::O_NONBLOCK) }),
+            fd: None, // fd: Some(unsafe { libc::eventfd(0, libc::O_NONBLOCK) }),
         })
     }
 

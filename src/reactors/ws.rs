@@ -188,14 +188,14 @@ impl WsServer {
     }
 }
 
-impl<'a> Select<'a, u8> for WsServer {
+impl<'a> Select<'a> for WsServer {
     fn init(&mut self, c: &mut Core, s: Slot) {
         let t = c.register(&self.tcp, s);
         self.listen_token = t;
         self.slot = s;
     }
 
-    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a, u8>> {
+    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a>> {
         if t == self.listen_token {
             // self.reg_incoming(c);
             Async::NotReady

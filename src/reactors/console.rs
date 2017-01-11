@@ -47,7 +47,7 @@ impl Evented for Console {
     }
 }
 
-impl<'a> Select<'a, u8> for Console {
+impl<'a> Select<'a> for Console {
     fn init(&mut self, c: &mut Core, s: Slot) {
         write!(self.stdout,
                "Welcome to O language interpreter {}\no)",
@@ -56,10 +56,9 @@ impl<'a> Select<'a, u8> for Console {
         c.register(self, s);
     }
 
-    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a, u8>> {
-        // let b = &mut self.buffer;
+    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a>> {
         self.stdin.read(&mut self.buffer).unwrap();
-        Async::Ready(Pool(&self.buffer))
+        Async::Ready(Pool::Raw(&self.buffer))
     }
 
     fn finalize(&mut self) {

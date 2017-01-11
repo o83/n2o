@@ -25,25 +25,26 @@ pub enum Async<T> {
     NotReady,
 }
 
-pub struct Pool<'a, T: 'a>(pub &'a [T]);
-
-pub trait Select<'a, T>: Write {
-    fn init(&mut self, c: &mut Core, s: Slot);
-    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a, T>>;
-    fn finalize(&mut self);
+pub enum Pool<'a> {
+    Raw(&'a [u8]),
+    Msg(&'a [Message]),
 }
 
-pub fn with_selector<'a, S, T, F, R>(s: &'a mut S, mut f: F) -> R
-    where S: Select<'a, T>,
-          F: FnMut(&mut S) -> R
-{
-    f(s)
+pub trait Select<'a>: Write {
+    fn init(&mut self, c: &mut Core, s: Slot);
+    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a>>;
+    fn finalize(&mut self);
+    fn with<F, R>(&'a mut self, mut f: F) -> R
+        where F: FnMut(&'a mut Self) -> R
+    {
+        f(self)
+    }
 }
 
 pub enum Selector {
     Ws(WsServer),
     Rx(Console),
-    Sb(Subscriber<Message>),
+    Sb(Subscriber<u8>),
 }
 
 impl Selector {
@@ -58,9 +59,9 @@ impl Selector {
 macro_rules! with(
     ($x:expr,$e:expr) => ({
         match *$x {
-            Selector::Ws(ref mut w) => with_selector(w, $e),
-            Selector::Rx(ref mut c) => with_selector(c, $e),
-            Selector::Sb(ref mut s) => with_selector(s, $e), 
+            Selector::Ws(ref mut w) => w.with($e),
+            Selector::Rx(ref mut c) => c.with($e),
+            Selector::Sb(ref mut s) => s.with($e), 
         }
     })
 );

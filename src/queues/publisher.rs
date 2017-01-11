@@ -361,11 +361,11 @@ impl<T> Evented for Subscriber<T> {
     }
 }
 
-impl<'a, T> Select<'a, T> for Subscriber<T> {
+impl<'a, T> Select<'a> for Subscriber<T> {
     fn init(&mut self, c: &mut Core, s: Slot) {
         c.register(self, s);
     }
-    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a, T>> {
+    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a>> {
         // self.read(buf).unwrap()
         Async::NotReady
     }

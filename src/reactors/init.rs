@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use reactors::core::{Async, Core};
+use reactors::core::Core;
 use reactors::scheduler::Scheduler;
 use streams::intercore::ctx::Ctx;
 use streams::intercore::api::{Message, Spawn};
@@ -15,7 +15,7 @@ use std::cell::UnsafeCell;
 use reactors::console::Console;
 use reactors::ws::WsServer;
 use std::net::SocketAddr;
-use reactors::selector::{Select, Selector};
+use reactors::selector::{Select, Selector, Async};
 use queues::publisher::{Publisher, Subscriber};
 use std::ffi::CString;
 
@@ -46,9 +46,9 @@ impl<'a> Host<'a> {
         let mut s = Selector::Sb(p.subscribe());
         self.junk.add_selected(o);
         self.junk.add_selected(w);
-        self.junk.add_intercore(s);
-        *p.next().unwrap() = Message::Spawn(Spawn { id: 1, id2: 10 });
-        p.commit();
+        // self.junk.add_intercore(s);
+        // *p.next().unwrap() = 1;
+        // p.commit();
         self.junk.boil();
     }
 }
