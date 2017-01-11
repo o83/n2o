@@ -17,7 +17,6 @@ use std::fmt::Arguments;
 
 const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;
-const READ_BUF_SIZE: usize = 2048;
 
 #[derive(Debug)]
 pub enum Async<T> {
@@ -33,7 +32,6 @@ pub struct Core {
     slots: Vec<Slot>,
     running: bool,
     i: usize,
-    buf: Vec<u8>,
 }
 
 impl Core {
@@ -46,7 +44,6 @@ impl Core {
             slots: Vec::with_capacity(SUBSCRIBERS_CAPACITY),
             running: true,
             i: 0,
-            buf: vec![0u8;READ_BUF_SIZE],
         }
     }
 
@@ -97,13 +94,13 @@ impl Core {
                 let e = self.events.get(self.i).unwrap();
                 let (s1, s2) = handle::split(self);
                 let slot = s1.slots.get(e.token().0).unwrap();
-                let buf = &mut s1.buf;
-                // let recv = with!(s1.selectors.get_mut(slot.0).unwrap(), |x| x.select(s2, e.token(), buf));
-                let recv = 1;
-                match recv {
-                    0 => Async::NotReady,
-                    _ => Async::Ready((Slot(slot.0), &s2.buf[..recv])),
-                }
+                // let recv = with!(s1.selectors.get_mut(slot.0).unwrap(), |x| x.select(s2, e.token()));
+                // let recv = 1;
+                // match recv {
+                //     0 => Async::NotReady,
+                //     _ => Async::Ready((Slot(slot.0), &s2.buf[..recv])),
+                // }
+                Async::NotReady
             }
         }
     }

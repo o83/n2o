@@ -20,7 +20,7 @@ use std::os::unix::io::RawFd;
 use std::io::{self, Result, Read, Write};
 use std::slice;
 use std::mem;
-use reactors::selector::{Select, Slot};
+use reactors::selector::{Select, Slot, Async, Pool};
 use reactors::core::Core;
 use libc;
 use core::mem::transmute;
@@ -365,9 +365,9 @@ impl<'a, T> Select<'a, T> for Subscriber<T> {
     fn init(&mut self, c: &mut Core, s: Slot) {
         c.register(self, s);
     }
-    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [T]) -> usize {
+    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a, T>> {
         // self.read(buf).unwrap()
-        1
+        Async::NotReady
     }
     fn finalize(&mut self) {
         // self.unwrap().finalize();

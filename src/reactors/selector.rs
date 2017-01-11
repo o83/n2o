@@ -25,18 +25,20 @@ pub enum Async<T> {
     NotReady,
 }
 
+pub struct Pool<'a, T: 'a>(pub &'a [T]);
+
 pub trait Select<'a, T>: Write {
     fn init(&mut self, c: &mut Core, s: Slot);
-    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [T]) -> usize;
+    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a, T>>;
     fn finalize(&mut self);
 }
 
-pub fn with_selector<'a, S, T, F, R>(s: &'a mut S, mut f: F) -> R 
+pub fn with_selector<'a, S, T, F, R>(s: &'a mut S, mut f: F) -> R
     where S: Select<'a, T>,
-          F: FnMut(&mut S) -> R 
-    {
-        f(s)
-    }
+          F: FnMut(&mut S) -> R
+{
+    f(s)
+}
 
 pub enum Selector {
     Ws(WsServer),
@@ -45,8 +47,8 @@ pub enum Selector {
 }
 
 impl Selector {
-    pub fn with<F,R>(&mut self, mut f: F) -> R 
-    where F: FnMut(&mut Self) -> R 
+    pub fn with<F, R>(&mut self, mut f: F) -> R
+        where F: FnMut(&mut Self) -> R
     {
         f(self)
     }

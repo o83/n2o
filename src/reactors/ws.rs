@@ -13,7 +13,7 @@ use std::slice;
 use std::mem;
 use rustc_serialize::base64::{ToBase64, STANDARD};
 use sha1;
-use reactors::selector::{Select, Selector, Slot};
+use reactors::selector::{Select, Selector, Slot, Async, Pool};
 use reactors::core::Core;
 use std::cell::UnsafeCell;
 use std::fmt::Arguments;
@@ -195,12 +195,13 @@ impl<'a> Select<'a, u8> for WsServer {
         self.slot = s;
     }
 
-    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [u8]) -> usize {
+    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a, u8>> {
         if t == self.listen_token {
-            self.reg_incoming(c);
-            0
+            // self.reg_incoming(c);
+            Async::NotReady
         } else {
-            self.read_incoming(t, buf)
+            // self.read_incoming(t, buf);
+            Async::NotReady
         }
     }
 

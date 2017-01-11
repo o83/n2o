@@ -8,7 +8,7 @@ use io::poll::*;
 use io::options::*;
 use io::stdio;
 use io::event::Evented;
-use reactors::selector::{Select, Slot};
+use reactors::selector::{Select, Slot, Async, Pool};
 use reactors::core::Core;
 use std::fmt::Arguments;
 
@@ -17,6 +17,7 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 pub struct Console {
     stdin: stdio::Stdin,
     stdout: io::Stdout,
+    buffer: Vec<u8>,
 }
 
 impl Console {
@@ -24,6 +25,7 @@ impl Console {
         Console {
             stdin: stdio::Stdin::new(),
             stdout: io::stdout(),
+            buffer: Vec::with_capacity(2048),
         }
     }
 }
@@ -54,8 +56,10 @@ impl<'a> Select<'a, u8> for Console {
         c.register(self, s);
     }
 
-    fn select(&mut self, c: &mut Core, t: Token, buf: &mut [u8]) -> usize {
-        self.stdin.read(buf).unwrap()
+    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a, u8>> {
+        // let b = &mut self.buffer;
+        self.stdin.read(&mut self.buffer).unwrap();
+        Async::Ready(Pool(&self.buffer))
     }
 
     fn finalize(&mut self) {
