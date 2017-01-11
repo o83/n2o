@@ -434,8 +434,9 @@ impl<'a> Interpreter<'a> {
                 }
             }
             x => {
-                self.emit_return(val, con)
-                // println!("Return: {:?} {:?}", cont, val);
+                let o = self.emit_return(val, con);
+                println!("Return: {:?}", o);
+                o
             }
         }
     }
