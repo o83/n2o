@@ -25,9 +25,11 @@ ExprCont:  &'ast AST<'ast> = { ";" => arena.nil(), ";" <m:ExprList>   => m };
 
 NameList:  &'ast AST<'ast> = { Name, <o:Name> <m:NameCont>  => cons(o, m, arena), };
 FieldList: &'ast AST<'ast> = { Expr, <o:Expr> <m:FieldCont> => cons(o, m, arena), };
-ExprList:  &'ast AST<'ast> = { Expr, <o:Expr> <m:ExprCont>  => cons(o, m, arena),
-                                                        ";" => arena.nil(),
-                                           ";" <m:ExprCont> => cons(m, arena.nil(), arena), };
+ExprList:  &'ast AST<'ast> = { Expr, <o:Expr> ";" <m:ExprList>  => cons(o, m, arena),
+                                                        ";" => cons(arena.nil(),arena.nil(), arena),
+                                               <o:Expr> ";" => cons(o, arena.nil(), arena),
+                                          ";" <m:ExprList>  => cons(arena.nil(), m, arena),
+                                                             };
 
 Verbs:     &'ast AST<'ast> = {          <v:Verb>            => verb(v, arena.nil(), arena.nil(), arena),
                                         <v:Verb> <r:Expr>   => verb(v, arena.nil(), r, arena), };

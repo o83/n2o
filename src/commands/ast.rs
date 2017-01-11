@@ -495,6 +495,9 @@ pub fn call<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST
 }
 
 pub fn cons<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
+    // if (l == r) && (l == &AST::Nil) {
+    //    return arena.nil();
+    // }
     ast(AST::Cons(l, r), arena)
 }
 
@@ -510,7 +513,9 @@ pub fn table<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AS
 }
 
 pub fn dict<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
+    // println!("Dict: {:?}", l);
     match l {
+        //        &AST::Cons(&AST::Nil, b) => arena.ast(AST::Cons(b, arena.nil())),
         &AST::Cons(a, b) => arena.ast(AST::Dict(l)),
         x => x,
     }
@@ -534,7 +539,7 @@ pub fn rev_list<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
         &AST::List(xs) => xs,
         _ => panic!(),
     };
-    println!(" from {:?}", from);
+    // println!(" from {:?}", from);
     let mut done = false;
     loop {
         if done {
@@ -605,7 +610,7 @@ pub fn adverb<'a>(a: Adverb, l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a
 }
 
 pub fn rev_dict<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
-    let mut res = arena.ast(AST::Nil);
+    let mut res = arena.nil();
     let mut from = l;
     loop {
         match from {
@@ -621,6 +626,10 @@ pub fn rev_dict<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
                         res = arena.ast(AST::Cons(arena.ast(AST::Dict(rev)), res));
                         from = xs;
                     }
+                    //&AST::Nil => {
+                    //    res = arena.nil();
+                    //    from = xs;
+                    //}
                     y => {
                         res = arena.ast(AST::Cons(y, res));
                         from = xs;
