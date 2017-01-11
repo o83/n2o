@@ -22,6 +22,8 @@ use std::slice;
 use std::mem;
 use reactors::selector::{Select, Slot};
 use reactors::core::Core;
+use libc;
+use core::mem::transmute;
 
 type Sequence = usize;
 
@@ -177,6 +179,7 @@ impl<T> Publisher<T> {
 
     pub fn commit(&self) {
         self.head().store(self.next_seq_cache.get());
+        self.signal();
     }
 
     #[inline]
@@ -187,6 +190,21 @@ impl<T> Publisher<T> {
     #[inline]
     fn cursors(&self) -> &[Cursor] {
         unsafe { self.cursors.get_immut() }
+    }
+
+    #[inline]
+    fn signal(&self) {
+        match self.ring.fd {
+            Some(fd) => {
+                let buf: [u8; 8] = unsafe { transmute(1u64) };
+                unsafe {
+                    libc::write(fd,
+                                buf.as_ptr() as *const libc::c_void,
+                                buf.len() as libc::size_t)
+                };
+            }
+            _ => {}
+        }
     }
 }
 
@@ -297,19 +315,34 @@ impl<T> Subscriber<T> {
     fn cursors(&self) -> &[Cursor] {
         unsafe { self.cursors.get_immut() }
     }
+
+    #[inline]
+    pub fn wait(&self) {
+        match self.ring.fd {
+            Some(fd) => {
+                let mut buf = [0u8; 8];
+                unsafe {
+                    libc::read(fd,
+                               buf.as_mut_ptr() as *mut libc::c_void,
+                               buf.len() as libc::size_t)
+                };
+            }
+            _ => {}
+        }
+    }
 }
 
 impl Evented for RawFd {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll.register(self, token, interest, opts)
+        poll::selector(poll).register(*self, token, interest, opts)
     }
 
     fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll.reregister(self, token, interest, opts)
+        poll::selector(poll).reregister(*self, token, interest, opts)
     }
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        poll.deregister(self)
+        poll::selector(poll).deregister(*self)
     }
 }
 
@@ -330,11 +363,12 @@ impl<T> Evented for Subscriber<T> {
 
 impl<'a, T> Select<'a> for Subscriber<T> {
     fn init(&mut self, c: &mut Core, s: Slot) {
-        // self.unwrap().init(c, s);
+        println!("Subscriber registered");
+        c.register(self, s);
     }
     fn select(&mut self, c: &mut Core, t: Token, buf: &mut [u8]) -> usize {
-        // self.unwrap().select(c, t, buf)
-        0
+        println!("SELECTED");
+        self.read(buf).unwrap()
     }
     fn finalize(&mut self) {
         // self.unwrap().finalize();
@@ -346,13 +380,15 @@ fn copy_block_memory<T>(src: *const T, dst: &mut [u8]) -> usize {
     let size = mem::size_of::<T>();
     unsafe {
         let bytes = slice::from_raw_parts(src, size);
-        dst.clone_from_slice(bytes);
+        dst[..size].clone_from_slice(bytes);
     }
+    println!("{:?}", size);
     size
 }
 
 impl<T> Read for Subscriber<T> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.wait();
         match self.recv() {
             Some(v) => {
                 let sz = copy_block_memory::<T>(v as *const T, buf);

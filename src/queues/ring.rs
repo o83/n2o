@@ -78,11 +78,11 @@ impl<T> RingBuffer<T> {
             return Err(io::Error::last_os_error());
         }
 
-        // let n = unsafe { libc::close(fd_raw) };
-        // if n != 0 {
-        //     println!("error {} when closing file descriptor {}", n, fd_raw);
-        //     return Err(io::Error::last_os_error());
-        // }
+        let n = unsafe { libc::close(fd_raw) };
+        if n != 0 {
+            println!("error {} when closing file descriptor {}", n, fd_raw);
+            return Err(io::Error::last_os_error());
+        }
 
         if unsafe { libc::shm_unlink(name.as_ptr()) < 0 } {
             return Err(io::Error::last_os_error());
@@ -93,7 +93,7 @@ impl<T> RingBuffer<T> {
         Ok(RingBuffer {
             buffer: unsafe { RawVec::from_raw_parts(ptr as *mut T, adjusted) },
             mask: adjusted - 1,
-            fd: Some(fd_raw),
+            fd: Some(unsafe { libc::eventfd(0, libc::O_NONBLOCK) }),
         })
     }
 
