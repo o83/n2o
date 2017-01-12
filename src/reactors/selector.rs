@@ -25,9 +25,21 @@ pub enum Async<T> {
     NotReady,
 }
 
+pub struct RingLock<'a> {
+    pub buf: &'a [Message],
+    pub sub: &'a Subscriber<Message>,
+}
+
+impl<'a> Drop for RingLock<'a> {
+    fn drop(&mut self) {
+        println!("Dropping RingLock!");
+        self.sub.commit();
+    }
+}
+
 pub enum Pool<'a> {
     Raw(&'a [u8]),
-    Msg(&'a [Message]),
+    Msg(RingLock<'a>),
 }
 
 pub trait Select<'a>: Write {

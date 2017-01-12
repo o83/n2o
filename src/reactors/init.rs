@@ -47,8 +47,15 @@ impl<'a> Host<'a> {
         self.junk.add_selected(o);
         self.junk.add_selected(w);
         self.junk.add_intercore(s);
-        *p.next().unwrap() = Message::Halt;
-        p.commit();
+        match p.next_n(3) {
+            Some(vs) => {
+                vs[0] = Message::Halt;
+                vs[1] = Message::Unknown;
+                vs[2] = Message::Spawn(Spawn { id: 13, id2: 42 });
+                p.commit();
+            }
+            None => {}
+        }
         self.junk.boil();
     }
 }

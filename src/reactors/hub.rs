@@ -64,8 +64,8 @@ impl<'a> Hub<'a> {
                         self.core.write_all(format!("{:?}\n", r).as_bytes());
                     }
                 }
-            }
-            _ => (),
+            }            
+            Pool::Msg(x) => println!("recv: {:?}", x.buf),
         }
     }
 
