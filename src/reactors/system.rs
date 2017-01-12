@@ -17,7 +17,7 @@ use std::fmt::Arguments;
 const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;
 
-pub struct Core {
+pub struct IO {
     tokens: usize,
     events: Events,
     poll: Poll,
@@ -27,9 +27,9 @@ pub struct Core {
     i: usize,
 }
 
-impl<'a> Core {
+impl<'a> IO {
     pub fn new() -> Self {
-        Core {
+        IO {
             tokens: 0,
             poll: Poll::new().unwrap(),
             events: Events::with_capacity(EVENTS_CAPACITY),

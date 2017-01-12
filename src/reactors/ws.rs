@@ -14,7 +14,7 @@ use std::mem;
 use rustc_serialize::base64::{ToBase64, STANDARD};
 use sha1;
 use reactors::selector::{Select, Selector, Slot, Async, Pool};
-use reactors::core::Core;
+use reactors::system::IO;
 use std::cell::UnsafeCell;
 use std::fmt::Arguments;
 use handle::split;
@@ -133,10 +133,10 @@ impl WsServer {
     }
 
     #[inline]
-    fn reg_incoming<'a>(&mut self, c: &mut Core) {
+    fn reg_incoming<'a>(&mut self, io: &mut IO) {
         match self.tcp.accept() {
             Ok((mut s, a)) => {
-                let t = c.register(&s, self.slot);
+                let t = io.register(&s, self.slot);
                 self.clients.insert(t,
                                     WsClient {
                                         sock: s,
@@ -191,15 +191,15 @@ impl WsServer {
 }
 
 impl<'a> Select<'a> for WsServer {
-    fn init(&mut self, c: &mut Core, s: Slot) {
-        let t = c.register(&self.tcp, s);
+    fn init(&mut self, io: &mut IO, s: Slot) {
+        let t = io.register(&self.tcp, s);
         self.listen_token = t;
         self.slot = s;
     }
 
-    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a>> {
+    fn select(&'a mut self, io: &'a mut IO, t: Token) -> Async<Pool<'a>> {
         if t == self.listen_token {
-            self.reg_incoming(c);
+            self.reg_incoming(io);
             Async::NotReady
         } else {
             let l = self.read_incoming(t);

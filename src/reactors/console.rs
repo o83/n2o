@@ -9,7 +9,7 @@ use io::options::*;
 use io::stdio;
 use io::event::Evented;
 use reactors::selector::{Select, Slot, Async, Pool};
-use reactors::core::Core;
+use reactors::system::IO;
 use std::fmt::Arguments;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -48,15 +48,15 @@ impl Evented for Console {
 }
 
 impl<'a> Select<'a> for Console {
-    fn init(&mut self, c: &mut Core, s: Slot) {
+    fn init(&mut self, io: &mut IO, s: Slot) {
         write!(self.stdout,
                "Welcome to O language interpreter {}\no)",
                VERSION);
         self.stdout.flush();
-        c.register(self, s);
+        io.register(self, s);
     }
 
-    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a>> {
+    fn select(&'a mut self, _: &'a mut IO, t: Token) -> Async<Pool<'a>> {
         let r = self.stdin.read(&mut self.buffer).unwrap();
         Async::Ready(Pool::Raw(&self.buffer[..r]))
     }

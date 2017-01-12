@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use reactors::core::Core;
+use reactors::system::IO;
 use reactors::scheduler::Scheduler;
 use streams::intercore::ctx::Ctx;
 use streams::intercore::api::{Message, Spawn};
@@ -23,7 +23,7 @@ pub struct Host<'a> {
     schedulers: Vec<Scheduler<'a, Job<'a>>>,
     junk: Handle<Hub<'a>>,
     rings: Vec<Rc<Ctx>>,
-    cores: Vec<Core>,
+    io: Vec<IO>,
 }
 
 impl<'a> Host<'a> {
@@ -34,7 +34,7 @@ impl<'a> Host<'a> {
             schedulers: Vec::new(),
             junk: handle::new(Hub::new(ctxs.last().unwrap().clone())),
             rings: ctxs,
-            cores: Vec::new(),
+            io: Vec::new(),
         }
     }
 

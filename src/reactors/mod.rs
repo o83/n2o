@@ -1,7 +1,7 @@
 pub mod console;
 #[macro_use]
 pub mod selector;
-pub mod core;
+pub mod system;
 pub mod hub;
 pub mod cpstask;
 pub mod scheduler;

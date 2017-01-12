@@ -6,7 +6,7 @@ use io::options::PollOpt;
 use std::collections::HashMap;
 use io::event::Evented;
 use std::cell::UnsafeCell;
-use reactors::core::Core;
+use reactors::system::IO;
 use reactors::ws::WsServer;
 use reactors::console::Console;
 use core::borrow::BorrowMut;
@@ -42,8 +42,8 @@ pub enum Pool<'a> {
 }
 
 pub trait Select<'a>: Write {
-    fn init(&mut self, c: &mut Core, s: Slot);
-    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a>>;
+    fn init(&mut self, io: &mut IO, s: Slot);
+    fn select(&'a mut self, io: &'a mut IO, t: Token) -> Async<Pool<'a>>;
     fn finalize(&mut self);
 }
 

@@ -21,7 +21,7 @@ use std::io::{self, Result, Read, Write};
 use std::slice;
 use std::mem;
 use reactors::selector::{Select, Slot, Async, Pool, RingLock};
-use reactors::core::Core;
+use reactors::system::IO;
 use libc;
 use core::mem::transmute;
 use streams::intercore::api::Message;
@@ -363,10 +363,10 @@ impl<T> Evented for Subscriber<T> {
 }
 
 impl<'a> Select<'a> for Subscriber<Message> {
-    fn init(&mut self, c: &mut Core, s: Slot) {
-        c.register(self, s);
+    fn init(&mut self, io: &mut IO, s: Slot) {
+        io.register(self, s);
     }
-    fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a>> {
+    fn select(&'a mut self, io: &'a mut IO, t: Token) -> Async<Pool<'a>> {
         // self.read(buf).unwrap()
         self.wait();
         match self.recv_all() {

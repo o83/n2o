@@ -2,7 +2,7 @@ use std::rc::Rc;
 use streams::intercore::ctx::Ctx;
 use queues::publisher::Publisher;
 use queues::publisher::Subscriber;
-use reactors::core::Core;
+use reactors::system::IO;
 use reactors::selector::{Selector, Slot, Async, Pool};
 use reactors::console::Console;
 use reactors::ws::WsServer;
@@ -15,7 +15,7 @@ use std::str;
 use streams::intercore::api::*;
 
 pub struct Hub<'a> {
-    core: Core,
+    io: IO,
     scheduler: Scheduler<'a, CpsTask<'a>>,
     ctx: Rc<Ctx>,
 }
@@ -23,14 +23,14 @@ pub struct Hub<'a> {
 impl<'a> Hub<'a> {
     pub fn new(ctx: Rc<Ctx>) -> Self {
         Hub {
-            core: Core::new(),
+            io: IO::new(),
             scheduler: Scheduler::new(),
             ctx: ctx,
         }
     }
 
     pub fn add_selected(&mut self, s: Selector) {
-        self.core.spawn(s);
+        self.io.spawn(s);
     }
 
     #[inline]
@@ -39,14 +39,14 @@ impl<'a> Hub<'a> {
             return;
         }
         if b.len() == 1 && b[0] == 0x0A {
-            self.core.write_all(&[0u8; 0]);
+            self.io.write_all(&[0u8; 0]);
             return;
         }
         let x = str::from_utf8(b).unwrap();
         let (s1, s2) = handle::split(self);
         s1.scheduler.exec(t, Some(x));
         let r = s2.scheduler.run();
-        s2.core.write_all(format!("{:?}\n", r).as_bytes());
+        s2.io.write_all(format!("{:?}\n", r).as_bytes());
     }
 
     #[inline]
@@ -65,7 +65,7 @@ impl<'a> Hub<'a> {
         loop {
             let h1: &mut Hub<'a> = unsafe { &mut *h };
             let h2: &mut Hub<'a> = unsafe { &mut *h };
-            match h1.core.poll() {
+            match h1.io.poll() {
                 Async::Ready((_, p)) => h2.ready(p, task_id),
                 Async::NotReady => (),
             }
