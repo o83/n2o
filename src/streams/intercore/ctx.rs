@@ -1,5 +1,6 @@
 use queues::publisher::Publisher;
 use queues::publisher::Subscriber;
+use streams::intercore::api::Message;
 use std::cell::UnsafeCell;
 
 pub enum TypeId {
@@ -10,6 +11,11 @@ pub enum TypeId {
 pub struct Ctx {
     publishers: UnsafeCell<Vec<Publisher<u64>>>,
     subscribers: UnsafeCell<Vec<Subscriber<u64>>>,
+}
+
+pub struct Channel {
+    publisher: Publisher<u64>,
+    subscribers: Vec<Subscriber<u64>>,
 }
 
 impl Ctx {

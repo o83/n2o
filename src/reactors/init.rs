@@ -3,6 +3,7 @@ use reactors::system::IO;
 use reactors::scheduler::Scheduler;
 use streams::intercore::ctx::Ctx;
 use streams::intercore::api::{Message, Spawn};
+use streams::intercore::ctx::Channel;
 use reactors::hub::Hub;
 use std::mem;
 use handle::{self, Handle};
@@ -19,11 +20,15 @@ use reactors::selector::{Select, Selector, Async};
 use queues::publisher::{Publisher, Subscriber};
 use std::ffi::CString;
 
+pub struct Core<'a> {
+    scheduler: Scheduler<'a, Job<'a>>,
+    bus: UnsafeCell<Channel>,
+    io: IO,
+}
+
 pub struct Host<'a> {
-    schedulers: Vec<Scheduler<'a, Job<'a>>>,
     junk: Handle<Hub<'a>>,
-    rings: Vec<Rc<Ctx>>,
-    io: Vec<IO>,
+    cores: Vec<Core<'a>>,
 }
 
 impl<'a> Host<'a> {
@@ -31,10 +36,8 @@ impl<'a> Host<'a> {
         let mut ctxs = Vec::new();
         ctxs.push(Rc::new(Ctx::new()));
         Host {
-            schedulers: Vec::new(),
+            cores: Vec::new(),
             junk: handle::new(Hub::new(ctxs.last().unwrap().clone())),
-            rings: ctxs,
-            io: Vec::new(),
         }
     }
 
