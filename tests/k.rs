@@ -58,35 +58,35 @@ pub fn k_assign() {
 }
 
 #[test]
-pub fn k_nilargs1() {
+pub fn k_anyargs1() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"[;]".to_string());
     assert_eq!(*code,
-               AST::Dict(&AST::Cons(&AST::Nil, &AST::Cons(&&AST::Nil, &&AST::Nil))));
+               AST::Dict(&AST::Cons(&AST::Any, &AST::Cons(&&AST::Any, &&AST::Nil))));
 }
 
 #[test]
-pub fn k_nilargs2() {
+pub fn k_anyargs2() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"[;;]".to_string());
     assert_eq!(*code,
-               AST::Dict(&AST::Cons(&AST::Nil, &AST::Cons(&AST::Nil, &AST::Cons(&AST::Nil, &AST::Nil)))));
+               AST::Dict(&AST::Cons(&AST::Any, &AST::Cons(&AST::Any, &AST::Cons(&AST::Any, &AST::Nil)))));
 }
 
 #[test]
-pub fn k_nilargs3() {
+pub fn k_anyargs3() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"[;;3]".to_string());
     assert_eq!(*code,
-               AST::Dict(&AST::Cons(&AST::Nil, &AST::Cons(&AST::Nil, &AST::Number(3)))));
+               AST::Dict(&AST::Cons(&AST::Any, &AST::Cons(&AST::Any, &AST::Number(3)))));
 }
 
 #[test]
-pub fn k_nilargs4() {
+pub fn k_anyargs4() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"[1;;]".to_string());
     assert_eq!(*code,
-               AST::Dict(&AST::Cons(&AST::Number(1), &AST::Cons(&AST::Nil, &AST::Cons(&AST::Nil, &AST::Nil)))));
+               AST::Dict(&AST::Cons(&AST::Number(1), &AST::Cons(&AST::Any, &AST::Cons(&AST::Any, &AST::Nil)))));
 }
 
 #[test]
