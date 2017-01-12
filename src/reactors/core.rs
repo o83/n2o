@@ -27,7 +27,7 @@ pub struct Core {
     i: usize,
 }
 
-impl Core {
+impl<'a> Core {
     pub fn new() -> Self {
         Core {
             tokens: 0,
@@ -54,12 +54,12 @@ impl Core {
         let (s1, s2) = handle::split(self);
         s1.selectors.push(s);
         let slot = Slot(s2.selectors.len() - 1);
-        with!(s1.selectors.last_mut().unwrap(), |x| x.init(s2, slot));
+        s1.selectors.last_mut().unwrap().unwrap().init(s2, slot);
         slot
     }
 
     pub fn write(&mut self, s: Slot, buf: &[u8]) -> io::Result<()> {
-        with!(self.selectors.get_mut(s.0).unwrap(), |x| x.write(buf));
+        self.selectors.get_mut(s.0).unwrap().unwrap().write(buf);
         Ok(())
     }
 
@@ -78,7 +78,7 @@ impl Core {
         }
     }
 
-    pub fn poll<'a>(&'a mut self) -> Async<(Slot, Pool<'a>)> {
+    pub fn poll(&'a mut self) -> Async<(Slot, Pool<'a>)> {
         self.poll_if_need();
         match self.i {
             0 => Async::NotReady,
@@ -87,16 +87,8 @@ impl Core {
                 let e = self.events.get(self.i).unwrap();
                 let (s1, s2) = handle::split(self);
                 let slot = s1.slots.get(e.token().0).unwrap();
-                // let recv = with!(s1.selectors.get_mut(slot.0).unwrap(),
-                //                  |x| x.select(s2, e.token()));
-
-                let recv = match *s1.selectors.get_mut(slot.0).unwrap() {
-                    Selector::Ws(ref mut w) => w.select(s2, e.token()),
-                    Selector::Rx(ref mut c) => c.select(s2, e.token()),
-                    Selector::Sb(ref mut s) => s.select(s2, e.token()),
-                };
-
-                match recv {
+                let sel = s1.selectors.get_mut(slot.0).unwrap();
+                match sel.unwrap().select(s2, e.token()) {
                     Async::Ready(p) => Async::Ready((Slot(slot.0), p)),
                     Async::NotReady => Async::NotReady,
                 }
@@ -107,7 +99,7 @@ impl Core {
     #[inline]
     fn finalize(&mut self) {
         for s in self.selectors.iter_mut() {
-            with!(s, |x| x.finalize());
+            s.unwrap().finalize();
         }
     }
 }

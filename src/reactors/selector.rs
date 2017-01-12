@@ -45,11 +45,6 @@ pub trait Select<'a>: Write {
     fn init(&mut self, c: &mut Core, s: Slot);
     fn select(&'a mut self, c: &'a mut Core, t: Token) -> Async<Pool<'a>>;
     fn finalize(&mut self);
-    fn with<F, R>(&'a mut self, mut f: F) -> R
-        where F: FnMut(&'a mut Self) -> R
-    {
-        f(self)
-    }
 }
 
 pub enum Selector {
@@ -58,20 +53,19 @@ pub enum Selector {
     Sb(Subscriber<Message>),
 }
 
-#[macro_export]
-macro_rules! with(
-    ($x:expr,$e:expr) => ({
-        match *$x {
-            Selector::Ws(ref mut w) => w.with($e),
-            Selector::Rx(ref mut c) => c.with($e),
-            Selector::Sb(ref mut s) => s.with($e), 
+impl Selector {
+    pub fn unwrap<'a>(&'a mut self) -> &'a mut Select<'a> {
+        match *self {
+            Selector::Ws(ref mut w) => w,
+            Selector::Rx(ref mut c) => c,
+            Selector::Sb(ref mut s) => s,
         }
-    })
-);
+    }
+}
 
 impl Write for Selector {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        with!(self, |x| x.write(buf));
+        self.unwrap().write(buf);
         Ok(1)
     }
     fn flush(&mut self) -> io::Result<()> {
