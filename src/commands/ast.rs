@@ -281,9 +281,13 @@ impl<'a> Arena<'a> {
 
 
     pub fn nil(&'a self) -> &'a AST<'a> {
-        unsafe { &(*self.asts.get())[0] }
+        unsafe { &(*self.asts.get())[0] } // see Arena::init for details
     }
 
+    pub fn any(&'a self) -> &'a AST<'a> {
+        unsafe { &(*self.asts.get())[1] } // see Arena::init for details
+    }
+    
     pub fn dump(&'a self) {
         let x = unsafe { &mut *self.asts.get() };
         for i in x.iter() {
@@ -345,7 +349,9 @@ impl<'a> Arena<'a> {
 
     pub fn init(asts: UnsafeCell<Vec<AST<'a>>>) -> (u16, UnsafeCell<Vec<AST<'a>>>) {
         let a = unsafe { &mut *asts.get() };
-        a.push(AST::Nil);
+        assert!(a.len() == 0);
+        a.push(AST::Nil);       // Nil - index 0
+        a.push(AST::Any);       // Any - index 1
         (a.len() as u16, asts)
     }
 
@@ -444,6 +450,7 @@ impl<'a> fmt::Display for AST<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             AST::Nil => write!(f, ""),
+            AST::Any => write!(f, "Any"),
             AST::Cons(ref a, &AST::Nil) => write!(f, "{}", a),
             AST::Cons(ref a, ref b) => write!(f, "{} {}", a, b),
             AST::List(ref a) => write!(f, "({})", a),
@@ -484,6 +491,10 @@ pub fn extract_name<'a>(a: &'a AST<'a>) -> u16 {
 
 pub fn nil<'a>(arena: &'a Arena<'a>) -> &'a AST<'a> {
     arena.ast(AST::Nil)
+}
+
+pub fn any<'a>(arena: &'a Arena<'a>) -> &'a AST<'a> {
+    arena.ast(AST::Any)
 }
 
 pub fn ast<'a>(n: AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {

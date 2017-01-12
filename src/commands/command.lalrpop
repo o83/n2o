@@ -28,9 +28,9 @@ FieldList: &'ast AST<'ast> = { Expr, <o:Expr> <m:FieldCont> => cons(o, m, arena)
 
 ExprList:  &'ast AST<'ast> = { Expr, 
            <o:Expr> ";" <m:ExprList>  => cons(o, m, arena),
-                                  ";" => cons(arena.nil(),cons(arena.nil(),arena.nil(), arena), arena),
-                         <o:Expr> ";" => cons(o, cons(arena.nil(),arena.nil(), arena), arena),
-                    ";" <m:ExprList>  => cons(arena.nil(), m, arena), };
+                                  ";" => cons(arena.any(),cons(arena.any(),arena.nil(), arena), arena),
+                         <o:Expr> ";" => cons(o, cons(arena.any(),arena.nil(), arena), arena),
+                    ";" <m:ExprList>  => cons(arena.any(), m, arena), };
 
 Verbs:     &'ast AST<'ast> = {          <v:Verb>            => verb(v, arena.nil(), arena.nil(), arena),
                                         <v:Verb> <r:Expr>   => verb(v, arena.nil(), r, arena), };
