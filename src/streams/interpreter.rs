@@ -14,7 +14,7 @@ pub enum Cont<'a> {
     Expressions(&'a AST<'a>, &'a Cont<'a>),
     Assign(&'a AST<'a>, &'a Cont<'a>),
     Cond(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
-    Func(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
+    Func(&'a AST<'a>, &'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
     List(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
     Dict(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
     Call(&'a AST<'a>, &'a Cont<'a>),
@@ -219,7 +219,7 @@ impl<'a> Interpreter<'a> {
                                   closure.unwrap()
                               },
                               body,
-                              self.arena.cont(Cont::Func(names, rev, cont)))
+                              self.arena.cont(Cont::Func(names, rev, body, cont)))
             }
             &AST::NameInt(s) => {
                 // println!("{:?}", s);
@@ -338,12 +338,24 @@ impl<'a> Interpreter<'a> {
                 };
                 c
             }
-            &Cont::Func(names, args, cont) => {
+            &Cont::Func(names, args, body, cont) => {
+                //println!("names={:?} args={:?}", names, args);
                 let f = self.env.new_child(node);
+                let mut partial = self.arena.nil(); // empty list of unfilled/empty arguments
                 for (k, v) in names.into_iter().zip(args.into_iter()) {
-                    self.env.define(ast::extract_name(k), v);
+                    match v {
+                        &AST::Any => partial = self.arena.ast(AST::Cons(k, partial)),
+                        _ => {
+                            self.env.define(ast::extract_name(k), v);
+                        }
+                    };
                 }
-                self.evaluate_expr(f, val, cont)
+                if partial == &AST::Nil {
+                    self.evaluate_expr(f, val, cont)
+                } else {
+                    Ok(Lazy::Defer(f,
+                                   self.arena.ast(AST::Lambda(Some(f), partial, body)), cont))
+                }
             }
             &Cont::Cond(if_expr, else_expr, cont) => {
                 match val {

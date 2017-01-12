@@ -238,7 +238,7 @@ impl<'a> fmt::Display for Cont<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             &Cont::Call(callee, cont) => write!(f, "call: {} next: {}", callee, delta(self, cont)),
-            &Cont::Func(names, args, cont) => write!(f, "func: {} {} next: {}", names, args, delta(self, cont)),
+            &Cont::Func(names, args, body, cont) => write!(f, "func: {} {} next: {}", names, args, delta(self, cont)),
             &Cont::Cond(if_expr, else_expr, cont) => {
                 write!(f,
                        "cond: {} {} next: {}",

@@ -268,3 +268,19 @@ pub fn k_pubsub() {
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
                "[41 41 42 42]");
 }
+
+#[test]
+pub fn k_partial1() {
+    let h = handle::new(Interpreter::new().unwrap());
+    let code = h.borrow_mut().parse(&"aa:{[x;y]x+y};bb:aa[;2];bb 3".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
+               "5");
+}
+
+#[test]
+pub fn k_partial2() {
+    let h = handle::new(Interpreter::new().unwrap());
+    let code = h.borrow_mut().parse(&"aa:{[x;y;z]x+y+z};bb:aa[;;];bb[1;2;3]".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
+               "6");
+}
