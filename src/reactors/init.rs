@@ -46,9 +46,9 @@ impl<'a> Host<'a> {
         let mut s = Selector::Sb(p.subscribe());
         self.junk.add_selected(o);
         self.junk.add_selected(w);
-        // self.junk.add_intercore(s);
-        // *p.next().unwrap() = 1;
-        // p.commit();
+        self.junk.add_intercore(s);
+        *p.next().unwrap() = Message::Halt;
+        p.commit();
         self.junk.boil();
     }
 }

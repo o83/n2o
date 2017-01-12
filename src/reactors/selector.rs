@@ -44,7 +44,7 @@ pub trait Select<'a>: Write {
 pub enum Selector {
     Ws(WsServer),
     Rx(Console),
-    Sb(Subscriber<u8>),
+    Sb(Subscriber<Message>),
 }
 
 #[macro_export]
