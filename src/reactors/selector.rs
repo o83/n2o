@@ -32,7 +32,6 @@ pub struct RingLock<'a> {
 
 impl<'a> Drop for RingLock<'a> {
     fn drop(&mut self) {
-        println!("Dropping RingLock!");
         self.sub.commit();
     }
 }

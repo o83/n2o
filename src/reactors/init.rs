@@ -46,7 +46,7 @@ impl<'a> Host<'a> {
         let mut s = Selector::Sb(p.subscribe());
         self.junk.add_selected(o);
         self.junk.add_selected(w);
-        self.junk.add_intercore(s);
+        self.junk.add_selected(s);
         match p.next_n(3) {
             Some(vs) => {
                 vs[0] = Message::Halt;
