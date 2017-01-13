@@ -1,7 +1,7 @@
 // Wrapper for userspace io event signaling.
 
 use io::unix;
-use io::poll::{self, Poll, Events};
+use io::poll::{self, Poll};
 use io::event::Evented;
 use io::options::PollOpt;
 use io::ready::Ready;
