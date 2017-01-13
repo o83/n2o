@@ -10,13 +10,13 @@ mod linux;
 mod xsock;
 
 #[cfg(any(target_os = "linux"))]
-pub use ::io::unix::linux::{Events, Selector};
+pub use ::io::unix::linux::{Events, Selector, Notify};
 
 #[cfg(any(target_os = "macos"))]
 mod bsd;
 
 #[cfg(any(target_os = "macos"))]
-pub use ::io::unix::bsd::{Events, Selector};
+pub use ::io::unix::bsd::{Events, Selector, Notify};
 
 // pub mod fd;
 pub mod stdio;

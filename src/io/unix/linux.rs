@@ -2,7 +2,8 @@
 use io::ready::Ready;
 use io::options::PollOpt;
 use io::token::Token;
-use io::event::Event;
+use io::event::{Event};
+use io::poll::{self, Poll};
 use io::unix::errno::Errno;
 use libc::c_int;
 use libc;
@@ -12,6 +13,7 @@ use std::io;
 use std::os::unix::io::RawFd;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::time::Duration;
+use std::mem;
 
 pub fn from_nix_error(err: ::io::unix::errno::Error) -> std::io::Error {
     std::io::Error::from_raw_os_error(errno::int(err.errno()))
@@ -270,4 +272,34 @@ pub enum EpollOp {
 pub struct EpollEvent {
     pub events: EpollEventKind,
     pub data: u64,
+}
+
+#[derive(Clone, Copy)]
+#[repr(C, packed)]
+pub struct Notify {
+    pub fd: RawFd,
+}
+
+impl Notify {
+    pub fn new(initval: u32) -> Self {
+        Notify { fd: unsafe { libc::eventfd(initval, libc::O_NONBLOCK) } }
+    }
+
+    pub fn send(&self) {
+        unsafe {
+            let buf: [u8; 8] = unsafe { mem::transmute(1u64) };
+            libc::write(self.fd,
+                        buf.as_ptr() as *const libc::c_void,
+                        buf.len() as libc::size_t);
+        }
+    }
+
+    pub fn wait(&self) {
+        let mut buf = [0u8; 8];
+        unsafe {
+            libc::read(self.fd,
+                       buf.as_mut_ptr() as *mut libc::c_void,
+                       buf.len() as libc::size_t);
+        }
+    }
 }

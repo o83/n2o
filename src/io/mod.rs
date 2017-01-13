@@ -9,3 +9,4 @@ pub mod registration;
 pub mod unix;
 pub mod tcp;
 pub mod stdio;
+pub mod notify;

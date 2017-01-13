@@ -1,6 +1,7 @@
 
 use io::ready::Ready;
 use io::options::PollOpt;
+use io::poll::{self, Poll};
 use io::token::Token;
 use io::event::Event;
 use io::event;
@@ -290,5 +291,25 @@ impl Events {
 impl fmt::Debug for Events {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(fmt, "Events {{ len: {} }}", self.sys_events.len())
+    }
+}
+
+#[derive(Clone, Copy)]
+#[repr(C, packed)]
+pub struct Notify {
+    pub fd: RawFd,
+}
+
+impl Notify {
+    pub fn new(initval: u32) -> Self {
+        Notify {fd:0 as i32}
+    }
+
+    pub fn send(&self) {
+        
+    }
+
+    pub fn wait(&self) {
+        
     }
 }

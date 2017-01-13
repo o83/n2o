@@ -15,8 +15,8 @@ use io::poll::{self, Poll};
 use io::options::PollOpt;
 use io::ready::Ready;
 use io::token::Token;
-use std::os::unix::io::RawFd;
 use std::io::{self, Read, Write};
+use std::os::unix::io::RawFd;
 use std::slice;
 use std::mem;
 use reactors::selector::{Select, Slot, Async, Pool, RingLock};
@@ -24,6 +24,7 @@ use reactors::system::IO;
 use libc;
 use core::mem::transmute;
 use streams::intercore::api::Message;
+use io::notify::Notify;
 
 type Sequence = usize;
 
@@ -194,15 +195,8 @@ impl<T> Publisher<T> {
 
     #[inline]
     fn signal(&self) {
-        match self.ring.fd {
-            Some(fd) => {
-                let buf: [u8; 8] = unsafe { transmute(1u64) };
-                unsafe {
-                    libc::write(fd,
-                                buf.as_ptr() as *const libc::c_void,
-                                buf.len() as libc::size_t)
-                };
-            }
+        match self.ring.notify {
+            Some(ref n) => n.send(),
             _ => {}
         }
     }
@@ -318,46 +312,27 @@ impl<T> Subscriber<T> {
 
     #[inline]
     pub fn wait(&self) {
-        match self.ring.fd {
-            Some(fd) => {
-                let mut buf = [0u8; 8];
-                unsafe {
-                    libc::read(fd,
-                               buf.as_mut_ptr() as *mut libc::c_void,
-                               buf.len() as libc::size_t)
-                };
-            }
+        match self.ring.notify {
+            Some(ref n) => n.wait(),
             _ => {}
         }
     }
 }
 
-impl Evented for RawFd {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll::selector(poll).register(*self, token, interest, opts)
-    }
-
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll::selector(poll).reregister(*self, token, interest, opts)
-    }
-
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        poll::selector(poll).deregister(*self)
-    }
-}
-
-
 impl<T> Evented for Subscriber<T> {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.ring.fd.unwrap().register(poll, token, interest, opts)
+        self.ring.notify().map(|n| n.register(poll, token, interest, opts));
+        Ok(())
     }
 
     fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.ring.fd.unwrap().reregister(poll, token, interest, opts)
+        self.ring.notify().map(|n| n.reregister(poll, token, interest, opts));
+        Ok(())
     }
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        self.ring.fd.unwrap().deregister(poll)
+        self.ring.notify().map(|n| n.deregister(poll));
+        Ok(())
     }
 }
 
