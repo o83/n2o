@@ -6,9 +6,10 @@ use io::readiness::*;
 use io::options::PollOpt;
 use io::token::Token;
 use io::ready::Ready;
-use std::{fmt, io, usize};
-use std::sync::atomic::Ordering;
-use std::isize;
+use std::io;
+use core::{fmt, usize};
+use core::sync::atomic::Ordering;
+use core::isize;
 
 const MAX_REFCOUNT: usize = (isize::MAX) as usize;
 const NODE_QUEUED_FLAG: usize = 1;

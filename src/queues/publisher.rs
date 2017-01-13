@@ -11,20 +11,16 @@ use std::fmt::Formatter;
 use std::fmt::Debug;
 use std::fmt;
 use io::event::Evented;
-use io::poll::{self, Poll};
+use io::poll::Poll;
 use io::options::PollOpt;
 use io::ready::Ready;
 use io::token::Token;
 use std::io::{self, Read, Write};
-use std::os::unix::io::RawFd;
 use std::slice;
 use std::mem;
 use reactors::selector::{Select, Slot, Async, Pool, RingLock};
 use reactors::system::IO;
-use libc;
-use core::mem::transmute;
 use streams::intercore::api::Message;
-use io::notify::Notify;
 
 type Sequence = usize;
 
