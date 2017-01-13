@@ -13,8 +13,40 @@ use std::io::Read;
 use handle;
 use std::str;
 use streams::intercore::api::*;
+use streams::intercore::ctx::Channel;
+use std::ffi::CString;
+use std::cell::UnsafeCell;
+use reactors::job::Job;
+
+// TODO: Merge Hub to Core
+
+pub struct Core<'a> {
+    scheduler: Scheduler<'a, Job<'a>>,
+    bus: UnsafeCell<Channel>,
+    io: IO,
+}
+
+impl<'a> Core<'a> {
+    pub fn new() -> Self {
+        let mut subscribers = Vec::new();
+        let mut publisher = Publisher::with_mirror(CString::new("/test").unwrap(), 8);
+        subscribers.push(publisher.subscribe());
+        Core {
+            io: IO::new(),
+            scheduler: Scheduler::new(),
+            bus: UnsafeCell::new(Channel {
+                publisher: publisher,
+                subscribers: subscribers,
+            }),
+        }
+    }
+    pub fn add_selected(&mut self, s: Selector) {
+        self.io.spawn(s);
+    }
+}
 
 pub struct Hub<'a> {
+    core: Core<'a>,
     io: IO,
     scheduler: Scheduler<'a, CpsTask<'a>>,
     ctx: Rc<Ctx>,
@@ -23,6 +55,7 @@ pub struct Hub<'a> {
 impl<'a> Hub<'a> {
     pub fn new(ctx: Rc<Ctx>) -> Self {
         Hub {
+            core: Core::new(),
             io: IO::new(),
             scheduler: Scheduler::new(),
             ctx: ctx,

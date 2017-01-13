@@ -13,18 +13,13 @@ use core::ops::DerefMut;
 use std::cell::UnsafeCell;
 // TODO: next uses will be removed when Interpreter
 // could create IO's dynamically.
+use reactors::hub::Core;
 use reactors::console::Console;
 use reactors::ws::WsServer;
 use std::net::SocketAddr;
 use reactors::selector::{Select, Selector, Async};
 use queues::publisher::{Publisher, Subscriber};
 use std::ffi::CString;
-
-pub struct Core<'a> {
-    scheduler: Scheduler<'a, Job<'a>>,
-    bus: UnsafeCell<Channel>,
-    io: IO,
-}
 
 pub struct Host<'a> {
     junk: Handle<Hub<'a>>,
