@@ -191,7 +191,7 @@ impl fmt::Display for Adverb {
 }
 
 #[derive(PartialEq,Debug,Clone)]
-pub enum AST<'a> {
+pub enum AST<'a> { 
     Nil,
     Any,
     Cons(&'a AST<'a>, &'a AST<'a>),
@@ -206,7 +206,7 @@ pub enum AST<'a> {
     Table(&'a AST<'a>, &'a AST<'a>),
     Ioverb(String),
     Yield,
-    VecInt(Vec<u64>),
+    VecInt(Vec<i64>),
     VecFloat(Vec<f64>),
     VecAST(Vec<AST<'a>>),
     Number(i64),
@@ -442,6 +442,16 @@ impl<'a> iter::IntoIterator for &'a AST<'a> {
     }
 }
 
+struct vi64<'a> (&'a Vec<i64>);
+
+impl<'a> fmt::Display for vi64<'a> {    // cannot implement trait directly for Vec<i64> :(
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let str=self.0.into_iter()
+            .map(|x| x.to_string())
+            .fold(String::new(), |acc, x| if acc == "" { x } else { format!("{};{}", acc, x) });
+        write!(f,"{}",str)
+    }
+}
 
 impl<'a> fmt::Display for AST<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -473,6 +483,9 @@ impl<'a> fmt::Display for AST<'a> {
             AST::Assign(ref a, ref b) => write!(f, "{}:{}", a, b),
             AST::Cond(ref c, ref a, ref b) => write!(f, "$[{};{};{}]", c, a, b),
             AST::Yield => write!(f, "Yield"),
+            AST::VecInt(ref v) => write!(f, "#i[{}]", vi64(v)),
+            //AST::VecFloat(ref v) => write!(f, "#f[{}]", v),
+            //AST::VecAST(ref v) => write!(f, "#a[{}]", v),
             _ => write!(f, "Not implemented yet."),
         }
 
@@ -540,9 +553,69 @@ pub fn list<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     }
 }
 
+struct intlist_r { isvec:bool, len:usize }
+
+fn is_intlist<'a>(l: &'a AST<'a>) -> intlist_r {
+    // returns if cons-list contains only integers and its length
+    
+    match l {
+        &AST::Cons(a, b) => {
+            let la = is_intlist(a);
+            let lb = if la.isvec { is_intlist(b) } else { intlist_r{ isvec:false, len:0 } };
+            intlist_r { isvec:la.isvec && lb.isvec,
+                        len:la.len + lb.len
+            }
+        },
+        &AST::Nil => intlist_r { isvec:true, len:0 },
+        &AST::Number(i64) => intlist_r { isvec:true, len:1 },
+        x => intlist_r { isvec:false, len:0 }
+    }
+}
+
+fn to_intlist<'a>(l: &'a AST<'a>, len:usize, arena: &'a Arena<'a>) -> &'a AST<'a> {
+    // converts list of integers to specialized vector
+
+    //println!("to_intlist : {:?} {}", l, len);
+    let mut a:Vec<i64> = Vec::with_capacity(len);
+    for v in l.into_iter() {
+        match v {
+            &AST::Number(x) => { a.push(x); },
+            _ => panic!("Unexpected non-integer type") 
+        }
+    }
+    arena.ast(AST::VecInt(a))
+}
+
+fn postprocess<'a>(t: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
+    // AST postprocessing
+    // - lists of integers => VecInt
+    // - lists of floats   => VecFloat
+    // - general lists     => VecAST
+
+    //println!("postprocess input: {:?}", t);
+    match t {
+        &AST::List(l) => {
+            //println!("postprocess List: {:?}", l);
+
+            let li = is_intlist(l);
+            if li.isvec { to_intlist(l, li.len, arena) }
+            else { arena.ast(AST::List(l)) }
+        },
+        &AST::Cons(a, b) => arena.ast(AST::Cons(postprocess(a, arena), postprocess(b, arena))),
+        &AST::Dict(d) => arena.ast(AST::Dict(postprocess(d, arena))), 
+        &AST::Assign(a, b) => arena.ast(AST::Assign(postprocess(a, arena), postprocess(b, arena))), 
+        &AST::Call(a, b) => arena.ast(AST::Call(postprocess(a, arena), postprocess(b, arena))), 
+        &AST::Cond(a, b, c) => arena.ast(AST::Cond(postprocess(a, arena), postprocess(b, arena), postprocess(c, arena))),
+        &AST::Lambda(t, a, b) => arena.ast(AST::Lambda(t, postprocess(a, arena), postprocess(b, arena))),
+        &AST::Verb(v, a, b) => arena.ast(AST::Verb(v, postprocess(a, arena), postprocess(b, arena))),
+        &AST::Adverb(adv, a, b) => arena.ast(AST::Adverb(adv, postprocess(a, arena), postprocess(b, arena))),
+        &AST::Table(a, b) => arena.ast(AST::Table(postprocess(a, arena), postprocess(b, arena))),
+        x => arena.ast(x.clone())       // nothing to postprocess
+    }
+}
 
 pub fn parse<'a>(arena: &'a Arena<'a>, s: &String) -> &'a AST<'a> {
-    command::parse_Mex(arena, s).unwrap()
+    postprocess( command::parse_Mex(arena, s).unwrap(), arena )
 }
 
 pub fn rev_list<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {

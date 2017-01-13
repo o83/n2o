@@ -25,10 +25,10 @@ pub fn k_ariph() {
 #[test]
 pub fn k_list() {
     let mut i = Interpreter::new().unwrap();
-    let code = i.parse(&"(1;2;3;4)".to_string());
+    let code = i.parse(&"(1;\"2\";3;4)".to_string());
     assert_eq!(*code,
                AST::List(&AST::Cons(&AST::Number(1),
-                                    &AST::Cons(&AST::Number(2),
+                                    &AST::Cons(&AST::SequenceInt(0),
                                                &AST::Cons(&AST::Number(3), &AST::Number(4))))));
 }
 
@@ -90,6 +90,15 @@ pub fn k_anyargs4() {
 }
 
 #[test]
+pub fn k_vecconst1() {
+    let mut i = Interpreter::new().unwrap();
+    let code = i.parse(&"(1;2;3)".to_string());
+    let a:Vec<i64> = vec![1,2,3];
+    assert_eq!(*code,
+               AST::VecInt(a));
+}
+
+#[test]
 pub fn k_plus() {
     let uc = UnsafeCell::new(Interpreter::new().unwrap());
     let i1: &mut Interpreter = unsafe { &mut *uc.get() };
@@ -104,7 +113,7 @@ pub fn k_func() {
     let code = i.parse(&"{x*2}[(1;2;3)]".to_string());
     assert_eq!(format!("{:?}", code),
                "Call(Lambda(None, NameInt(0), Verb(Times, NameInt(0), Number(2))), \
-                List(Cons(Number(1), Cons(Number(2), Number(3)))))");
+                VecInt([1, 2, 3]))");
 }
 
 #[test]
@@ -113,7 +122,7 @@ pub fn k_adverb() {
     let code = i.parse(&"{x+2}/(1;2;3)".to_string());
     assert_eq!(format!("{:?}", code),
                "Adverb(Over, Lambda(None, NameInt(0), Verb(Plus, NameInt(0), Number(2))), \
-                List(Cons(Number(1), Cons(Number(2), Number(3)))))");
+                VecInt([1, 2, 3]))");
 }
 
 
@@ -123,9 +132,7 @@ pub fn k_reduce() {
     let ref mut code = i.parse(&"+/{x*y}[(1;3;4;5;6);(2;6;2;1;3)]".to_string());
     assert_eq!(format!("{:?}", code),
                "Adverb(Over, Verb(Plus, Nil, Nil), Call(Lambda(None, NameInt(0), Verb(Times, \
-                NameInt(0), NameInt(1))), Dict(Cons(List(Cons(Number(1), Cons(Number(3), \
-                Cons(Number(4), Cons(Number(5), Number(6)))))), List(Cons(Number(2), \
-                Cons(Number(6), Cons(Number(2), Cons(Number(1), Number(3))))))))))");
+                NameInt(0), NameInt(1))), Dict(Cons(VecInt([1, 3, 4, 5, 6]), VecInt([2, 6, 2, 1, 3])))))");
 }
 
 #[test]
