@@ -23,11 +23,7 @@ pub mod ffi {
     extern "C" {
         pub fn epoll_create(size: c_int) -> c_int;
         pub fn epoll_ctl(epfd: c_int, op: c_int, fd: c_int, event: *const EpollEvent) -> c_int;
-        pub fn epoll_wait(epfd: c_int,
-                          events: *mut EpollEvent,
-                          max_events: c_int,
-                          timeout: c_int)
-                          -> c_int;
+        pub fn epoll_wait(epfd: c_int, events: *mut EpollEvent, max_events: c_int, timeout: c_int) -> c_int;
     }
 }
 
@@ -66,18 +62,13 @@ impl Selector {
         self.id
     }
 
-    pub fn select(&self,
-                  evts: &mut Events,
-                  awakener: Token,
-                  timeout: Option<Duration>)
-                  -> io::Result<bool> {
+    pub fn select(&self, evts: &mut Events, awakener: Token, timeout: Option<Duration>) -> io::Result<bool> {
         use std::{cmp, i32, slice};
 
         let timeout_ms = timeout.map(|to| cmp::min(millis(to), i32::MAX as u64) as i32)
             .unwrap_or(-1);
 
-        let dst =
-            unsafe { slice::from_raw_parts_mut(evts.events.as_mut_ptr(), evts.events.capacity()) };
+        let dst = unsafe { slice::from_raw_parts_mut(evts.events.as_mut_ptr(), evts.events.capacity()) };
 
         let cnt = try!(epoll_wait(self.epfd, dst, timeout_ms as isize).map_err(from_nix_error));
 
@@ -95,12 +86,7 @@ impl Selector {
         Ok(false)
     }
 
-    pub fn register(&self,
-                    fd: RawFd,
-                    token: Token,
-                    interests: Ready,
-                    opts: PollOpt)
-                    -> io::Result<()> {
+    pub fn register(&self, fd: RawFd, token: Token, interests: Ready, opts: PollOpt) -> io::Result<()> {
         let info = EpollEvent {
             events: ioevent_to_epoll(interests, opts),
             data: usize::from(token) as u64,
@@ -109,12 +95,7 @@ impl Selector {
         epoll_ctl(self.epfd, EpollOp::EpollCtlAdd, fd, &info).map_err(from_nix_error)
     }
 
-    pub fn reregister(&self,
-                      fd: RawFd,
-                      token: Token,
-                      interests: Ready,
-                      opts: PollOpt)
-                      -> io::Result<()> {
+    pub fn reregister(&self, fd: RawFd, token: Token, interests: Ready, opts: PollOpt) -> io::Result<()> {
         let info = EpollEvent {
             events: ioevent_to_epoll(interests, opts),
             data: usize::from(token) as u64,
@@ -244,10 +225,7 @@ pub fn epoll_ctl(epfd: RawFd, op: EpollOp, fd: RawFd, event: &EpollEvent) -> err
 }
 
 #[inline]
-pub fn epoll_wait(epfd: RawFd,
-                  events: &mut [EpollEvent],
-                  timeout_ms: isize)
-                  -> errno::Result<usize> {
+pub fn epoll_wait(epfd: RawFd, events: &mut [EpollEvent], timeout_ms: isize) -> errno::Result<usize> {
     let res = unsafe {
         ffi::epoll_wait(epfd,
                         events.as_mut_ptr(),
@@ -292,4 +270,34 @@ pub enum EpollOp {
 pub struct EpollEvent {
     pub events: EpollEventKind,
     pub data: u64,
+}
+
+#[derive(Clone, Copy)]
+#[repr(C, packed)]
+pub struct Notify {
+    pub fd: RawFd,
+}
+
+impl Notify {
+    pub fn new(initval: u32) -> Self {
+        Notify { fd: unsafe { libc::eventfd(initval, libc::O_NONBLOCK) } }
+    }
+
+    pub fn send(&self) {
+        unsafe {
+            let buf: [u8; 8] = unsafe { mem::transmute(1u64) };
+            libc::write(self.fd,
+                        buf.as_ptr() as *const libc::c_void,
+                        buf.len() as libc::size_t);
+        }
+    }
+
+    pub fn wait(&self) {
+        let mut buf = [0u8; 8];
+        unsafe {
+            libc::read(self.fd,
+                       buf.as_mut_ptr() as *mut libc::c_void,
+                       buf.len() as libc::size_t);
+        }
+    }
 }
