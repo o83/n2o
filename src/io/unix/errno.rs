@@ -1,6 +1,6 @@
 
-use libc::{c_int, c_void, c_char};
-use std::ffi::{CStr, OsStr};
+use libc::{c_int, c_char};
+use std::ffi::CStr;
 use libc;
 use std::{self, fmt};
 use core;

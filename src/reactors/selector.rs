@@ -1,16 +1,8 @@
 use std::io::{self, Write};
-use io::poll::{Poll, Events};
 use io::token::Token;
-use io::ready::Ready;
-use io::options::PollOpt;
-use std::collections::HashMap;
-use io::event::Evented;
-use std::cell::UnsafeCell;
 use reactors::system::IO;
 use reactors::ws::WsServer;
 use reactors::console::Console;
-use core::borrow::BorrowMut;
-use handle;
 use std::fmt::Arguments;
 use queues::publisher::Subscriber;
 use streams::intercore::api::Message;

@@ -1,24 +1,17 @@
 use std::rc::Rc;
-use reactors::system::IO;
-use reactors::scheduler::Scheduler;
 use streams::intercore::ctx::Ctx;
 use streams::intercore::api::{Message, Spawn};
-use streams::intercore::ctx::Channel;
 use reactors::hub::Hub;
 use std::mem;
 use handle::{self, Handle};
-use reactors::job::Job;
-use std::sync::{Arc, Mutex, Once, ONCE_INIT};
-use core::ops::DerefMut;
+use std::sync::{Arc, Once, ONCE_INIT};
 use std::cell::UnsafeCell;
-// TODO: next uses will be removed when Interpreter
-// could create IO's dynamically.
 use reactors::hub::Core;
 use reactors::console::Console;
 use reactors::ws::WsServer;
 use std::net::SocketAddr;
-use reactors::selector::{Select, Selector, Async};
-use queues::publisher::{Publisher, Subscriber};
+use reactors::selector::Selector;
+use queues::publisher::Publisher;
 use std::ffi::CString;
 
 pub struct Host<'a> {

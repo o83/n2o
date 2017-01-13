@@ -1,4 +1,4 @@
-use reactors::task::{self, Task, Context, Poll, Error};
+use reactors::task::{Task, Context, Poll, Error};
 use streams::interpreter::*;
 use commands::ast::AST;
 use handle::*;

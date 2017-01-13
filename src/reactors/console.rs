@@ -1,7 +1,7 @@
 
 // Pretty simple mio-based terminal by Anton
 
-use std::io::{self, ErrorKind, Error, Read, Write};
+use std::io::{self, Read, Write};
 use io::token::Token;
 use io::ready::Ready;
 use io::poll::*;

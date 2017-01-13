@@ -1,6 +1,5 @@
 use queues::publisher::Publisher;
 use queues::publisher::Subscriber;
-use streams::intercore::api::Message;
 use std::cell::UnsafeCell;
 
 pub enum TypeId {

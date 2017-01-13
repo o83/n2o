@@ -1,21 +1,15 @@
 use std::net::SocketAddr;
 use io::tcp::{TcpListener, TcpStream};
-use io::poll::{Poll, Events};
 use io::token::Token;
-use io::ready::Ready;
-use io::options::PollOpt;
 use std::io::{self, Read, Write};
 use http_muncher::{Parser, ParserHandler};
 use std::collections::HashMap;
 use std::str;
 use std::fmt;
-use std::slice;
-use std::mem;
 use rustc_serialize::base64::{ToBase64, STANDARD};
 use sha1;
-use reactors::selector::{Select, Selector, Slot, Async, Pool};
+use reactors::selector::{Select, Slot, Async, Pool};
 use reactors::system::IO;
-use std::cell::UnsafeCell;
 use std::fmt::Arguments;
 use handle::split;
 

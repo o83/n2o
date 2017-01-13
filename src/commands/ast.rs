@@ -3,16 +3,13 @@
 
 use std::fmt;
 use std::iter;
-use std::vec;
 use std::result::Result;
-use std::rc::Rc;
-use std::cell::RefCell;
 use std::collections::HashMap;
 use commands::command;
-use streams::{otree, interpreter, env};
+use streams::otree;
 use streams::interpreter::*;
 use std::cell::UnsafeCell;
-use std::{mem, ptr, isize};
+use std::isize;
 use std::intrinsics::size_of;
 
 #[derive(Debug)]

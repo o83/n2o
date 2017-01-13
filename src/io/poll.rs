@@ -7,13 +7,9 @@ use io::ready::Ready;
 use io::event::{Event, Evented};
 use io::unix;
 use io::readiness::*;
-use io::registration::*;
-
-use std::{fmt, io, mem, ptr, usize};
-use std::cell::{UnsafeCell, Cell};
+use std::{fmt, io, usize};
+use std::cell::Cell;
 use std::marker;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, AtomicPtr, Ordering};
 use std::time::Duration;
 
 pub struct Poll {
@@ -35,12 +31,7 @@ impl Poll {
         Ok(poll)
     }
 
-    pub fn register<E: ?Sized>(&self,
-                               io: &E,
-                               token: Token,
-                               interest: Ready,
-                               opts: PollOpt)
-                               -> io::Result<()>
+    pub fn register<E: ?Sized>(&self, io: &E, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()>
         where E: Evented
     {
         try!(validate_args(token, interest));
@@ -49,12 +40,7 @@ impl Poll {
         Ok(())
     }
 
-    pub fn reregister<E: ?Sized>(&self,
-                                 io: &E,
-                                 token: Token,
-                                 interest: Ready,
-                                 opts: PollOpt)
-                                 -> io::Result<()>
+    pub fn reregister<E: ?Sized>(&self, io: &E, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()>
         where E: Evented
     {
         try!(validate_args(token, interest));

@@ -1,6 +1,4 @@
-use streams::interpreter::*;
 use commands::ast::AST;
-use streams::stream::{self, Error, Poll, Async};
 
 pub struct Div<'ast> {
     lvalue: &'ast AST<'ast>,

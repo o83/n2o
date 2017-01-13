@@ -1,8 +1,7 @@
 
 // Args Parser by Anton
 
-use std::{self, env};
-use std::collections::HashMap;
+use std::env;
 use std::result::Result;
 
 pub enum Error {
