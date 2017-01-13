@@ -287,7 +287,7 @@ impl<'a> Arena<'a> {
     pub fn any(&'a self) -> &'a AST<'a> {
         unsafe { &(*self.asts.get())[1] } // see Arena::init for details
     }
-    
+
     pub fn dump(&'a self) {
         let x = unsafe { &mut *self.asts.get() };
         for i in x.iter() {
@@ -528,7 +528,7 @@ pub fn table<'a>(l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AS
 }
 
 pub fn dict<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
-    println!("Dict: {:?}", l);
+    // println!("Dict: {:?}", l);
     match l {
         //        &AST::Cons(&AST::Nil, b) => arena.ast(AST::Cons(b, arena.nil())),
         &AST::Cons(a, b) => arena.ast(AST::Dict(l)),

@@ -14,8 +14,8 @@ pub struct Ctx {
 }
 
 pub struct Channel {
-    publisher: Publisher<u64>,
-    subscribers: Vec<Subscriber<u64>>,
+    pub publisher: Publisher<u64>,
+    pub subscribers: Vec<Subscriber<u64>>,
 }
 
 impl Ctx {

@@ -100,7 +100,7 @@ impl<'a> Interpreter<'a> {
 
     pub fn run(&'a mut self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
         let mut counter = 0;
-        println!("Input: {:?}", ast);
+        // println!("Input: {:?}", ast);
         let uc = UnsafeCell::new(self);
         let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
         let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
@@ -127,7 +127,7 @@ impl<'a> Interpreter<'a> {
                 Lazy::Return(ast) => {
                     // println!("env: {:?}", se3.env.dump());
                     // println!("arena: {:?}", se4.arena.dump());
-                    println!("Result: {}", ast);
+                    // println!("Result: {}", ast);
                     return Ok(ast);
                 }
             }
@@ -292,7 +292,7 @@ impl<'a> Interpreter<'a> {
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
                          -> Result<Lazy<'a>, Error> {
-        println!("Eval Dict: {:?}", exprs);
+        // println!("Eval Dict: {:?}", exprs);
         match exprs {
             &AST::Cons(car, cdr) => {
                 Ok(Lazy::Defer(node,
@@ -306,7 +306,7 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn emit_return(&'a self, val: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<Lazy<'a>, Error> {
-        println!("Emit: {:?}", val);
+        // println!("Emit: {:?}", val);
         match val {
             &AST::Dict(x) => {
                 let mut dict = ast::rev_dict(x, &self.arena);
@@ -339,7 +339,7 @@ impl<'a> Interpreter<'a> {
                 c
             }
             &Cont::Func(names, args, body, cont) => {
-                //println!("names={:?} args={:?}", names, args);
+                // println!("names={:?} args={:?}", names, args);
                 let f = self.env.new_child(node);
                 let mut partial = self.arena.nil(); // empty list of unfilled/empty arguments
                 for (k, v) in names.into_iter().zip(args.into_iter()) {
@@ -353,8 +353,7 @@ impl<'a> Interpreter<'a> {
                 if partial == &AST::Nil {
                     self.evaluate_expr(f, val, cont)
                 } else {
-                    Ok(Lazy::Defer(f,
-                                   self.arena.ast(AST::Lambda(Some(f), partial, body)), cont))
+                    Ok(Lazy::Defer(f, self.arena.ast(AST::Lambda(Some(f), partial, body)), cont))
                 }
             }
             &Cont::Cond(if_expr, else_expr, cont) => {
@@ -385,7 +384,7 @@ impl<'a> Interpreter<'a> {
                 }
             }
             &Cont::Dict(acc, rest, cont) => {
-                println!("Cont Dict: {:?} {:?}", val, rest);
+                // println!("Cont Dict: {:?} {:?}", val, rest);
                 let new_acc;
                 match val {
                     &AST::Cons(x, y) => new_acc = self.arena.ast(AST::Cons(self.arena.ast(AST::Dict(val)), acc)),
@@ -447,7 +446,7 @@ impl<'a> Interpreter<'a> {
             }
             x => {
                 let o = self.emit_return(val, con);
-                println!("Return: {:?}", o);
+                // println!("Return: {:?}", o);
                 o
             }
         }
