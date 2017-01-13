@@ -29,7 +29,7 @@ impl<'a> Host<'a> {
         }
     }
 
-    fn connect_cores(&self) {
+    fn connect_cores(&mut self) {
         for i in 1..5 {
             println!("init core_{:?}", i);
             let core = Core::new(i);
@@ -37,6 +37,7 @@ impl<'a> Host<'a> {
             for c in &self.cores {
                 c.connect_with(&core);
             }
+            self.cores.push(core);
         }
     }
     pub fn run(&mut self) {
