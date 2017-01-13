@@ -306,17 +306,15 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn emit_return(&'a self, val: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<Lazy<'a>, Error> {
-        // println!("Emit: {:?}", val);
+        println!("Emit: {:?}", val);
         match val {
             &AST::Dict(x) => {
                 let mut dict = ast::rev_dict(x, &self.arena);
                 Ok(Lazy::Return(self.arena.ast(AST::Dict(dict))))
             }
             &AST::Cons(x, y) => {
-                let mut head = ast::rev_dict(x, &self.arena);
-                let mut tail = ast::rev_dict(y, &self.arena);
                 Ok(Lazy::Return(self.arena
-                    .ast(AST::Dict(self.arena.ast(AST::Cons(tail, head))))))
+                    .ast(AST::Dict(ast::rev_dict(self.arena.ast(AST::Cons(x, y)), &self.arena)))))
             }
             x => Ok(Lazy::Return(x)),
         }
