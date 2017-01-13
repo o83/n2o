@@ -297,11 +297,12 @@ impl fmt::Debug for Events {
 #[derive(Clone, Copy)]
 #[repr(C, packed)]
 pub struct Notify {
+    pub fd: RawFd,
 }
 
 impl Notify {
     pub fn new(initval: u32) -> Self {
-        Notify {}
+        Notify {fd:0 as raw::c_int}
     }
 
     pub fn send(&self) {
@@ -310,19 +311,5 @@ impl Notify {
 
     pub fn wait(&self) {
         
-    }
-}
-
-impl Evented for Notify {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        // poll::selector(poll).register(self.fd, token, interest, opts)
-    }
-
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        // poll::selector(poll).reregister(self.fd, token, interest, opts)
-    }
-
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        // poll::selector(poll).deregister(self.fd)
     }
 }

@@ -2,7 +2,7 @@
 use io::ready::Ready;
 use io::options::PollOpt;
 use io::token::Token;
-use io::event::{Event,Evented};
+use io::event::{Event};
 use io::poll::{self, Poll};
 use io::unix::errno::Errno;
 use libc::c_int;
@@ -301,19 +301,5 @@ impl Notify {
                        buf.as_mut_ptr() as *mut libc::c_void,
                        buf.len() as libc::size_t);
         }
-    }
-}
-
-impl Evented for Notify {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll::selector(poll).register(self.fd, token, interest, opts)
-    }
-
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll::selector(poll).reregister(self.fd, token, interest, opts)
-    }
-
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        poll::selector(poll).deregister(self.fd)
     }
 }
