@@ -28,14 +28,14 @@ impl Notify {
 
 impl Evented for Notify {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll::selector(poll).register(self.inner.fd, token, interest, opts)
+        self.inner.register(poll, token, interest, opts)
     }
 
     fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll::selector(poll).reregister(self.inner.fd, token, interest, opts)
+        self.inner.reregister(poll, token, interest, opts)
     }
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        poll::selector(poll).deregister(self.inner.fd)
+        self.inner.deregister(poll)
     }
 }
