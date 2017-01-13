@@ -13,8 +13,8 @@ pub struct Notify {
 }
 
 impl Notify {
-    pub fn new(initval: u32) -> Self {
-        Notify { inner: unix::Notify::new(initval) }
+    pub fn new() -> Self {
+        Notify { inner: unix::Notify::new() }
     }
 
     pub fn send(&self) {

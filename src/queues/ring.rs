@@ -92,7 +92,7 @@ impl<T> RingBuffer<T> {
         Ok(RingBuffer {
             buffer: unsafe { RawVec::from_raw_parts(ptr as *mut T, adjusted) },
             mask: adjusted - 1,
-            notify: Some(Notify::new(0)),
+            notify: Some(Notify::new()),
         })
     }
 

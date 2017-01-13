@@ -2,7 +2,7 @@
 use io::ready::Ready;
 use io::options::PollOpt;
 use io::token::Token;
-use io::event::{Event};
+use io::event::Event;
 use io::poll::{self, Poll};
 use io::unix::errno::Errno;
 use libc::c_int;
@@ -281,8 +281,8 @@ pub struct Notify {
 }
 
 impl Notify {
-    pub fn new(initval: u32) -> Self {
-        Notify { fd: unsafe { libc::eventfd(initval, libc::O_NONBLOCK) } }
+    pub fn new() -> Self {
+        Notify { fd: unsafe { libc::eventfd(!0 as u32, libc::O_NONBLOCK) } }
     }
 
     pub fn send(&self) {
