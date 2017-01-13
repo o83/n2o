@@ -292,3 +292,22 @@ impl fmt::Debug for Events {
         write!(fmt, "Events {{ len: {} }}", self.sys_events.len())
     }
 }
+
+#[derive(Clone, Copy)]
+#[repr(C, packed)]
+pub struct Notify {
+}
+
+impl Notify {
+    pub fn new(initval: u32) -> Self {
+        Notify {}
+    }
+
+    pub fn send(&self) {
+        
+    }
+
+    pub fn wait(&self) {
+        
+    }
+}
