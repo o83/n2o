@@ -1,5 +1,4 @@
 pub mod console;
-#[macro_use]
 pub mod selector;
 pub mod system;
 pub mod hub;

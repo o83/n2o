@@ -12,20 +12,23 @@ use std::ffi::CString;
 use std::cell::UnsafeCell;
 use reactors::job::Job;
 
-// TODO: Merge Hub to Core
+pub trait Run {
+    fn run(&mut self);
+}
 
 pub struct Core<'a> {
     scheduler: Scheduler<'a, Job<'a>>,
     bus: UnsafeCell<Channel>,
     io: IO,
+    id: usize,
 }
 
 impl<'a> Core<'a> {
-    pub fn new() -> Self {
+    pub fn new(id: usize) -> Self {
         let mut subscribers = Vec::new();
-        let mut publisher = Publisher::with_mirror(CString::new("/test").unwrap(), 8);
-        subscribers.push(publisher.subscribe());
+        let mut publisher = Publisher::with_mirror(CString::new(format!("/core_{}", id)).unwrap(), 8);
         Core {
+            id: id,
             io: IO::new(),
             scheduler: Scheduler::new(),
             bus: UnsafeCell::new(Channel {
@@ -34,13 +37,21 @@ impl<'a> Core<'a> {
             }),
         }
     }
+
+    pub fn connect_with(&self, other: &Self) {
+        let s = unsafe { (&mut *other.bus.get()).publisher.subscribe() };
+        unsafe { (&mut *self.bus.get()).subscribers.push(s) };
+        let s = unsafe { (&mut *self.bus.get()).publisher.subscribe() };
+        unsafe { (&mut *other.bus.get()).subscribers.push(s) };
+    }
+
     pub fn add_selected(&mut self, s: Selector) {
         self.io.spawn(s);
     }
 }
 
 pub struct Hub<'a> {
-    core: Core<'a>,
+    pub core: Core<'a>,
     io: IO,
     scheduler: Scheduler<'a, CpsTask<'a>>,
     ctx: Rc<Ctx>,
@@ -49,7 +60,7 @@ pub struct Hub<'a> {
 impl<'a> Hub<'a> {
     pub fn new(ctx: Rc<Ctx>) -> Self {
         Hub {
-            core: Core::new(),
+            core: Core::new(0), // predefined 0 id
             io: IO::new(),
             scheduler: Scheduler::new(),
             ctx: ctx,

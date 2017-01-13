@@ -581,7 +581,7 @@ pub fn verb<'a>(v: Verb, l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -
                     match d {
                         &AST::Cons(a, b) => {
                             match b {
-                                &AST::Cons(t, f) => arena.ast(AST::Cond(a, t, arena.ast(AST::List(f)))),
+                                &AST::Cons(t, f) => arena.ast(AST::Cond(a, t, f)),
                                 x => x,
                             }
                         }

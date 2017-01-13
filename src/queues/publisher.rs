@@ -223,7 +223,6 @@ unsafe impl<T: Send> Send for Publisher<T> {}
 impl<T> !Sync for Subscriber<T> {}
 impl<T> !Sync for Publisher<T> {}
 
-
 impl<T> Clone for Subscriber<T> {
     #[inline]
     fn clone(&self) -> Subscriber<T> {

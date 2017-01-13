@@ -280,8 +280,8 @@ pub struct Notify {
 }
 
 impl Notify {
-    pub fn new(initval: u32) -> Self {
-        Notify { fd: unsafe { libc::eventfd(initval, libc::O_NONBLOCK) } }
+    pub fn new() -> Self {
+        Notify { fd: unsafe { libc::eventfd(!0 as u32, libc::O_NONBLOCK) } }
     }
 
     pub fn send(&self) {
