@@ -1,4 +1,4 @@
-use std::iter::{empty, once, repeat};
+use core::iter::{empty, once, repeat};
 
 struct DyadIterator<L, R, F> {
     l: L,

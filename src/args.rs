@@ -2,7 +2,7 @@
 // Args Parser by Anton
 
 use std::env;
-use std::result::Result;
+use core::result::Result;
 
 pub enum Error {
     ArgumentNotFound,

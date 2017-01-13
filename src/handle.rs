@@ -1,5 +1,5 @@
-use std::cell::UnsafeCell;
-use std::ops::{Deref, DerefMut};
+use core::cell::UnsafeCell;
+use core::ops::{Deref, DerefMut};
 
 pub struct Handle<T>(UnsafeCell<T>);
 

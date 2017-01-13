@@ -1,6 +1,6 @@
 use queues::publisher::Publisher;
 use queues::publisher::Subscriber;
-use std::cell::UnsafeCell;
+use core::cell::UnsafeCell;
 
 pub enum TypeId {
     Byte,

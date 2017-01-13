@@ -2,6 +2,9 @@
 pub mod errno;
 pub mod tcp;
 
+#[cfg(any(target_os = "sel4"))]
+mod linux;
+
 #[cfg(any(target_os = "linux"))]
 mod linux;
 mod xsock;
