@@ -1,6 +1,7 @@
 
 use io::ready::Ready;
 use io::options::PollOpt;
+use io::poll::{self, Poll};
 use io::token::Token;
 use io::event::Event;
 use io::event;
