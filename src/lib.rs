@@ -1,4 +1,5 @@
 
+#![feature(iter_arith)]
 #![feature(fnbox)]
 #![feature(static_in_const)]
 #![feature(as_unsafe_cell)]

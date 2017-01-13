@@ -427,6 +427,30 @@ impl<'a> Interpreter<'a> {
                             }
                         }
                     }
+                    (&AST::VecInt(_), &AST::Number(_)) => {
+                        match swap {
+                            0 => {
+                                let a = verb::eval(verb.clone(), right, val).unwrap();
+                                self.run_cont(node, self.arena.ast(a), cont)
+                            }
+                            _ => {
+                                let a = verb::eval(verb.clone(), val, right).unwrap();
+                                self.run_cont(node, self.arena.ast(a), cont)
+                            }
+                        }
+                    }
+                    (&AST::VecInt(_), &AST::VecInt(_)) => {
+                        match swap {
+                            0 => {
+                                let a = verb::eval(verb.clone(), right, val).unwrap();
+                                self.run_cont(node, self.arena.ast(a), cont)
+                            }
+                            _ => {
+                                let a = verb::eval(verb.clone(), val, right).unwrap();
+                                self.run_cont(node, self.arena.ast(a), cont)
+                            }
+                        }
+                    }
                     (x, y) => {
                         Ok(Lazy::Defer(node,
                                        x,

@@ -291,3 +291,21 @@ pub fn k_partial2() {
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
                "6");
 }
+
+#[test]
+pub fn k_vecop_va() {
+    let h = handle::new(Interpreter::new().unwrap());
+    let code = h.borrow_mut().parse(&"(1;2;3)+1".to_string());
+    let a:Vec<i64> = vec![2,3,4];
+    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
+               "#i[2;3;4]");
+}
+
+#[test]
+pub fn k_vecop_vv() {
+    let h = handle::new(Interpreter::new().unwrap());
+    let code = h.borrow_mut().parse(&"(1;2;3)+(1;2;3)".to_string());
+    let a:Vec<i64> = vec![2,4,6];
+    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
+               "#i[2;4;6]");
+}
