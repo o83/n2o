@@ -1,7 +1,7 @@
 
 // O-CPS INTERPRETER by 5HT et all
 
-use streams::{verb, adverb, env, otree};
+use streams::{verb, env, otree};
 use commands::ast::{self, Error, AST, Verb, Adverb, Arena};
 use streams::intercore::ctx::Ctx;
 use streams::intercore::internals;
@@ -313,10 +313,8 @@ impl<'a> Interpreter<'a> {
                 Ok(Lazy::Return(self.arena.ast(AST::Dict(dict))))
             }
             &AST::Cons(x, y) => {
-                let mut head = ast::rev_dict(x, &self.arena);
-                let mut tail = ast::rev_dict(y, &self.arena);
                 Ok(Lazy::Return(self.arena
-                    .ast(AST::Dict(self.arena.ast(AST::Cons(tail, head))))))
+                    .ast(AST::Dict(ast::rev_dict(self.arena.ast(AST::Cons(x, y)), &self.arena)))))
             }
             x => Ok(Lazy::Return(x)),
         }

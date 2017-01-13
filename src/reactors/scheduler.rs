@@ -1,6 +1,5 @@
 use reactors::task::{self, Task, Context, Poll};
 use std::mem;
-use handle::*;
 
 const TASKS_MAX_CNT: usize = 256;
 

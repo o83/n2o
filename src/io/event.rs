@@ -5,7 +5,7 @@ use io::poll::Poll;
 use io::options::PollOpt;
 use io::token::Token;
 use io::ready::Ready;
-use std::io::{Read, Write, Result, Error, ErrorKind};
+use std::io::Result;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct Event {

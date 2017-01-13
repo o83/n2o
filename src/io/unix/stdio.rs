@@ -1,16 +1,13 @@
 use std::prelude::v1::*;
 use std::io::prelude::*;
-
 use std;
-use std::fmt;
-use std::io::{self, BufReader, LineWriter};
-use io::poll::{self, Poll, Events};
+use std::io;
+use io::poll::{self, Poll};
 use io::options::PollOpt;
 use io::ready::Ready;
 use io::token::Token;
 use io::event::Evented;
-use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
-use libc;
+use std::os::unix::io::{RawFd, AsRawFd};
 use std::os::raw;
 
 pub struct EventedFd<'a>(pub &'a RawFd);

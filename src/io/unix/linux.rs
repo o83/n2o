@@ -4,21 +4,22 @@ use io::options::PollOpt;
 use io::token::Token;
 use io::event::Event;
 use io::unix::errno::Errno;
-use libc::{c_int, c_void};
+use libc::c_int;
 use libc;
 use io::unix::errno;
-use std::{self, mem};
-use std::io::{self, Result};
+use std;
+use std::io;
 use std::os::unix::io::RawFd;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::time::Duration;
+use std::mem;
 
 pub fn from_nix_error(err: ::io::unix::errno::Error) -> std::io::Error {
     std::io::Error::from_raw_os_error(errno::int(err.errno()))
 }
 
 pub mod ffi {
-    use libc::{c_int, c_void};
+    use libc::c_int;
     use ::io::unix::linux::EpollEvent;
     extern "C" {
         pub fn epoll_create(size: c_int) -> c_int;

@@ -3,16 +3,9 @@ use io::poll::{Poll, Events};
 use io::token::Token;
 use io::ready::Ready;
 use io::options::PollOpt;
-use std::collections::HashMap;
 use io::event::Evented;
-use std::cell::UnsafeCell;
-use reactors::selector;
-use reactors::selector::{Slot, Selector, Select, Async, Pool};
-use reactors::ws::WsServer;
-use reactors::console::Console;
-use core::borrow::BorrowMut;
+use reactors::selector::{Slot, Selector, Async, Pool};
 use handle;
-use std::fmt::Arguments;
 
 const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;

@@ -1,8 +1,6 @@
 use super::ctx::Ctx;
 use commands::ast::AST;
 use queues::publisher::Publisher;
-use queues::publisher::Subscriber;
-use core::ops::IndexMut;
 
 pub fn pub_<'a>(args: &'a AST<'a>, ctx: &Ctx) -> AST<'a> {
     println!("publishers {:?}", args);

@@ -1,12 +1,5 @@
-use std::fmt;
-use std::hash::BuildHasherDefault;
-use std::collections::HashMap;
-use std::rc::Rc;
-use std::cell::RefCell;
-use std::iter;
-use std::vec;
+
 use commands::ast::*;
-use fnv::*;
 use std::cell::UnsafeCell;
 use streams::otree::*;
 

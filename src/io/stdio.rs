@@ -1,11 +1,10 @@
 
 // Pipe Stream
 
-use std;
-use std::io::{self, Read, Write};
+use std::io::{self, Read};
 use io::token::Token;
 use io::ready::Ready;
-use io::poll::{self, Poll, Events};
+use io::poll::{self, Poll};
 use io::options::*;
 use io::unix;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -32,22 +31,12 @@ impl Read for Stdin {
 }
 
 impl Evented for Stdin {
-    fn register(&self,
-                poll: &Poll,
-                token: Token,
-                interest: Ready,
-                opts: PollOpt)
-                -> io::Result<()> {
+    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
         try!(self.selector_id.associate_selector(poll));
         self.sys.register(poll, token, interest, opts)
     }
 
-    fn reregister(&self,
-                  poll: &Poll,
-                  token: Token,
-                  interest: Ready,
-                  opts: PollOpt)
-                  -> io::Result<()> {
+    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
         self.sys.reregister(poll, token, interest, opts)
     }
 

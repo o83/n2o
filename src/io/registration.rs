@@ -6,10 +6,8 @@ use io::readiness::*;
 use io::options::PollOpt;
 use io::token::Token;
 use io::ready::Ready;
-use io::event::Event;
-use io::unix;
-use std::{fmt, io, mem, ptr, usize};
-use std::sync::atomic::{AtomicUsize, AtomicPtr, Ordering};
+use std::{fmt, io, usize};
+use std::sync::atomic::Ordering;
 use std::isize;
 
 const MAX_REFCOUNT: usize = (isize::MAX) as usize;
@@ -49,11 +47,7 @@ pub struct RegistrationData {
 }
 
 impl Registration {
-    pub fn new(poll: &Poll,
-               token: Token,
-               interest: Ready,
-               opts: PollOpt)
-               -> (Registration, SetReadiness) {
+    pub fn new(poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> (Registration, SetReadiness) {
         let inner = RegistrationInner::new(poll, token, interest, opts);
         let registration = Registration { inner: inner.clone() };
         let set_readiness = SetReadiness { inner: inner.clone() };
@@ -61,12 +55,7 @@ impl Registration {
         (registration, set_readiness)
     }
 
-    pub fn update(&self,
-                  poll: &Poll,
-                  token: Token,
-                  interest: Ready,
-                  opts: PollOpt)
-                  -> io::Result<()> {
+    pub fn update(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
         self.inner.update(poll, token, interest, opts)
     }
 
@@ -103,12 +92,7 @@ impl RegistrationInner {
         }
     }
 
-    pub fn update(&self,
-                  poll: &Poll,
-                  token: Token,
-                  interest: Ready,
-                  opts: PollOpt)
-                  -> io::Result<()> {
+    pub fn update(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
         try!(self.registration_data_mut(&poll.readiness_queue)).update(token, interest, opts);
         if !::io::event::is_empty(self.readiness()) {
             let needs_wakeup = self.queue_for_processing();
@@ -147,9 +131,7 @@ impl RegistrationInner {
         self.node.as_ref().unwrap()
     }
 
-    pub fn registration_data_mut(&self,
-                                 readiness_queue: &ReadinessQueue)
-                                 -> io::Result<&mut RegistrationData> {
+    pub fn registration_data_mut(&self, readiness_queue: &ReadinessQueue) -> io::Result<&mut RegistrationData> {
         if !self.queue.identical(readiness_queue) {
             return Err(io::Error::new(io::ErrorKind::Other,
                                       "registration registered with another instance of Poll"));

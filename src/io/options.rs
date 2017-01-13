@@ -1,7 +1,6 @@
 
 // Poller Options Bitmask
 
-use io::token::Token;
 use std::fmt;
 use std::ops;
 

@@ -1,7 +1,6 @@
 
 //  Rediness Queue
 
-use io::poll::*;
 use io::registration::*;
 use io::options::PollOpt;
 use io::token::Token;
@@ -9,12 +8,9 @@ use io::ready::Ready;
 use io::event::Event;
 use io::unix;
 use std::{fmt, io, mem, ptr, usize};
-use std::cell::{UnsafeCell, Cell};
-use std::isize;
-use std::marker;
+use std::cell::UnsafeCell;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, AtomicPtr, Ordering};
-use std::time::Duration;
 
 #[derive(Clone)]
 pub struct ReadinessQueue {
@@ -47,8 +43,7 @@ pub struct ReadinessNode {
 
 impl ReadinessQueue {
     pub fn new() -> io::Result<ReadinessQueue> {
-        let sleep_token =
-            Box::new(ReadinessNode::new(Token(0), Ready::none(), PollOpt::empty(), 0));
+        let sleep_token = Box::new(ReadinessNode::new(Token(0), Ready::none(), PollOpt::empty(), 0));
 
         Ok(ReadinessQueue {
             inner: Arc::new(UnsafeCell::new(ReadinessQueueInner {
@@ -123,12 +118,7 @@ impl ReadinessQueue {
         ReadyList { head: ReadyRef::new(head) }
     }
 
-    pub fn new_readiness_node(&self,
-                              token: Token,
-                              interest: Ready,
-                              opts: PollOpt,
-                              ref_count: usize)
-                              -> ReadyRef {
+    pub fn new_readiness_node(&self, token: Token, interest: Ready, opts: PollOpt, ref_count: usize) -> ReadyRef {
         let mut node = Box::new(ReadinessNode::new(token, interest, opts, ref_count));
         let ret = ReadyRef::new(&mut *node as *mut ReadinessNode);
 
@@ -209,8 +199,7 @@ impl ReadinessNode {
     }
 
     pub fn poll_events(&self) -> Ready {
-        (self.interest() | ::io::event::drop()) &
-        ::io::event::from_usize(self.events.load(Ordering::Relaxed))
+        (self.interest() | ::io::event::drop()) & ::io::event::from_usize(self.events.load(Ordering::Relaxed))
     }
 
     pub fn token(&self) -> Token {

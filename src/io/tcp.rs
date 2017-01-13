@@ -7,9 +7,8 @@ use std::net::{self, SocketAddr, SocketAddrV4, SocketAddrV6, Ipv4Addr, Ipv6Addr}
 use net2::TcpBuilder;
 use io::token::Token;
 use io::ready::Ready;
-use io::poll::{self, Poll, Events};
+use io::poll::{self, Poll};
 use io::options::*;
-use io::tcp;
 use io::unix;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use io::event::Evented;
