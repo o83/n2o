@@ -1,18 +1,14 @@
 
 use io::ready::Ready;
 use io::options::PollOpt;
-use io::poll::{self, Poll};
 use io::token::Token;
 use io::event::Event;
 use io::event;
-use std::io::{self, Result};
-use std;
-use io::unix::errno;
+use std::io;
 use nix::libc::timespec;
 use nix::unistd::close;
 use nix::sys::event::{EventFilter, EventFlag, FilterFlag, KEvent, kqueue, kevent, kevent_ts};
-use nix::sys::event::{EV_ADD, EV_CLEAR, EV_DELETE, EV_DISABLE, EV_ENABLE, EV_EOF, EV_ERROR,
-                      EV_ONESHOT};
+use nix::sys::event::{EV_ADD, EV_CLEAR, EV_DELETE, EV_DISABLE, EV_ENABLE, EV_EOF, EV_ERROR, EV_ONESHOT};
 use libc::{self, time_t};
 use std::{cmp, fmt, slice};
 use std::cell::UnsafeCell;
@@ -60,11 +56,7 @@ impl Selector {
         self.id
     }
 
-    pub fn select(&self,
-                  evts: &mut Events,
-                  awakener: Token,
-                  timeout: Option<Duration>)
-                  -> io::Result<bool> {
+    pub fn select(&self, evts: &mut Events, awakener: Token, timeout: Option<Duration>) -> io::Result<bool> {
         let timeout = timeout.map(|to| {
             timespec {
                 tv_sec: cmp::min(to.as_secs(), time_t::max_value() as u64) as time_t,
@@ -72,8 +64,7 @@ impl Selector {
             }
         });
 
-        let cnt = try!(kevent_ts(self.kq, &[], evts.as_mut_slice(), timeout)
-            .map_err(from_nix_error));
+        let cnt = try!(kevent_ts(self.kq, &[], evts.as_mut_slice(), timeout).map_err(from_nix_error));
 
         self.mut_changes().clear();
 
@@ -84,12 +75,7 @@ impl Selector {
         Ok(evts.coalesce(awakener))
     }
 
-    pub fn register(&self,
-                    fd: RawFd,
-                    token: Token,
-                    interests: Ready,
-                    opts: PollOpt)
-                    -> io::Result<()> {
+    pub fn register(&self, fd: RawFd, token: Token, interests: Ready, opts: PollOpt) -> io::Result<()> {
         trace!("KEVENT registering; token={:?}; interests={:?}",
                token,
                interests);
@@ -108,12 +94,7 @@ impl Selector {
         self.flush_changes()
     }
 
-    pub fn reregister(&self,
-                      fd: RawFd,
-                      token: Token,
-                      interests: Ready,
-                      opts: PollOpt)
-                      -> io::Result<()> {
+    pub fn reregister(&self, fd: RawFd, token: Token, interests: Ready, opts: PollOpt) -> io::Result<()> {
         // Just need to call register here since EV_ADD is a mod if already
         // registered
         self.register(fd, token, interests, opts)
@@ -126,12 +107,7 @@ impl Selector {
         self.flush_changes()
     }
 
-    fn ev_register(&self,
-                   fd: RawFd,
-                   token: usize,
-                   filter: EventFilter,
-                   enable: bool,
-                   opts: PollOpt) {
+    fn ev_register(&self, fd: RawFd, token: usize, filter: EventFilter, enable: bool, opts: PollOpt) {
         let mut flags = EV_ADD;
 
         if enable {
@@ -302,14 +278,13 @@ pub struct Notify {
 
 impl Notify {
     pub fn new(initval: u32) -> Self {
-        Notify {fd:0 as i32}
+        Notify { fd: 0 as i32 }
     }
 
     pub fn send(&self) {
-        
+        println!("SEND");
+
     }
 
-    pub fn wait(&self) {
-        
-    }
+    pub fn wait(&self) {}
 }
