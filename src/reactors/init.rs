@@ -29,7 +29,18 @@ impl<'a> Host<'a> {
         }
     }
 
+    fn connect_cores(&self) {
+        for i in 1..5 {
+            println!("init core_{:?}", i);
+            let core = Core::new(i);
+            core.connect_with(&self.junk.borrow().core);
+            for c in &self.cores {
+                c.connect_with(&core);
+            }
+        }
+    }
     pub fn run(&mut self) {
+        self.connect_cores();
         let mut o = Selector::Rx(Console::new());
         let addr = "0.0.0.0:9001".parse::<SocketAddr>().ok().expect("Parser Error");
         let mut w = Selector::Ws(WsServer::new(&addr));
