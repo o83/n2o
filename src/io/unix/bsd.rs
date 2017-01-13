@@ -302,7 +302,7 @@ pub struct Notify {
 
 impl Notify {
     pub fn new(initval: u32) -> Self {
-        Notify {fd:0 as raw::c_int}
+        Notify {fd:0 as i32}
     }
 
     pub fn send(&self) {
