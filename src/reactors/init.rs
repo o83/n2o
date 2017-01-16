@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use streams::intercore::ctx::Ctx;
 use streams::intercore::api::{Message, Spawn};
-use reactors::junk::Junk;
+use reactors::boot::Boot;
 use std::mem;
 use handle::{self, Handle};
 use std::sync::{Arc, Once, ONCE_INIT};
@@ -13,9 +13,26 @@ use std::net::SocketAddr;
 use reactors::selector::Selector;
 use queues::publisher::Publisher;
 use std::ffi::CString;
+use std::env;
+
+struct Args<'a> {
+    raw: Vec<String>,
+    cores: Option<usize>,
+    init: Option<&'a str>,
+}
+
+fn args<'a>() -> Args<'a> {
+    let a: Vec<String> = env::args().collect();
+    Args {
+        raw: a,
+        cores: None,
+        init: None,
+    }
+}
 
 pub struct Host<'a> {
-    junk: Handle<Junk<'a>>,
+    args: Args<'a>,
+    boot: Handle<Boot<'a>>,
     cores: Vec<Core<'a>>,
 }
 
@@ -24,8 +41,9 @@ impl<'a> Host<'a> {
         let mut ctxs = Vec::new();
         ctxs.push(Rc::new(Ctx::new()));
         Host {
+            args: args(),
             cores: Vec::new(),
-            junk: handle::new(Junk::new(ctxs.last().unwrap().clone())),
+            boot: handle::new(Boot::new(ctxs.last().unwrap().clone())),
         }
     }
 
@@ -33,7 +51,7 @@ impl<'a> Host<'a> {
         for i in 1..5 {
             println!("init core_{:?}", i);
             let core = Core::new(i);
-            core.connect_with(&self.junk.borrow().core);
+            core.connect_with(&self.boot.borrow().core);
             for c in &self.cores {
                 c.connect_with(&core);
             }
@@ -47,9 +65,9 @@ impl<'a> Host<'a> {
         let mut w = Selector::Ws(WsServer::new(&addr));
         let mut p = Publisher::with_mirror(CString::new("/test").unwrap(), 8);
         let mut s = Selector::Sb(p.subscribe());
-        self.junk.add_selected(o);
-        self.junk.add_selected(w);
-        self.junk.add_selected(s);
+        self.boot.add_selected(o);
+        self.boot.add_selected(w);
+        self.boot.add_selected(s);
         match p.next_n(3) {
             Some(vs) => {
                 vs[0] = Message::Halt;
@@ -59,7 +77,7 @@ impl<'a> Host<'a> {
             }
             None => {}
         }
-        self.junk.run();
+        self.boot.init();
     }
 }
 

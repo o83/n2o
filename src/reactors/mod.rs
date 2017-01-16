@@ -1,7 +1,7 @@
 pub mod console;
 pub mod selector;
 pub mod system;
-pub mod junk;
+pub mod boot;
 pub mod cpstask;
 pub mod scheduler;
 pub mod sequence;

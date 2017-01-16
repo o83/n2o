@@ -8,16 +8,16 @@ use handle;
 use std::str;
 use reactors::core::Core;
 
-pub struct Junk<'a> {
+pub struct Boot<'a> {
     pub core: Core<'a>,
     io: IO,
     scheduler: Scheduler<'a, CpsTask<'a>>,
     ctx: Rc<Ctx>,
 }
 
-impl<'a> Junk<'a> {
+impl<'a> Boot<'a> {
     pub fn new(ctx: Rc<Ctx>) -> Self {
-        Junk {
+        Boot {
             core: Core::new(0), // predefined 0 id
             io: IO::new(),
             scheduler: Scheduler::new(),
@@ -53,14 +53,14 @@ impl<'a> Junk<'a> {
         }
     }
 
-    pub fn run(&mut self) {
+    pub fn init(&mut self) {
         let cps = CpsTask::new(self.ctx.clone());
-        let h: *mut Junk<'a> = self;
-        let h0: &mut Junk<'a> = unsafe { &mut *h };
+        let h: *mut Boot<'a> = self;
+        let h0: &mut Boot<'a> = unsafe { &mut *h };
         let task_id = h0.scheduler.spawn(cps, TaskTermination::Corecursive, None);
         loop {
-            let h1: &mut Junk<'a> = unsafe { &mut *h };
-            let h2: &mut Junk<'a> = unsafe { &mut *h };
+            let h1: &mut Boot<'a> = unsafe { &mut *h };
+            let h2: &mut Boot<'a> = unsafe { &mut *h };
             match h1.io.poll() {
                 Async::Ready((_, p)) => h2.ready(p, task_id),
                 Async::NotReady => (),
