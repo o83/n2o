@@ -24,7 +24,10 @@ impl<'ast> Div<'ast> {
     }
     #[target_feature = "+avx"]
     fn l_l(l: &[i64], r: &[i64]) -> AST<'ast> {
-        AST::Number(1)
+        let a:Vec<i64> = l.iter().zip(r)
+            .map(|(l,r)| l / r)
+            .collect();
+        AST::VecInt(a)
     }
 }
 
