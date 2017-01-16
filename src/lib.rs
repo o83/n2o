@@ -44,7 +44,7 @@ extern crate deque;
 extern crate num_cpus;
 extern crate rand;
 extern crate time;
-extern crate simdty;
+extern crate x86intrin;
 
 #[macro_use]
 pub mod session_types;
@@ -52,7 +52,6 @@ pub mod session_types;
 pub mod reactors;
 // pub mod timers;
 pub mod io;
-pub mod llvm;
 pub mod commands;
 pub mod args;
 pub mod streams;

@@ -31,7 +31,7 @@ fnv             = "1.0.5"
 env_logger      = "0.3.5"
 http-muncher    = "0.3"
 sha1            = "0.2.0"
-simdty          = "0"
+x86intrin       = "0.2.0"
 rustc-serialize = "0.3.22"
 
 [target.'cfg(unix)'.dependencies]
