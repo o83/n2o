@@ -1,7 +1,9 @@
 #![feature(core_intrinsics)]
 #![feature(target_feature)]
 
-#[inline(never)]
+// $ rustc -C opt-level=3 -C target-feature=+avx --emit asm intint.rs
+// $ cat intint.s | grep mul
+
 #[target_feature = "+avx"]
 pub fn mul_array<'a>(x: &mut[f64], y: &[f64]) {
     debug_assert!(x.len() == y.len());
@@ -15,8 +17,8 @@ pub fn mul_array<'a>(x: &mut[f64], y: &[f64]) {
 }
 
 fn main() {
-    let mut a = vec![0.0, 1.0, 4.0, 9.0];
-    let b = vec![0.0, 2.0, 6.0, 0.0];
+    let mut a = vec![0.0, 1.0, 4.0, 9.0, 0.0, 1.0, 4.0, 9.0];
+    let b = vec![0.0, 2.0, 6.0, 0.0, 0.0, 1.0, 4.0, 9.0];
     //let mut a = vec![0, 1, 4, 9];
     //let b = vec![0, 2, 6, 0];
     mul_array(a.as_mut_slice(), b.as_slice());
