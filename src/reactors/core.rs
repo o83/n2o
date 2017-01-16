@@ -29,7 +29,7 @@ impl<'a> Core<'a> {
         }
     }
 
-    pub fn connect_with(&self, other: &Self) {
+    pub fn connect_with(&'a self, other: &'a Self) {
         let s = self.bus().publisher.subscribe();
         self.bus().subscribers.push(s);
         let s = self.bus().publisher.subscribe();

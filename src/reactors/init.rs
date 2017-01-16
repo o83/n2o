@@ -64,20 +64,23 @@ impl<'a> Host<'a> {
         Ok(())
     }
 
-    fn connect_cores(&mut self) {
-        for i in 1..self.args.cores.expect("Please, specify number of cores.") {
-            println!("init core_{:?}", i);
-            let core = Core::new(i);
-            core.connect_with(&self.boot.borrow().core);
-            for c in &self.cores {
-                c.connect_with(&core);
-            }
-            self.cores.push(core);
+    fn connect_w(c1: &Core, c2: &Core) {
+        let s = c1.bus().publisher.subscribe();
+        c1.bus().subscribers.push(s);
+        let s = c1.bus().publisher.subscribe();
+        c2.bus().subscribers.push(s);
+    }
+
+    fn connect_cores(core: &'a Core) {
+        Host::connect_w(core, &host().borrow_mut().boot.borrow().core);
+        for c in &host().borrow_mut().cores {
+            Host::connect_w(c, &core);
         }
     }
 
+
     pub fn run(&mut self) {
-        self.connect_cores();
+        // self.connect_cores();
         self.init();
         self.park_cores();
         let mut o = Selector::Rx(Console::new());
@@ -101,7 +104,7 @@ impl<'a> Host<'a> {
     }
 
     pub fn park_cores(&mut self) {
-        for i in 0..self.cores.len() {
+        for i in 0..self.args.cores.expect("Please, specify number of cores.") {
             let t = thread::Builder::new()
                 .name(format!("core_{}", i))
                 .spawn(move || {
@@ -109,9 +112,10 @@ impl<'a> Host<'a> {
                     let mut cpu = CpuSet::new();
                     cpu.set(1 << i);
                     sched::sched_setaffinity(id, &cpu);
-                    let mut c = Core::new(i);
-                    // let mut c = self.cores.clone().get(i).unwrap();
-                    c.park();
+                    let c = Core::new(i);
+                    Host::connect_cores(&c);
+                    host().borrow_mut().cores.push(c);
+                    // host().borrow_mut().cores[i].park(); // temporary value created here ????
                 })
                 .expect("Can't spawn new thread!");
         }
