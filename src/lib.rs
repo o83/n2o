@@ -1,3 +1,4 @@
+#![feature(simd, simd_ffi, link_llvm_intrinsics)]
 
 #![feature(iter_arith)]
 #![feature(fnbox)]
@@ -16,6 +17,7 @@
 #![feature(custom_derive)]
 #![feature(libc)]
 
+#![allow(improper_ctypes)]
 #![allow(unused_must_use)]
 #![allow(deprecated)]
 #![allow(unreachable_code)]
@@ -41,6 +43,7 @@ extern crate deque;
 extern crate num_cpus;
 extern crate rand;
 extern crate time;
+extern crate simdty;
 
 #[macro_use]
 pub mod session_types;
@@ -48,6 +51,7 @@ pub mod session_types;
 pub mod reactors;
 // pub mod timers;
 pub mod io;
+pub mod llvm;
 pub mod commands;
 pub mod args;
 pub mod streams;
