@@ -30,6 +30,7 @@
 #![allow(non_upper_case_globals)]
 #![feature(libc)]
 #![feature(core_intrinsics)]
+#![feature(thread_id)]
 // TODO: remove these deps
 
 extern crate net2;
@@ -45,7 +46,7 @@ extern crate time;
 pub mod session_types;
 #[macro_use]
 pub mod reactors;
-//pub mod timers;
+// pub mod timers;
 pub mod io;
 pub mod commands;
 pub mod args;
