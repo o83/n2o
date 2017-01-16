@@ -4,7 +4,7 @@ pub mod system;
 pub mod boot;
 pub mod cpstask;
 pub mod scheduler;
-pub mod sequence;
+//pub mod sequence;
 pub mod task;
 pub mod ws;
 pub mod init;

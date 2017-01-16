@@ -24,7 +24,6 @@
 #![allow(unreachable_code)]
 #![allow(non_snake_case)]
 #![allow(dead_code)]
-//#![allow(unused_imports)]
 #![allow(unused_unsafe)]
 #![allow(unused_variables)]
 #![allow(unused_features)]
@@ -34,28 +33,20 @@
 #![feature(libc)]
 #![feature(core_intrinsics)]
 #![feature(thread_id)]
-// TODO: remove these deps
 
 extern crate net2;
 extern crate nix;
-extern crate fnv;
 extern crate alloc;
-extern crate deque;
-extern crate num_cpus;
-extern crate rand;
 extern crate time;
-extern crate x86intrin;
 
 #[macro_use]
 pub mod session_types;
 #[macro_use]
 pub mod reactors;
-// pub mod timers;
 pub mod io;
 pub mod commands;
 pub mod args;
 pub mod streams;
-// #[cfg(any(target_os = "linux"))]
 pub mod queues;
 pub mod handle;
 
