@@ -17,7 +17,7 @@ use std::env;
 use std::io::{self, BufReader, BufRead};
 use std::fs::File;
 use std::thread::{self, Thread};
-use nix::sched::{self, CpuSet};
+//use nix::sched::{self, CpuSet};
 use libc;
 
 struct Args<'a> {
@@ -109,9 +109,9 @@ impl<'a> Host<'a> {
                 .name(format!("core_{}", i))
                 .spawn(move || {
                     let id = unsafe { libc::pthread_self() as isize };
-                    let mut cpu = CpuSet::new();
-                    cpu.set(1 << i);
-                    sched::sched_setaffinity(id, &cpu);
+//                    let mut cpu = CpuSet::new();
+//                    cpu.set(1 << i);
+//                    sched::sched_setaffinity(id, &cpu);
                     let c = Core::new(i);
                     Host::connect_cores(&c);
                     host().borrow_mut().cores.push(c);

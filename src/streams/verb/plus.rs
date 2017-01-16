@@ -22,12 +22,14 @@ impl<'ast> Plus<'ast> {
     fn a_l(l: &'ast AST<'ast>, r: &'ast AST<'ast>) -> AST<'ast> {
         AST::Number(1)
     }
+    #[target_feature = "+avx"]
     fn v_v(l: &[i64], r: &[i64]) -> AST<'ast> {
         let a:Vec<i64> = l.iter().zip(r)
             .map(|(l,r)| l+r)
             .collect();
         AST::VecInt(a)
     }
+    #[target_feature = "+avx"]
     fn v_a(l: &[i64], r: i64) -> AST<'ast> {
         let a:Vec<i64> = l.iter()
             .map(|x| x+r)

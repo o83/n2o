@@ -48,7 +48,7 @@ impl<'a> Boot<'a> {
     #[inline]
     fn ready(&'a mut self, p: Pool<'a>, t: TaskId) {
         match p {
-            Pool::Raw(b) => self.handle_raw(t, b),            
+            Pool::Raw(b) => self.handle_raw(t, b),
             Pool::Msg(x) => println!("Intercore: {:?}", x.buf),
         }
     }
