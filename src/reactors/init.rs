@@ -75,6 +75,7 @@ impl<'a> Host<'a> {
             self.cores.push(core);
         }
     }
+
     pub fn run(&mut self) {
         self.connect_cores();
         self.init();
@@ -100,7 +101,8 @@ impl<'a> Host<'a> {
     }
 
     pub fn park_cores(&mut self) {
-        for (i, _) in self.cores.iter().enumerate() {
+        for i in 0..self.cores.len() {
+            let mut c = mem::replace(self.cores.get_mut(i).unwrap(),Core::new(100));
             let t = thread::Builder::new()
                 .name(format!("core_{}", i))
                 .spawn(move || {
@@ -108,8 +110,10 @@ impl<'a> Host<'a> {
                     let mut cpu = CpuSet::new();
                     cpu.set(i);
                     sched::sched_setaffinity(id, &cpu);
-                    let mut c = Core::new(i);
-                    c.park()
+                    // let mut c = Core::new(i);
+                    // let mut c = self.cores.clone().get(i).unwrap();
+                    
+                    // c.park();
                 })
                 .expect("Can't spawn new thread!");
         }
