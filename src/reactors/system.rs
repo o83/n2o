@@ -47,12 +47,12 @@ impl<'a> IO {
         let (s1, s2) = handle::split(self);
         s1.selectors.push(s);
         let slot = Slot(s2.selectors.len() - 1);
-        s1.selectors.last_mut().unwrap().unwrap().init(s2, slot);
+        s1.selectors.last_mut().expect("Can't retrieve a selector.").unpack().init(s2, slot);
         slot
     }
 
     pub fn write(&mut self, s: Slot, buf: &[u8]) -> io::Result<()> {
-        self.selectors.get_mut(s.0).unwrap().unwrap().write(buf);
+        self.selectors.get_mut(s.0).expect("Can't retrieve a selector.").unpack().write(buf);
         Ok(())
     }
 
@@ -66,7 +66,7 @@ impl<'a> IO {
     #[inline]
     fn poll_if_need(&mut self) {
         if self.i == 0 {
-            self.poll.poll(&mut self.events, None).unwrap();
+            self.poll.poll(&mut self.events, None).expect("No events in poll.");
             self.i = self.events.len();
         }
     }
@@ -77,11 +77,11 @@ impl<'a> IO {
             0 => Async::NotReady,
             id => {
                 self.i -= 1;
-                let e = self.events.get(self.i).unwrap();
+                let e = self.events.get(self.i).expect("Can't retrieve an event.");
                 let (s1, s2) = handle::split(self);
-                let slot = s1.slots.get(e.token().0).unwrap();
-                let sel = s1.selectors.get_mut(slot.0).unwrap();
-                match sel.unwrap().select(s2, e.token()) {
+                let slot = s1.slots.get(e.token().0).expect("Can't retrieve a slot.");
+                let sel = s1.selectors.get_mut(slot.0).expect("Can't retrieve a selector.");
+                match sel.unpack().select(s2, e.token()) {
                     Async::Ready(p) => Async::Ready((Slot(slot.0), p)),
                     Async::NotReady => Async::NotReady,
                 }
@@ -92,7 +92,7 @@ impl<'a> IO {
     #[inline]
     fn finalize(&mut self) {
         for s in self.selectors.iter_mut() {
-            s.unwrap().finalize();
+            s.unpack().finalize();
         }
     }
 }

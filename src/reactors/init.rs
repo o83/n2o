@@ -14,6 +14,11 @@ use reactors::selector::Selector;
 use queues::publisher::Publisher;
 use std::ffi::CString;
 use std::env;
+use std::io::{self, BufReader, BufRead};
+use std::fs::File;
+use std::thread::{self, Thread};
+use nix::sched::{self,CpuSet};
+use libc;
 
 struct Args<'a> {
     raw: Vec<String>,
@@ -25,7 +30,7 @@ fn args<'a>() -> Args<'a> {
     let a: Vec<String> = env::args().collect();
     Args {
         raw: a,
-        cores: None,
+        cores: Some(5),
         init: None,
     }
 }
@@ -34,6 +39,7 @@ pub struct Host<'a> {
     args: Args<'a>,
     boot: Handle<Boot<'a>>,
     cores: Vec<Core<'a>>,
+    children: Vec<Thread>,
 }
 
 impl<'a> Host<'a> {
@@ -43,12 +49,23 @@ impl<'a> Host<'a> {
         Host {
             args: args(),
             cores: Vec::new(),
-            boot: handle::new(Boot::new(ctxs.last().unwrap().clone())),
+            boot: handle::new(Boot::new(ctxs.last().expect("There are no ctx's in store.").clone())),
+            children: Vec::with_capacity(8),
         }
     }
 
+    fn init(&mut self) -> io::Result<()> {
+        let f = try!(File::open("./etc/init.boot"));
+        let mut file = BufReader::new(&f);
+        for line in file.lines() {
+            let l = line.unwrap();
+            println!("{}", l);
+        }
+        Ok(())
+    }
+
     fn connect_cores(&mut self) {
-        for i in 1..5 {
+        for i in 1..self.args.cores.expect("Please, specify number of cores.") {
             println!("init core_{:?}", i);
             let core = Core::new(i);
             core.connect_with(&self.boot.borrow().core);
@@ -60,6 +77,8 @@ impl<'a> Host<'a> {
     }
     pub fn run(&mut self) {
         self.connect_cores();
+        self.init();
+        self.park_cores();
         let mut o = Selector::Rx(Console::new());
         let addr = "0.0.0.0:9001".parse::<SocketAddr>().ok().expect("Parser Error");
         let mut w = Selector::Ws(WsServer::new(&addr));
@@ -78,6 +97,22 @@ impl<'a> Host<'a> {
             None => {}
         }
         self.boot.init();
+    }
+
+    pub fn park_cores(&mut self) {
+        for (i, _) in self.cores.iter().enumerate() {
+            let t = thread::Builder::new()
+                .name(format!("core_{}", i))
+                .spawn(move || {
+                    let id = unsafe { libc::pthread_self() as isize };
+                    let mut cpu = CpuSet::new();
+                    cpu.set(i);
+                    sched::sched_setaffinity(id, &cpu);
+                    let mut c = Core::new(i);
+                    c.park()
+                })
+                .expect("Can't spawn new thread!");
+        }
     }
 }
 

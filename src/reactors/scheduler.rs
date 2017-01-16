@@ -34,12 +34,12 @@ impl<'a, T> Scheduler<'a, T>
         let last = self.tasks.len();
         self.tasks.push(T3(t, l));
         self.ctxs.push(Context::Nil);
-        self.tasks.last_mut().unwrap().0.init(input);
+        self.tasks.last_mut().expect("Scheduler: can't retrieve a task.").0.init(input);
         TaskId(last)
     }
 
     pub fn exec(&'a mut self, t: TaskId, input: Option<&'a str>) {
-        self.tasks.get_mut(t.0).unwrap().0.exec(input);
+        self.tasks.get_mut(t.0).expect("Scheduler: can't retrieve a task.").0.exec(input);
     }
 
     #[inline]
@@ -55,7 +55,7 @@ impl<'a, T> Scheduler<'a, T>
         loop {
             let h1: &mut Self = unsafe { &mut *f };
             for (i, t) in h1.tasks.iter_mut().enumerate() {
-                let c = h1.ctxs.get_mut(i).unwrap();
+                let c = h1.ctxs.get_mut(i).expect("Scheduler: can't retrieve a ctx.");
                 let mut ctx = mem::replace(c, Context::Nil);
                 match t.0.poll(ctx) {
                     Poll::Yield(..) => (),

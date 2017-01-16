@@ -35,4 +35,8 @@ impl<'a> Core<'a> {
         let s = self.bus().publisher.subscribe();
         other.bus().subscribers.push(s);
     }
+
+    pub fn park(&'a mut self) {
+        self.scheduler.run();
+    }
 }

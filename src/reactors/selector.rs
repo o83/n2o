@@ -46,18 +46,24 @@ pub enum Selector {
 }
 
 impl Selector {
-    pub fn unwrap<'a>(&'a mut self) -> &'a mut Select<'a> {
+    pub fn unpack<'a>(&'a mut self) -> &'a mut Select<'a> {
         match *self {
             Selector::Ws(ref mut w) => w,
             Selector::Rx(ref mut c) => c,
             Selector::Sb(ref mut s) => s,
         }
     }
+
+    pub fn map<'a, F, R>(&'a mut self, mut f: F) -> R
+        where F: FnMut(&'a mut Select<'a>) -> R
+    {
+        f(self.unpack())
+    }
 }
 
 impl Write for Selector {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.unwrap().write(buf);
+        self.unpack().write(buf);
         Ok(1)
     }
     fn flush(&mut self) -> io::Result<()> {
