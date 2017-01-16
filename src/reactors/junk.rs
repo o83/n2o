@@ -1,14 +1,32 @@
+use std::rc::Rc;
+use streams::intercore::ctx::Ctx;
+use reactors::system::IO;
+use reactors::selector::{Selector, Async, Pool};
+use reactors::scheduler::{Scheduler, TaskTermination, TaskId};
+use reactors::cpstask::CpsTask;
+use handle;
+use std::str;
+use reactors::core::Core;
+
 pub struct Junk<'a> {
-    core: Core<'a>,
+    pub core: Core<'a>,
+    io: IO,
+    scheduler: Scheduler<'a, CpsTask<'a>>,
+    ctx: Rc<Ctx>,
 }
 
 impl<'a> Junk<'a> {
     pub fn new(ctx: Rc<Ctx>) -> Self {
-        Hub { core: Core::new() }
+        Junk {
+            core: Core::new(0), // predefined 0 id
+            io: IO::new(),
+            scheduler: Scheduler::new(),
+            ctx: ctx,
+        }
     }
 
     pub fn add_selected(&mut self, s: Selector) {
-        self.core.add_selected(s);
+        self.io.spawn(s);
     }
 
     #[inline]
@@ -34,17 +52,15 @@ impl<'a> Junk<'a> {
             Pool::Msg(x) => println!("Intercore: {:?}", x.buf),
         }
     }
-}
 
-impl Run for Junk {
-    pub fn boil(&mut self) {
+    pub fn run(&mut self) {
         let cps = CpsTask::new(self.ctx.clone());
-        let h: *mut Hub<'a> = self;
-        let h0: &mut Hub<'a> = unsafe { &mut *h };
+        let h: *mut Junk<'a> = self;
+        let h0: &mut Junk<'a> = unsafe { &mut *h };
         let task_id = h0.scheduler.spawn(cps, TaskTermination::Corecursive, None);
         loop {
-            let h1: &mut Hub<'a> = unsafe { &mut *h };
-            let h2: &mut Hub<'a> = unsafe { &mut *h };
+            let h1: &mut Junk<'a> = unsafe { &mut *h };
+            let h2: &mut Junk<'a> = unsafe { &mut *h };
             match h1.io.poll() {
                 Async::Ready((_, p)) => h2.ready(p, task_id),
                 Async::NotReady => (),

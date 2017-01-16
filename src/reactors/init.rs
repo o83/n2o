@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use streams::intercore::ctx::Ctx;
 use streams::intercore::api::{Message, Spawn};
-use reactors::hub::Hub;
+use reactors::junk::Junk;
 use std::mem;
 use handle::{self, Handle};
 use std::sync::{Arc, Once, ONCE_INIT};
@@ -15,7 +15,7 @@ use queues::publisher::Publisher;
 use std::ffi::CString;
 
 pub struct Host<'a> {
-    junk: Handle<Hub<'a>>,
+    junk: Handle<Junk<'a>>,
     cores: Vec<Core<'a>>,
 }
 
@@ -25,7 +25,7 @@ impl<'a> Host<'a> {
         ctxs.push(Rc::new(Ctx::new()));
         Host {
             cores: Vec::new(),
-            junk: handle::new(Hub::new(ctxs.last().unwrap().clone())),
+            junk: handle::new(Junk::new(ctxs.last().unwrap().clone())),
         }
     }
 
@@ -59,7 +59,7 @@ impl<'a> Host<'a> {
             }
             None => {}
         }
-        self.junk.boil();
+        self.junk.run();
     }
 }
 
