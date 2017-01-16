@@ -17,7 +17,7 @@ use std::env;
 use std::io::{self, BufReader, BufRead};
 use std::fs::File;
 use std::thread::{self, Thread};
-use nix::sched::{self,CpuSet};
+use nix::sched::{self, CpuSet};
 use libc;
 
 struct Args<'a> {
@@ -102,18 +102,16 @@ impl<'a> Host<'a> {
 
     pub fn park_cores(&mut self) {
         for i in 0..self.cores.len() {
-            let mut c = mem::replace(self.cores.get_mut(i).unwrap(),Core::new(100));
             let t = thread::Builder::new()
                 .name(format!("core_{}", i))
                 .spawn(move || {
                     let id = unsafe { libc::pthread_self() as isize };
                     let mut cpu = CpuSet::new();
-                    cpu.set(i);
+                    cpu.set(1 << i);
                     sched::sched_setaffinity(id, &cpu);
-                    // let mut c = Core::new(i);
+                    let mut c = Core::new(i);
                     // let mut c = self.cores.clone().get(i).unwrap();
-                    
-                    // c.park();
+                    c.park();
                 })
                 .expect("Can't spawn new thread!");
         }
