@@ -1,5 +1,4 @@
 #![feature(simd, simd_ffi, link_llvm_intrinsics)]
-
 #![feature(iter_arith)]
 #![feature(fnbox)]
 #![feature(static_in_const)]
