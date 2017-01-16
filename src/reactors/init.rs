@@ -25,7 +25,7 @@ fn args<'a>() -> Args<'a> {
     let a: Vec<String> = env::args().collect();
     Args {
         raw: a,
-        cores: None,
+        cores: Some(5),
         init: None,
     }
 }
@@ -43,12 +43,12 @@ impl<'a> Host<'a> {
         Host {
             args: args(),
             cores: Vec::new(),
-            boot: handle::new(Boot::new(ctxs.last().unwrap().clone())),
+            boot: handle::new(Boot::new(ctxs.last().expect("There are no ctx's in store.").clone())),
         }
     }
 
     fn connect_cores(&mut self) {
-        for i in 1..5 {
+        for i in 1..self.args.cores.expect("Please, specify number of cores.") {
             println!("init core_{:?}", i);
             let core = Core::new(i);
             core.connect_with(&self.boot.borrow().core);
