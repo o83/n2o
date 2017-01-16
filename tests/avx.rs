@@ -8,7 +8,7 @@ extern crate simdty;
 
 #[test]
 #[target_feature = "+avx"]
-fn avx_mul() {
+fn avx_max() {
     let a = ::simdty::f64x4(0.0, 1.0, 4.0, 9.0);
     let b = ::simdty::f64x4(0.0, 2.0, 6.0, 0.0);
     let c = unsafe { kernel::llvm::x86::avx_max_pd_256(a, b) };
