@@ -14,6 +14,10 @@ use reactors::selector::Selector;
 use queues::publisher::Publisher;
 use std::ffi::CString;
 use std::env;
+use std::io::{self, BufReader, BufRead};
+use std::fs::File;
+use std::thread::{self, Thread};
+use nix::sched::sched_setaffinity;
 
 struct Args<'a> {
     raw: Vec<String>,
@@ -34,6 +38,7 @@ pub struct Host<'a> {
     args: Args<'a>,
     boot: Handle<Boot<'a>>,
     cores: Vec<Core<'a>>,
+    children: Vec<Thread>,
 }
 
 impl<'a> Host<'a> {
@@ -44,7 +49,18 @@ impl<'a> Host<'a> {
             args: args(),
             cores: Vec::new(),
             boot: handle::new(Boot::new(ctxs.last().expect("There are no ctx's in store.").clone())),
+            children: Vec::with_capacity(8),
         }
+    }
+
+    fn init(&mut self) -> io::Result<()> {
+        let f = try!(File::open("./etc/init.boot"));
+        let mut file = BufReader::new(&f);
+        for line in file.lines() {
+            let l = line.unwrap();
+            println!("{}", l);
+        }
+        Ok(())
     }
 
     fn connect_cores(&mut self) {
@@ -60,6 +76,8 @@ impl<'a> Host<'a> {
     }
     pub fn run(&mut self) {
         self.connect_cores();
+        self.init();
+        self.park_cores();
         let mut o = Selector::Rx(Console::new());
         let addr = "0.0.0.0:9001".parse::<SocketAddr>().ok().expect("Parser Error");
         let mut w = Selector::Ws(WsServer::new(&addr));
@@ -78,6 +96,15 @@ impl<'a> Host<'a> {
             None => {}
         }
         self.boot.init();
+    }
+
+    pub fn park_cores(&mut self) {
+        for (i, _) in self.cores.iter().enumerate() {
+            thread::Builder::new().name(format!("core_{}", i)).spawn(move || {
+                let mut c = Core::new(i);
+                c.park()
+            });
+        }
     }
 }
 
