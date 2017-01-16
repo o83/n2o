@@ -38,6 +38,7 @@ pub struct Interpreter<'a> {
     arena: Arena<'a>,
     ctx: Rc<Ctx>,
     registers: Lazy<'a>,
+    counter: u64,
 }
 
 impl<'a> Interpreter<'a> {
@@ -49,6 +50,7 @@ impl<'a> Interpreter<'a> {
             env: env,
             ctx: ctx,
             registers: Lazy::Start,
+            counter: 1,
         };
         Ok(interpreter)
     }
@@ -61,6 +63,7 @@ impl<'a> Interpreter<'a> {
             env: env,
             ctx: Rc::new(Ctx::new()),
             registers: Lazy::Start,
+            counter: 1,
         };
         Ok(interpreter)
     }
@@ -99,8 +102,6 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn run(&'a mut self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
-        let mut counter = 0;
-        println!("Input: {:?}", ast);
         let uc = UnsafeCell::new(self);
         let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
         let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
@@ -110,27 +111,38 @@ impl<'a> Interpreter<'a> {
             Lazy::Start => tick = try!(se1.evaluate_expr(se2.env.last(), ast, se3.arena.cont(Cont::Return))),
             _ => tick = se3.registers.clone(),
         }
+        println!("Count: {:?}", se1.counter);
         loop {
             let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+            let mut counter = se1.counter;
             match tick {
                 Lazy::Defer(node, ast, cont) => {
-                    tick = try!({
-                        counter = counter + 1;
-                        se4.handle_defer(node, ast, cont)
-                    })
+                    if counter % 1000 == 0 {
+                        se4.registers = tick;
+                        se3.counter = counter + 1;
+                        return Ok(se4.arena.ast(AST::Yield));
+                    } else {
+                        tick = try!({
+                            se3.counter = counter + 1;
+                            se4.handle_defer(node, ast, cont)
+                        })
+                    }
                 }
                 Lazy::Start => break,
                 Lazy::Continuation(node, ast, cont) => {
                     se4.registers = Lazy::Defer(node, ast, cont);
+                    se3.counter = counter + 1;
                     return Ok(se4.arena.ast(AST::Yield));
                 }
                 Lazy::Return(ast) => {
                     // println!("env: {:?}", se3.env.dump());
                     // println!("arena: {:?}", se4.arena.dump());
                     // println!("Result: {}", ast);
+                    se3.counter = counter + 1;
                     return Ok(ast);
                 }
             }
+
         }
         Err(Error::EvalError {
             desc: "Program is terminated abnormally".to_string(),
