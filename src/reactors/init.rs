@@ -6,7 +6,7 @@ use std::mem;
 use handle::{self, Handle};
 use std::sync::{Arc, Once, ONCE_INIT};
 use std::cell::UnsafeCell;
-use reactors::hub::Core;
+use reactors::core::Core;
 use reactors::console::Console;
 use reactors::ws::WsServer;
 use std::net::SocketAddr;

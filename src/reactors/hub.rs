@@ -1,54 +1,12 @@
 use std::rc::Rc;
 use streams::intercore::ctx::Ctx;
-use queues::publisher::Publisher;
 use reactors::system::IO;
 use reactors::selector::{Selector, Async, Pool};
-use reactors::cpstask::CpsTask;
 use reactors::scheduler::{Scheduler, TaskTermination, TaskId};
+use reactors::cpstask::CpsTask;
 use handle;
 use std::str;
-use streams::intercore::ctx::Channel;
-use std::ffi::CString;
-use std::cell::UnsafeCell;
-use reactors::job::Job;
-
-pub trait Run {
-    fn run(&mut self);
-}
-
-pub struct Core<'a> {
-    scheduler: Scheduler<'a, Job<'a>>,
-    bus: UnsafeCell<Channel>,
-    io: IO,
-    id: usize,
-}
-
-impl<'a> Core<'a> {
-    pub fn new(id: usize) -> Self {
-        let mut subscribers = Vec::new();
-        let mut publisher = Publisher::with_mirror(CString::new(format!("/core_{}", id)).unwrap(), 8);
-        Core {
-            id: id,
-            io: IO::new(),
-            scheduler: Scheduler::new(),
-            bus: UnsafeCell::new(Channel {
-                publisher: publisher,
-                subscribers: subscribers,
-            }),
-        }
-    }
-
-    pub fn connect_with(&self, other: &Self) {
-        let s = unsafe { (&mut *other.bus.get()).publisher.subscribe() };
-        unsafe { (&mut *self.bus.get()).subscribers.push(s) };
-        let s = unsafe { (&mut *self.bus.get()).publisher.subscribe() };
-        unsafe { (&mut *other.bus.get()).subscribers.push(s) };
-    }
-
-    pub fn add_selected(&mut self, s: Selector) {
-        self.io.spawn(s);
-    }
-}
+use reactors::core::Core;
 
 pub struct Hub<'a> {
     pub core: Core<'a>,
