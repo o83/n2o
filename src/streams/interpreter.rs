@@ -117,7 +117,7 @@ impl<'a> Interpreter<'a> {
             let mut counter = se1.counter;
             match tick {
                 Lazy::Defer(node, ast, cont) => {
-                    if counter % 1000 == 0 {
+                    if counter % 1000000 == 0 {
                         se4.registers = tick;
                         se3.counter = counter + 1;
                         return Ok(se4.arena.ast(AST::Yield));
