@@ -98,4 +98,8 @@ impl<'a, T> Scheduler<'a, T>
     pub fn subscribe(&mut self) -> Subscriber<Message> {
         self.bus.as_mut().expect("This scheduler without bus!").publisher.subscribe()
     }
+
+    pub fn add_subscriber(&mut self, s: Subscriber<Message>) {
+        self.bus.as_mut().expect("This scheduler without bus!").subscribers.push(s);
+    }
 }
