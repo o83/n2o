@@ -33,7 +33,6 @@ impl<'a> Task<'a> for IntercoreTask {
     }
 
     fn poll(&'a mut self, c: Context<'a>) -> Poll<Context<'a>, Error> {
-        println!("POLL");
         Poll::Yield(Context::Nil)
     }
 

@@ -17,6 +17,9 @@ use std::net::SocketAddr;
 use reactors::selector::Selector;
 use std::io::{self, BufReader, BufRead};
 use nix::sched::{self, CpuSet};
+use reactors::intercoretask::IntercoreTask;
+use reactors::scheduler::TaskTermination;
+use reactors::job::Job;
 
 struct Args<'a> {
     raw: Vec<String>,
@@ -67,6 +70,15 @@ impl<'a> Host<'a> {
         c2.bus().subscribers.push(s);
     }
 
+    fn spawn_intercore_tasks() {
+        println!("Cores count: {:?}", host().borrow_mut().cores.len());
+        for (i, c) in host().borrow_mut().cores.iter_mut().enumerate() {
+            c.spawn_task(Job::Ipc(IntercoreTask::new(i, 8)),
+                         TaskTermination::Recursive,
+                         None);
+        }
+    }
+
     fn connect_cores(core: &'a Core) {
         Host::connect_w(core, &host().borrow_mut().boot.borrow().core);
         for c in &host().borrow_mut().cores {
@@ -82,6 +94,7 @@ impl<'a> Host<'a> {
         self.boot.add_selected(o);
         self.boot.add_selected(w);
         Host::connect(&self.args);
+        Host::spawn_intercore_tasks();
         self.park_cores();
         self.boot.core.publish(|p| {
             match p.next_n(3) {
@@ -129,7 +142,7 @@ pub struct HostSingleton {
 }
 
 impl HostSingleton {
-    pub fn borrow_mut(&mut self) -> &mut Host<'static> {
+    pub fn borrow_mut(&mut self) -> &'static mut Host<'static> {
         unsafe { &mut *self.inner.get() }
     }
 }
