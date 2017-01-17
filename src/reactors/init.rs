@@ -20,6 +20,8 @@ use nix::sched::{self, CpuSet};
 use reactors::intercoretask::IntercoreTask;
 use reactors::scheduler::TaskTermination;
 use reactors::job::Job;
+use queues::publisher::{Publisher, Subscriber};
+use std::ffi::CString;
 
 struct Args<'a> {
     raw: Vec<String>,
@@ -73,9 +75,11 @@ impl<'a> Host<'a> {
     fn spawn_intercore_tasks() {
         println!("Cores count: {:?}", host().borrow_mut().cores.len());
         for (i, c) in host().borrow_mut().cores.iter_mut().enumerate() {
-            c.spawn_task(Job::Ipc(IntercoreTask::new(i, 8)),
-                         TaskTermination::Recursive,
-                         None);
+            let p = Publisher::with_mirror(CString::new(format!("/ipc_{}", i)).unwrap(), 8);
+            let s: Vec<Subscriber<Message>> = Vec::new();
+            let mut j = Job::Ipc(IntercoreTask::new(i, p, s));
+
+            c.spawn_task(j, TaskTermination::Recursive, None);
         }
     }
 

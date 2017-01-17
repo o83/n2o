@@ -10,11 +10,11 @@ pub struct IntercoreTask {
 }
 
 impl IntercoreTask {
-    pub fn new(id: usize, capacity: usize) -> Self {
+    pub fn new(id: usize, p: Publisher<Message>, s: Vec<Subscriber<Message>>) -> Self {
         IntercoreTask {
             id: id,
-            publisher: Publisher::with_mirror(CString::new(format!("/ipc_{}", id)).unwrap(), capacity),
-            subscribers: Vec::with_capacity(capacity),
+            publisher: p,
+            subscribers: s,
         }
     }
 
