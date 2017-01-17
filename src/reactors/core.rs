@@ -7,9 +7,8 @@ use handle::{self, Handle};
 use streams::intercore::api::Message;
 
 pub struct Core<'a> {
-    scheduler: Scheduler<'a, Job<'a>>,
-    bus: Handle<Channel>,
     id: usize,
+    scheduler: Scheduler<'a, Job<'a>>,
 }
 
 impl<'a> Core<'a> {
@@ -18,36 +17,27 @@ impl<'a> Core<'a> {
     }
 
     pub fn new(id: usize) -> Self {
-        let mut subscribers = Vec::new();
-        let mut publisher = Publisher::with_mirror(CString::new(format!("/core_{}", id)).unwrap(), 8);
         Core {
             id: id,
             scheduler: Scheduler::new(),
-            bus: handle::new(Channel {
-                publisher: publisher,
-                subscribers: subscribers,
-            }),
         }
     }
 
-    pub fn spawn_task(&'a mut self, j: Job<'a>, t: TaskTermination, i: Option<&'a str>) {
-        self.scheduler.spawn(j, t, i);
+    pub fn with_channel(id: usize, c: Channel) -> Self {
+        Core {
+            id: id,
+            scheduler: Scheduler::with_channel(c),
+        }
     }
 
     pub fn connect_with(&'a self, other: &'a Self) {
-        let s = self.bus().publisher.subscribe();
-        self.bus().subscribers.push(s);
-        let s = self.bus().publisher.subscribe();
-        other.bus().subscribers.push(s);
+        // let s = self.bus().publisher.subscribe();
+        // self.bus().subscribers.push(s);
+        // let s = self.bus().publisher.subscribe();
+        // other.bus().subscribers.push(s);
     }
 
     pub fn park(&mut self) {
         self.scheduler.run();
-    }
-
-    pub fn publish<F, R>(&mut self, mut f: F) -> R
-        where F: FnMut(&mut Publisher<Message>) -> R
-    {
-        f(&mut self.bus.borrow_mut().publisher)
     }
 }
