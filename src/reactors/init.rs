@@ -11,12 +11,10 @@ use reactors::console::Console;
 use reactors::ws::WsServer;
 use std::net::SocketAddr;
 use reactors::selector::Selector;
-use queues::publisher::Publisher;
-use std::ffi::CString;
 use std::env;
 use std::io::{self, BufReader, BufRead};
 use std::fs::File;
-use std::thread::{self, Thread};
+use std::thread;
 use nix::sched::{self, CpuSet};
 use libc;
 
@@ -39,7 +37,6 @@ pub struct Host<'a> {
     args: Args<'a>,
     boot: Handle<Boot<'a>>,
     cores: Vec<Core<'a>>,
-    children: Vec<Thread>,
 }
 
 impl<'a> Host<'a> {
@@ -50,7 +47,6 @@ impl<'a> Host<'a> {
             args: args(),
             cores: Vec::new(),
             boot: handle::new(Boot::new(ctxs.last().expect("There are no ctx's in store.").clone())),
-            children: Vec::with_capacity(8),
         }
     }
 
@@ -86,20 +82,19 @@ impl<'a> Host<'a> {
         let mut o = Selector::Rx(Console::new());
         let addr = "0.0.0.0:9001".parse::<SocketAddr>().ok().expect("Parser Error");
         let mut w = Selector::Ws(WsServer::new(&addr));
-        let mut p = Publisher::with_mirror(CString::new("/test").unwrap(), 8);
-        let mut s = Selector::Sb(p.subscribe());
         self.boot.add_selected(o);
         self.boot.add_selected(w);
-        self.boot.add_selected(s);
-        match p.next_n(3) {
-            Some(vs) => {
-                vs[0] = Message::Halt;
-                vs[1] = Message::Unknown;
-                vs[2] = Message::Spawn(Spawn { id: 13, id2: 42 });
-                p.commit();
+        self.boot.core.publish(|p| {
+            match p.next_n(3) {
+                Some(vs) => {
+                    vs[0] = Message::Halt;
+                    vs[1] = Message::Unknown;
+                    vs[2] = Message::Spawn(Spawn { id: 13, id2: 42 });
+                    p.commit();
+                }
+                None => {}
             }
-            None => {}
-        }
+        });
         self.boot.init();
     }
 
@@ -113,7 +108,7 @@ impl<'a> Host<'a> {
 
     pub fn park_cores(&mut self) {
         for i in 1..self.args.cores.expect("Please, specify number of cores.") {
-            let t = thread::Builder::new()
+            thread::Builder::new()
                 .name(format!("core_{}", i))
                 .spawn(move || {
                     let id = unsafe { libc::pthread_self() as isize };

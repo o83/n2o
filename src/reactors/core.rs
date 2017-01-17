@@ -4,6 +4,7 @@ use reactors::job::Job;
 use queues::publisher::Publisher;
 use std::ffi::CString;
 use handle::{self, Handle};
+use streams::intercore::api::Message;
 
 pub struct Core<'a> {
     scheduler: Scheduler<'a, Job<'a>>,
@@ -38,5 +39,11 @@ impl<'a> Core<'a> {
 
     pub fn park(&mut self) {
         self.scheduler.run();
+    }
+
+    pub fn publish<F, R>(&mut self, mut f: F) -> R
+        where F: FnMut(&mut Publisher<Message>) -> R
+    {
+        f(&mut self.bus.borrow_mut().publisher)
     }
 }
