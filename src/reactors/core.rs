@@ -36,7 +36,7 @@ impl<'a> Core<'a> {
         other.bus().subscribers.push(s);
     }
 
-    pub fn park(&'a mut self) {
+    pub fn park(&mut self) {
         self.scheduler.run();
     }
 }
