@@ -16,7 +16,7 @@ use reactors::ws::WsServer;
 use std::net::SocketAddr;
 use reactors::selector::Selector;
 use std::io::{self, BufReader, BufRead};
-use nix::sched::{self, CpuSet};
+// use nix::sched::{self, CpuSet};
 use reactors::intercoretask::IntercoreTask;
 use reactors::scheduler::TaskTermination;
 use reactors::job::Job;
@@ -128,9 +128,9 @@ impl<'a> Host<'a> {
                 .name(format!("core_{}", i))
                 .spawn(move || {
                     let id = unsafe { libc::pthread_self() as isize };
-                    let mut cpu = CpuSet::new();
-                    cpu.set(1 << i);
-                    sched::sched_setaffinity(id, &cpu);
+                    // let mut cpu = CpuSet::new();
+                    // cpu.set(1 << i);
+                    // sched::sched_setaffinity(id, &cpu);
                     for c in &mut host().borrow_mut().cores {
                         c.park();
                     }

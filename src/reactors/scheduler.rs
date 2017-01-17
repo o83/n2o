@@ -1,4 +1,5 @@
 use reactors::task::{self, Task, Context, Poll};
+use streams::intercore::ctx::Channel;
 use std::mem;
 
 const TASKS_MAX_CNT: usize = 256;
@@ -18,6 +19,7 @@ struct T3<T>(T, TaskTermination);
 pub struct Scheduler<'a, T: 'a> {
     tasks: Vec<T3<T>>,
     ctxs: Vec<Context<'a>>,
+    bus: Option<Channel>,
 }
 
 impl<'a, T> Scheduler<'a, T>
@@ -27,6 +29,7 @@ impl<'a, T> Scheduler<'a, T>
         Scheduler {
             tasks: Vec::with_capacity(TASKS_MAX_CNT),
             ctxs: Vec::with_capacity(TASKS_MAX_CNT),
+            bus: None,
         }
     }
 
@@ -50,10 +53,18 @@ impl<'a, T> Scheduler<'a, T>
         }
     }
 
+    #[inline]
+    fn poll_bus(&mut self) {
+        if self.bus.is_some() {
+            // poll intercore bus
+        }
+    }
+
     pub fn run(&mut self) -> Poll<Context<'a>, task::Error> {
         let f: *mut Self = self;
         loop {
             let h1: &mut Self = unsafe { &mut *f };
+            h1.poll_bus();
             for (i, t) in h1.tasks.iter_mut().enumerate() {
                 let c = h1.ctxs.get_mut(i).expect("Scheduler: can't retrieve a ctx.");
                 let mut ctx = mem::replace(c, Context::Nil);
