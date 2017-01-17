@@ -206,19 +206,12 @@ pub enum AST<'a> {
     Table(&'a AST<'a>, &'a AST<'a>),
     Ioverb(String),
     Yield,
-    VecInt(Vec<i64>),
-    VecFloat(Vec<f64>),
-    VecAST(Vec<AST<'a>>),
-    Number(i64),
-    Float(f64),
-    NameInt(u16),
-    SymbolInt(u16),
-    SequenceInt(u16),
     Value(Value<'a>),
 }
 
 #[derive(PartialEq,Debug,Clone)]
 pub enum Value<'a> {
+    Nil,
     Number(i64),
     Float(f64),
     NameInt(u16),
@@ -326,32 +319,32 @@ impl<'a> Arena<'a> {
     pub fn intern(&self, s: String) -> &'a AST<'a> {
         let names = unsafe { &mut *self.names.get() };
         if names.contains_key(&s) {
-            self.ast(AST::NameInt(names[&s]))
+            self.ast(AST::Value(Value::NameInt(names[&s])))
         } else {
             let id = names.len() as u16;
             names.insert(s, id);
-            self.ast(AST::NameInt(id))
+            self.ast(AST::Value(Value::NameInt(id)))
         }
     }
 
     pub fn intern_symbol(&self, s: String) -> &'a AST<'a> {
         let symbols = unsafe { &mut *self.symbols.get() };
         if symbols.contains_key(&s) {
-            self.ast(AST::SymbolInt(symbols[&s]))
+            self.ast(AST::Value(Value::SymbolInt(symbols[&s])))
         } else {
             let id = symbols.len() as u16;
             symbols.insert(s, id);
-            self.ast(AST::SymbolInt(id))
+            self.ast(AST::Value(Value::SymbolInt(id)))
         }
     }
     pub fn intern_sequence(&self, s: String) -> &'a AST<'a> {
         let sequences = unsafe { &mut *self.sequences.get() };
         if sequences.contains_key(&s) {
-            self.ast(AST::SequenceInt(sequences[&s]))
+            self.ast(AST::Value(Value::SequenceInt(sequences[&s])))
         } else {
             let id = sequences.len() as u16;
             sequences.insert(s, id);
-            self.ast(AST::SequenceInt(id))
+            self.ast(AST::Value(Value::SequenceInt(id)))
         }
     }
     pub fn to_string(&self) {
@@ -513,17 +506,21 @@ impl<'a> fmt::Display for AST<'a> {
             }
             AST::Verb(ref v, ref a, ref b) => write!(f, "{}{}{}", a, v, b),
             AST::Adverb(ref v, ref a, ref b) => write!(f, "{}{}{}", a, v, b),
-            AST::Ioverb(ref v) => write!(f, "{}", v),
-            AST::Number(n) => write!(f, "{}", n),
-            AST::NameInt(ref n) => write!(f, "^{}", n),
-            AST::SymbolInt(ref s) => write!(f, "{}", s),
-            AST::SequenceInt(ref s) => write!(f, "{:?}", s),
             AST::Assign(ref a, ref b) => write!(f, "{}:{}", a, b),
             AST::Cond(ref c, ref a, ref b) => write!(f, "$[{};{};{}]", c, a, b),
             AST::Yield => write!(f, "Yield"),
-            AST::VecInt(ref v) => write!(f, "#i[{}]", vi64(v)),
-            AST::VecFloat(ref v) => write!(f, "#f[{}]", vf64(v)),
-            // AST::VecAST(ref v) => write!(f, "#a[{}]", v),
+            AST::Value(ref v) =>
+                match v {
+                    &Value::Number(n) => write!(f, "{}", n),
+                    &Value::NameInt(ref n) => write!(f, "^{}", n),
+                    &Value::SymbolInt(ref s) => write!(f, "{}", s),
+                    &Value::SequenceInt(ref s) => write!(f, "{:?}", s),
+                    &Value::VecInt(ref v) => write!(f, "#i[{}]", vi64(v)),
+                    &Value::VecFloat(ref v) => write!(f, "#f[{}]", vf64(v)),
+                    // &Value::VecValue(ref v) => write!(f, "#a[{}]", v),
+                    &Value::Ioverb(ref v) => write!(f, "{}", v),
+                    _ => write!(f, "Not implemented yet."),
+                },
             _ => write!(f, "Not implemented yet."),
         }
 
@@ -532,7 +529,12 @@ impl<'a> fmt::Display for AST<'a> {
 
 pub fn extract_name<'a>(a: &'a AST<'a>) -> u16 {
     match a {
-        &AST::NameInt(s) => s,
+        &AST::Value(ref x) => {
+            match x {
+                &Value::NameInt(s) => s,
+                _ => 0
+            }
+        },
         x => 0,
     }
 }
@@ -599,16 +601,18 @@ struct intlist_r {
 fn is_intlist<'a>(l: &'a AST<'a>) -> intlist_r {
     // returns if cons-list contains only integers and its length
 
+    let not_intlist = intlist_r {
+        isvec: false,
+        len: 0,
+    };
+    
     match l {
         &AST::Cons(a, b) => {
             let la = is_intlist(a);
             let lb = if la.isvec {
                 is_intlist(b)
             } else {
-                intlist_r {
-                    isvec: false,
-                    len: 0,
-                }
+                not_intlist
             };
             intlist_r {
                 isvec: la.isvec && lb.isvec,
@@ -620,25 +624,25 @@ fn is_intlist<'a>(l: &'a AST<'a>) -> intlist_r {
                 isvec: true,
                 len: 0,
             }
-        }
-        &AST::Number(i64) => {
-            intlist_r {
-                isvec: true,
-                len: 1,
+        },
+        &AST::Value(ref x) => {
+            match x {
+                &Value::Number(i64) => {
+                    intlist_r {
+                        isvec: true,
+                        len: 1,
+                    }
+                }
+                &Value::Float(f64) => {
+                    intlist_r {
+                        isvec: true,
+                        len: 1,
+                    }
+                },
+                x => not_intlist
             }
-        }
-        &AST::Float(f64) => {
-            intlist_r {
-                isvec: true,
-                len: 1,
-            }
-        }
-        x => {
-            intlist_r {
-                isvec: false,
-                len: 0,
-            }
-        }
+        },
+        x => not_intlist
     }
 }
 
@@ -650,19 +654,19 @@ fn to_intlist<'a>(l: &'a AST<'a>, len: usize, arena: &'a Arena<'a>) -> &'a AST<'
     let mut f: Vec<f64> = Vec::with_capacity(len);
     for v in l.into_iter() {
         match v {
-            &AST::Number(x) => {
+            &AST::Value(Value::Number(x)) => {
                 i.push(x);
-            }
-            &AST::Float(x) => {
+            },
+            &AST::Value(Value::Float(x)) => {
                 f.push(x);
-            }
-            _ => panic!("Unexpected non-integer type"), 
+            },
+            _ => panic!("Unexpected non-number type"),
         }
     }
     if i.len() >= f.len() {
-        arena.ast(AST::VecInt(i))
+        arena.ast(AST::Value(Value::VecInt(i)))
     } else {
-        arena.ast(AST::VecFloat(f))
+        arena.ast(AST::Value(Value::VecFloat(f)))
     }
 }
 
@@ -737,7 +741,8 @@ pub fn verb<'a>(v: Verb, l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -
     match v {
         Verb::Dot => {
             match (l, r) {
-                (&AST::Number(x), &AST::Number(y)) => arena.ast(AST::Float(x as f64 + (y as f64 / 10.0))),
+                (&AST::Value(Value::Number(x)),
+                 &AST::Value(Value::Number(y))) => arena.ast(AST::Value(Value::Float(x as f64 + (y as f64 / 10.0)))),
                 _ => arena.ast(AST::Verb(v, l, r)),
             }
         }
