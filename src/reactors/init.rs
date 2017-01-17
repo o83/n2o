@@ -103,7 +103,7 @@ impl<'a> Host<'a> {
     }
 
     pub fn park_cores(&mut self) {
-        for i in 0..self.args.cores.expect("Please, specify number of cores.") {
+        for i in 1..self.args.cores.expect("Please, specify number of cores.") {
             let t = thread::Builder::new()
                 .name(format!("core_{}", i))
                 .spawn(move || {
@@ -115,7 +115,7 @@ impl<'a> Host<'a> {
                     Host::connect_cores(&c);
                     let mut h = host();
                     h.borrow_mut().cores.push(c);
-                    h.borrow_mut().cores[i].park();
+                    h.borrow_mut().cores.last_mut().unwrap().park();
                 })
                 .expect("Can't spawn new thread!");
         }

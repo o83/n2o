@@ -33,6 +33,7 @@
 #![feature(libc)]
 #![feature(core_intrinsics)]
 #![feature(thread_id)]
+#![feature(custom_attribute)]
 
 extern crate net2;
 extern crate nix;
