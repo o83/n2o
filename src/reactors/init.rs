@@ -81,6 +81,7 @@ impl<'a> Host<'a> {
 
     pub fn run(&mut self) {
         self.init();
+        Host::connect(&self.args);
         self.park_cores();
         let mut o = Selector::Rx(Console::new());
         let addr = "0.0.0.0:9001".parse::<SocketAddr>().ok().expect("Parser Error");
@@ -102,6 +103,14 @@ impl<'a> Host<'a> {
         self.boot.init();
     }
 
+    fn connect(args: &Args<'a>) {
+        for i in 1..args.cores.expect("Please, specify number of cores.") {
+            let c = Core::new(i);
+            Host::connect_cores(&c);
+            host().borrow_mut().cores.push(c);
+        }
+    }
+
     pub fn park_cores(&mut self) {
         for i in 1..self.args.cores.expect("Please, specify number of cores.") {
             let t = thread::Builder::new()
@@ -111,11 +120,10 @@ impl<'a> Host<'a> {
                     let mut cpu = CpuSet::new();
                     cpu.set(1 << i);
                     sched::sched_setaffinity(id, &cpu);
-                    let c = Core::new(i);
-                    Host::connect_cores(&c);
-                    let mut h = host();
-                    h.borrow_mut().cores.push(c);
-                    h.borrow_mut().cores.last_mut().unwrap().park();
+                    for c in &mut host().borrow_mut().cores {
+                        println!("park core_{}", i);
+                        c.park();
+                    }
                 })
                 .expect("Can't spawn new thread!");
         }
