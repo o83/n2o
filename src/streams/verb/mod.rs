@@ -3,6 +3,7 @@ pub mod minus;
 pub mod eq;
 pub mod mul;
 pub mod div;
+pub mod dot;
 
 use commands::ast::*;
 
@@ -25,6 +26,10 @@ pub fn eval<'ast>(verb: Verb,
         }
         Verb::Divide => {
             let mut a = div::new(left, right);
+            Ok(a.next().unwrap())
+        }
+        Verb::Dot => {
+            let mut a = dot::new(left, right);
             Ok(a.next().unwrap())
         }
         Verb::Equal => {

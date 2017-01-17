@@ -113,7 +113,7 @@ impl<'a> Interpreter<'a> {
             Lazy::Start => tick = try!(se1.evaluate_expr(se2.env.last(), ast, se3.arena.cont(Cont::Return))),
             _ => tick = se3.registers.clone(),
         }
-        // println!("Count: {:?}", se1.counter);
+        println!("AST: {:?}", ast);
         loop {
             let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
             let mut counter = se1.counter;
