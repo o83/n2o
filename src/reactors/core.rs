@@ -1,4 +1,4 @@
-use reactors::scheduler::Scheduler;
+use reactors::scheduler::{Scheduler, TaskTermination};
 use streams::intercore::ctx::Channel;
 use reactors::job::Job;
 use queues::publisher::Publisher;
@@ -28,6 +28,10 @@ impl<'a> Core<'a> {
                 subscribers: subscribers,
             }),
         }
+    }
+
+    pub fn spawn_task(&'a mut self, j: Job<'a>, t: TaskTermination, i: Option<&'a str>) {
+        self.scheduler.spawn(j, t, i);
     }
 
     pub fn connect_with(&'a self, other: &'a Self) {

@@ -17,8 +17,11 @@ impl IntercoreTask {
             subscribers: Vec::with_capacity(capacity),
         }
     }
-}
 
+    pub fn add_subscriber(&mut self, s: Subscriber<Message>) {
+        self.subscribers.push(s);
+    }
+}
 
 impl<'a> Task<'a> for IntercoreTask {
     fn init(&'a mut self, input: Option<&'a str>) {

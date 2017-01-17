@@ -2,15 +2,18 @@
 
 use reactors::task::{self, Poll, Context, Task};
 use reactors::cpstask::CpsTask;
+use reactors::intercoretask::IntercoreTask;
 
 pub enum Job<'a> {
     Cps(CpsTask<'a>),
+    Ipc(IntercoreTask),
 }
 
 impl<'a> Job<'a> {
     fn unwrap(&'a mut self) -> &'a mut Task<'a> {
         match *self {
             Job::Cps(ref mut c) => c,
+            Job::Ipc(ref mut i) => i,
         }
     }
 }
