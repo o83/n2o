@@ -116,7 +116,11 @@ impl<'a> Host<'a> {
 
     fn connect(args: &Args<'a>) {
         for i in 1..args.cores.expect("Please, specify number of cores.") {
-            let c = Core::new(i);
+            let c = Channel {
+                publisher: Publisher::with_mirror(CString::new(format!("/ipc_{}", i)).unwrap(), 8),
+                subscribers: Vec::new(),
+            };
+            let c = Core::with_channel(i, c);
             // Host::connect_cores(&c);
             host().borrow_mut().cores.push(c);
         }
