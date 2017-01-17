@@ -22,6 +22,7 @@ use reactors::scheduler::TaskTermination;
 use reactors::job::Job;
 use queues::publisher::{Publisher, Subscriber};
 use std::ffi::CString;
+use streams::intercore::ctx::Channel;
 
 struct Args<'a> {
     raw: Vec<String>,
