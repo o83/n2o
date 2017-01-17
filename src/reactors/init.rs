@@ -1,8 +1,12 @@
+use libc;
+use std::mem;
 use std::rc::Rc;
+use std::env;
+use std::thread;
+use std::fs::File;
 use streams::intercore::ctx::Ctx;
 use streams::intercore::api::{Message, Spawn};
 use reactors::boot::Boot;
-use std::mem;
 use handle::{self, Handle};
 use std::sync::{Arc, Once, ONCE_INIT};
 use std::cell::UnsafeCell;
@@ -11,12 +15,8 @@ use reactors::console::Console;
 use reactors::ws::WsServer;
 use std::net::SocketAddr;
 use reactors::selector::Selector;
-use std::env;
 use std::io::{self, BufReader, BufRead};
-use std::fs::File;
-use std::thread;
 use nix::sched::{self, CpuSet};
-use libc;
 
 struct Args<'a> {
     raw: Vec<String>,
@@ -74,16 +74,15 @@ impl<'a> Host<'a> {
         }
     }
 
-
     pub fn run(&mut self) {
         self.init();
-        Host::connect(&self.args);
-        self.park_cores();
         let mut o = Selector::Rx(Console::new());
         let addr = "0.0.0.0:9001".parse::<SocketAddr>().ok().expect("Parser Error");
         let mut w = Selector::Ws(WsServer::new(&addr));
         self.boot.add_selected(o);
         self.boot.add_selected(w);
+        Host::connect(&self.args);
+        self.park_cores();
         self.boot.core.publish(|p| {
             match p.next_n(3) {
                 Some(vs) => {
@@ -116,7 +115,6 @@ impl<'a> Host<'a> {
                     cpu.set(1 << i);
                     sched::sched_setaffinity(id, &cpu);
                     for c in &mut host().borrow_mut().cores {
-                        println!("park core_{}", i);
                         c.park();
                     }
                 })
