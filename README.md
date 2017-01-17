@@ -19,6 +19,7 @@ Features
 * 5-20ns latency
 * BERT protocol for VM stats
 * AVX Vectorization
+* Dedicated InterCore Bus Protocol (Star Topology)
 
 Test The O Language
 -------------------
