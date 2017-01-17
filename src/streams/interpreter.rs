@@ -2,7 +2,7 @@
 // O-CPS INTERPRETER by 5HT et all
 
 use streams::{verb, env, otree};
-use commands::ast::{self, Error, AST, Verb, Adverb, Arena};
+use commands::ast::{self, Error, AST, Verb, Adverb, Arena, Value};
 use streams::intercore::ctx::Ctx;
 use streams::intercore::internals;
 use std::cell::UnsafeCell;
@@ -113,7 +113,7 @@ impl<'a> Interpreter<'a> {
             Lazy::Start => tick = try!(se1.evaluate_expr(se2.env.last(), ast, se3.arena.cont(Cont::Return))),
             _ => tick = se3.registers.clone(),
         }
-        println!("Counter: {:?}", ast);
+        // println!("Counter: {:?}", ast);
         loop {
             let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
             let mut counter = se1.counter;
@@ -139,7 +139,7 @@ impl<'a> Interpreter<'a> {
                 Lazy::Return(ast) => {
                     // println!("env: {:?}", se3.env.dump());
                     // println!("arena: {:?}", se4.arena.dump());
-                    println!("Result: {}", ast);
+                    // println!("Result: {}", ast);
                     se3.counter = counter + 1;
                     return Ok(ast);
                 }
@@ -168,13 +168,14 @@ impl<'a> Interpreter<'a> {
             &AST::Dict(x) => self.evaluate_dict(node, self.arena.nil(), x, cont),
             &AST::Call(c, a) => Ok(Lazy::Defer(node, a, self.arena.cont(Cont::Call(c, cont)))),
             &AST::Verb(ref verb, left, right) => {
+                // println!("Defer Verb: {:?} {:?}", left, right);
                 match (left, right) {
-                    (&AST::Number(_), _) => {
+                    (&AST::Value(_), _) => {
                         Ok(Lazy::Defer(node,
                                        right,
                                        self.arena.cont(Cont::Verb(verb.clone(), left, 0, cont))))
                     }
-                    (_, &AST::Number(_)) => {
+                    (_, &AST::Value(_)) => {
                         Ok(Lazy::Defer(node,
                                        left,
                                        self.arena
@@ -370,8 +371,8 @@ impl<'a> Interpreter<'a> {
             }
             &Cont::Cond(if_expr, else_expr, cont) => {
                 match val {
-                    &AST::Number(0) => Ok(Lazy::Defer(node, else_expr, cont)),
-                    &AST::Number(_) => Ok(Lazy::Defer(node, if_expr, cont)),
+                    &AST::Value(Value::Number(0)) => Ok(Lazy::Defer(node, else_expr, cont)),
+                    &AST::Value(_) => Ok(Lazy::Defer(node, if_expr, cont)),
                     x => {
                         Ok(Lazy::Defer(node,
                                        x,
@@ -410,7 +411,9 @@ impl<'a> Interpreter<'a> {
                                            self.arena
                                                .cont(Cont::Dict(new_acc, tail, cont)))
                     }
-                    &AST::Number(s) => self.run_cont(node, self.arena.ast(AST::Cons(rest, new_acc)), cont),
+                    &AST::Value(Value::Number(s)) => {
+                        self.run_cont(node, self.arena.ast(AST::Cons(rest, new_acc)), cont)
+                    }
                     &AST::Nil => self.run_cont(node, new_acc, cont),
                     &AST::NameInt(name) => {
                         match self.lookup(node, name, &self.env) {
@@ -429,31 +432,7 @@ impl<'a> Interpreter<'a> {
             &Cont::Verb(ref verb, right, swap, cont) => {
                 // println!("Cont Verb: {:?}", val);
                 match (right, val) {
-                    (&AST::Number(_), &AST::Number(_)) => {
-                        match swap {
-                            0 => {
-                                let a = verb::eval(verb.clone(), right, val).unwrap();
-                                self.run_cont(node, self.arena.ast(a), cont)
-                            }
-                            _ => {
-                                let a = verb::eval(verb.clone(), val, right).unwrap();
-                                self.run_cont(node, self.arena.ast(a), cont)
-                            }
-                        }
-                    }
-                    (&AST::VecInt(_), &AST::Number(_)) => {
-                        match swap {
-                            0 => {
-                                let a = verb::eval(verb.clone(), right, val).unwrap();
-                                self.run_cont(node, self.arena.ast(a), cont)
-                            }
-                            _ => {
-                                let a = verb::eval(verb.clone(), val, right).unwrap();
-                                self.run_cont(node, self.arena.ast(a), cont)
-                            }
-                        }
-                    }
-                    (&AST::VecInt(_), &AST::VecInt(_)) => {
+                    (&AST::Value(_), &AST::Value(_)) => {
                         match swap {
                             0 => {
                                 let a = verb::eval(verb.clone(), right, val).unwrap();

@@ -13,13 +13,17 @@ pub fn k_ariph() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"1+2".to_string());
     assert_eq!(*code,
-               AST::Verb(Verb::Plus, &AST::Number(1), &AST::Number(2)));
+               AST::Verb(Verb::Plus,
+                         &AST::Value(Value::Number(1)),
+                         &AST::Value(Value::Number(2))));
 
     let code = h.borrow_mut().parse(&"1+2*4".to_string());
     assert_eq!(*code,
                AST::Verb(Verb::Plus,
-                         &AST::Number(1),
-                         &AST::Verb(Verb::Times, &AST::Number(2), &AST::Number(4))));
+                         &AST::Value(Value::Number(1)),
+                         &AST::Verb(Verb::Times,
+                                    &AST::Value(Value::Number(2)),
+                                    &AST::Value(Value::Number(4)))));
 }
 
 #[test]
@@ -27,9 +31,10 @@ pub fn k_list() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"(1;\"2\";3;4)".to_string());
     assert_eq!(*code,
-               AST::List(&AST::Cons(&AST::Number(1),
-                                    &AST::Cons(&AST::SequenceInt(0),
-                                               &AST::Cons(&AST::Number(3), &AST::Number(4))))));
+               AST::List(&AST::Cons(&AST::Value(Value::Number(1)),
+                                    &AST::Cons(&AST::Value(Value::SequenceInt(0)),
+                                               &AST::Cons(&AST::Value(Value::Number(3)),
+                                                          &AST::Value(Value::Number(4)))))));
 }
 
 #[test]
@@ -37,14 +42,15 @@ pub fn k_symbols() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"`a`b`c;`1`1`1".to_string());
     assert_eq!(*code,
-               AST::Cons(&AST::Call(&AST::SymbolInt(0),
-                                    &AST::Call(&AST::SymbolInt(1), &AST::SymbolInt(2))),
-                         &AST::Call(&AST::SymbolInt(3),
-                                    &AST::Call(&AST::Number(1),
-                                               &AST::Call(&AST::SymbolInt(3),
-                                                          &AST::Call(&AST::Number(1),
-                                                                     &AST::Call(&AST::SymbolInt(3),
-                                                                                &AST::Number(1))))))));
+               AST::Cons(&AST::Call(&AST::Value(Value::SymbolInt(0)),
+                                    &AST::Call(&AST::Value(Value::SymbolInt(1)),
+                                               &AST::Value(Value::SymbolInt(2)))),
+                         &AST::Call(&AST::Value(Value::SymbolInt(3)),
+                                    &AST::Call(&AST::Value(Value::Number(1)),
+                                               &AST::Call(&AST::Value(Value::SymbolInt(3)),
+                                                          &AST::Call(&AST::Value(Value::Number(1)),
+                                                                     &AST::Call(&AST::Value(Value::SymbolInt(3)),
+                                                                                &AST::Value(Value::Number(1)))))))));
 }
 
 #[test]
@@ -54,7 +60,7 @@ pub fn k_assign() {
     assert_eq!(*code,
                AST::Assign(&AST::NameInt(0),
                            &AST::Assign(&AST::NameInt(1),
-                                        &AST::Assign(&AST::NameInt(2), &AST::Number(1)))));
+                                        &AST::Assign(&AST::NameInt(2), &AST::Value(Value::Number(1))))));
 }
 
 #[test]
@@ -70,7 +76,8 @@ pub fn k_anyargs2() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"[;;]".to_string());
     assert_eq!(*code,
-               AST::Dict(&AST::Cons(&AST::Any, &AST::Cons(&AST::Any, &AST::Cons(&AST::Any, &AST::Nil)))));
+               AST::Dict(&AST::Cons(&AST::Any,
+                                    &AST::Cons(&AST::Any, &AST::Cons(&AST::Any, &AST::Nil)))));
 }
 
 #[test]
@@ -78,7 +85,8 @@ pub fn k_anyargs3() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"[;;3]".to_string());
     assert_eq!(*code,
-               AST::Dict(&AST::Cons(&AST::Any, &AST::Cons(&AST::Any, &AST::Number(3)))));
+               AST::Dict(&AST::Cons(&AST::Any,
+                                    &AST::Cons(&AST::Any, &AST::Value(Value::Number(3))))));
 }
 
 #[test]
@@ -86,16 +94,16 @@ pub fn k_anyargs4() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"[1;;]".to_string());
     assert_eq!(*code,
-               AST::Dict(&AST::Cons(&AST::Number(1), &AST::Cons(&AST::Any, &AST::Cons(&AST::Any, &AST::Nil)))));
+               AST::Dict(&AST::Cons(&AST::Value(Value::Number(1)),
+                                    &AST::Cons(&AST::Any, &AST::Cons(&AST::Any, &AST::Nil)))));
 }
 
 #[test]
 pub fn k_vecconst1() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"(1;2;3)".to_string());
-    let a:Vec<i64> = vec![1,2,3];
-    assert_eq!(*code,
-               AST::VecInt(a));
+    let a: Vec<i64> = vec![1, 2, 3];
+    assert_eq!(*code, AST::Value(Value::VecInt(a)));
 }
 
 #[test]
@@ -112,8 +120,8 @@ pub fn k_func() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"{x*2}[(1;2;3)]".to_string());
     assert_eq!(format!("{:?}", code),
-               "Call(Lambda(None, NameInt(0), Verb(Times, NameInt(0), Number(2))), \
-                VecInt([1, 2, 3]))");
+               "Call(Lambda(None, NameInt(0), Verb(Times, NameInt(0), Value(Number(2)))), \
+                Value(VecInt([1, 2, 3])))");
 }
 
 #[test]
@@ -121,8 +129,8 @@ pub fn k_adverb() {
     let mut i = Interpreter::new().unwrap();
     let code = i.parse(&"{x+2}/(1;2;3)".to_string());
     assert_eq!(format!("{:?}", code),
-               "Adverb(Over, Lambda(None, NameInt(0), Verb(Plus, NameInt(0), Number(2))), \
-                VecInt([1, 2, 3]))");
+               "Adverb(Over, Lambda(None, NameInt(0), Verb(Plus, NameInt(0), Value(Number(2)))), \
+                Value(VecInt([1, 2, 3])))");
 }
 
 
@@ -131,8 +139,8 @@ pub fn k_reduce() {
     let mut i = Interpreter::new().unwrap();
     let ref mut code = i.parse(&"+/{x*y}[(1;3;4;5;6);(2;6;2;1;3)]".to_string());
     assert_eq!(format!("{:?}", code),
-               "Adverb(Over, Verb(Plus, Nil, Nil), Call(Lambda(None, NameInt(0), Verb(Times, \
-                NameInt(0), NameInt(1))), Dict(Cons(VecInt([1, 3, 4, 5, 6]), VecInt([2, 6, 2, 1, 3])))))");
+               "Adverb(Over, Verb(Plus, Nil, Nil), Call(Lambda(None, NameInt(0), Verb(Times, NameInt(0), \
+                NameInt(1))), Dict(Cons(Value(VecInt([1, 3, 4, 5, 6])), Value(VecInt([2, 6, 2, 1, 3]))))))");
 }
 
 #[test]
@@ -280,23 +288,21 @@ pub fn k_pubsub() {
 pub fn k_partial1() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"aa:{[x;y]x+y};bb:aa[;2];bb 3".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
-               "5");
+    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "5");
 }
 
 #[test]
 pub fn k_partial2() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"aa:{[x;y;z]x+y+z};bb:aa[;;];bb[1;2;3]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
-               "6");
+    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "6");
 }
 
 #[test]
 pub fn k_vecop_va() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"(1;2;3)+1".to_string());
-    let a:Vec<i64> = vec![2,3,4];
+    let a: Vec<i64> = vec![2, 3, 4];
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
                "#i[2;3;4]");
 }
@@ -305,7 +311,7 @@ pub fn k_vecop_va() {
 pub fn k_vecop_vv() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"(1;2;3)+(1;2;3)".to_string());
-    let a:Vec<i64> = vec![2,4,6];
+    let a: Vec<i64> = vec![2, 4, 6];
     assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
                "#i[2;4;6]");
 }

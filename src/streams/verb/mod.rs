@@ -11,23 +11,23 @@ pub fn eval<'ast>(verb: Verb, left: &'ast AST<'ast>, right: &'ast AST<'ast>) -> 
     match verb {
         Verb::Plus => {
             let mut a = plus::new(left, right);
-            Ok(a.next().unwrap())
+            Ok(a.next().expect("Verb Plus"))
         }
         Verb::Minus => {
             let mut a = minus::new(left, right);
-            Ok(a.next().unwrap())
+            Ok(a.next().expect("Verb Minus"))
         }
         Verb::Times => {
             let mut a = mul::new(left, right);
-            Ok(a.next().unwrap())
+            Ok(a.next().expect("Verb Times"))
         }
         Verb::Divide => {
             let mut a = div::new(left, right);
-            Ok(a.next().unwrap())
+            Ok(a.next().expect("Verb Divide"))
         }
         Verb::Equal => {
             let mut a = eq::new(left, right);
-            Ok(a.next().unwrap())
+            Ok(a.next().expect("Verb Equal"))
         }
         x => {
             Err(Error::EvalError {
