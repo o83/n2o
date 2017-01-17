@@ -463,6 +463,11 @@ impl<'a> Interpreter<'a> {
                             }
                         }
                     }
+                    (x, &AST::Nil) => {
+                        Ok(Lazy::Defer(node,
+                                       x,
+                                       cont))
+                    }
                     (x, y) => {
                         Ok(Lazy::Defer(node,
                                        x,
