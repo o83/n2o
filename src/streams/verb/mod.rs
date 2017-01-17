@@ -3,13 +3,11 @@ pub mod minus;
 pub mod eq;
 pub mod mul;
 pub mod div;
+pub mod dot;
 
 use commands::ast::*;
 
-pub fn eval<'ast>(verb: Verb,
-                  left: &'ast AST<'ast>,
-                  right: &'ast AST<'ast>)
-                  -> Result<AST<'ast>, Error> {
+pub fn eval<'ast>(verb: Verb, left: &'ast AST<'ast>, right: &'ast AST<'ast>) -> Result<AST<'ast>, Error> {
     match verb {
         Verb::Plus => {
             let mut a = plus::new(left, right);

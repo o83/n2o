@@ -1,18 +1,18 @@
 use commands::ast::AST;
 
-pub struct Eq<'ast> {
+pub struct Dot<'ast> {
     lvalue: &'ast AST<'ast>,
     rvalue: &'ast AST<'ast>,
 }
 
-pub fn new<'ast>(lvalue: &'ast AST<'ast>, rvalue: &'ast AST<'ast>) -> Eq<'ast> {
-    Eq {
+pub fn new<'ast>(lvalue: &'ast AST<'ast>, rvalue: &'ast AST<'ast>) -> Dot<'ast> {
+    Dot {
         lvalue: lvalue,
         rvalue: rvalue,
     }
 }
 
-impl<'ast> Eq<'ast> {
+impl<'ast> Dot<'ast> {
     fn a_a(l: i64, r: i64) -> AST<'ast> {
         AST::Number(if r == l { 1 } else { 0 })
     }
@@ -27,17 +27,17 @@ impl<'ast> Eq<'ast> {
     }
 }
 
-impl<'ast> Iterator for Eq<'ast> {
+impl<'ast> Iterator for Dot<'ast> {
     type Item = AST<'ast>;
     fn next(&mut self) -> Option<Self::Item> {
         match (self.lvalue, self.rvalue) {
-            (&AST::Number(l), &AST::Number(r)) => Some(Self::a_a(l, r)),
+            (&AST::Number(l), &AST::Number(r)) => Some(AST::Float((l+r) as f64)),
             _ => None,
         }
     }
 }
 
-impl<'a, 'ast> Iterator for &'a Eq<'ast> {
+impl<'a, 'ast> Iterator for &'a Dot<'ast> {
     type Item = AST<'ast>;
 
     fn next(&mut self) -> Option<Self::Item> {

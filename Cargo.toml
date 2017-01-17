@@ -36,4 +36,6 @@ lalrpop = "0.12.0"
 
 [profile.release]
 lto = false
-debug = true
+debug = false
+opt-level = 3
+debug-assertions = false

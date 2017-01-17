@@ -113,7 +113,7 @@ impl<'a> Interpreter<'a> {
             Lazy::Start => tick = try!(se1.evaluate_expr(se2.env.last(), ast, se3.arena.cont(Cont::Return))),
             _ => tick = se3.registers.clone(),
         }
-        // println!("Count: {:?}", se1.counter);
+        println!("Counter: {:?}", ast);
         loop {
             let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
             let mut counter = se1.counter;
@@ -139,7 +139,7 @@ impl<'a> Interpreter<'a> {
                 Lazy::Return(ast) => {
                     // println!("env: {:?}", se3.env.dump());
                     // println!("arena: {:?}", se4.arena.dump());
-                    // println!("Result: {}", ast);
+                    println!("Result: {}", ast);
                     se3.counter = counter + 1;
                     return Ok(ast);
                 }
@@ -465,11 +465,7 @@ impl<'a> Interpreter<'a> {
                             }
                         }
                     }
-                    (x, &AST::Nil) => {
-                        Ok(Lazy::Defer(node,
-                                       x,
-                                       cont))
-                    }
+                    (x, &AST::Nil) => Ok(Lazy::Defer(node, x, cont)),
                     (x, y) => {
                         Ok(Lazy::Defer(node,
                                        x,

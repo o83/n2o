@@ -22,7 +22,6 @@ impl<'ast> Div<'ast> {
     fn a_l(l: &'ast AST<'ast>, r: &'ast AST<'ast>) -> AST<'ast> {
         AST::Number(1)
     }
-    #[target_feature = "+avx"]
     fn l_l(l: &[i64], r: &[i64]) -> AST<'ast> {
         let a:Vec<i64> = l.iter().zip(r)
             .map(|(l,r)| l / r)
