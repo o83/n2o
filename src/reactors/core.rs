@@ -40,4 +40,8 @@ impl<'a> Core<'a> {
     pub fn subscribe(&mut self) -> Subscriber<Message> {
         self.scheduler.subscribe()
     }
+
+    pub fn add_subscriber(&mut self, s: Subscriber<Message>) {
+        self.scheduler.add_subscriber(s);
+    }
 }
