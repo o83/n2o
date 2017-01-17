@@ -11,13 +11,11 @@ use reactors::console::Console;
 use reactors::ws::WsServer;
 use std::net::SocketAddr;
 use reactors::selector::Selector;
-use queues::publisher::Publisher;
-use std::ffi::CString;
 use std::env;
 use std::io::{self, BufReader, BufRead};
 use std::fs::File;
-use std::thread::{self, Thread};
-//use nix::sched::{self, CpuSet};
+use std::thread;
+use nix::sched::{self, CpuSet};
 use libc;
 
 struct Args<'a> {
@@ -39,7 +37,6 @@ pub struct Host<'a> {
     args: Args<'a>,
     boot: Handle<Boot<'a>>,
     cores: Vec<Core<'a>>,
-    children: Vec<Thread>,
 }
 
 impl<'a> Host<'a> {
@@ -50,7 +47,6 @@ impl<'a> Host<'a> {
             args: args(),
             cores: Vec::new(),
             boot: handle::new(Boot::new(ctxs.last().expect("There are no ctx's in store.").clone())),
-            children: Vec::with_capacity(8),
         }
     }
 
@@ -80,42 +76,49 @@ impl<'a> Host<'a> {
 
 
     pub fn run(&mut self) {
-        // self.connect_cores();
         self.init();
+        Host::connect(&self.args);
         self.park_cores();
         let mut o = Selector::Rx(Console::new());
         let addr = "0.0.0.0:9001".parse::<SocketAddr>().ok().expect("Parser Error");
         let mut w = Selector::Ws(WsServer::new(&addr));
-        let mut p = Publisher::with_mirror(CString::new("/test").unwrap(), 8);
-        let mut s = Selector::Sb(p.subscribe());
         self.boot.add_selected(o);
         self.boot.add_selected(w);
-        self.boot.add_selected(s);
-        match p.next_n(3) {
-            Some(vs) => {
-                vs[0] = Message::Halt;
-                vs[1] = Message::Unknown;
-                vs[2] = Message::Spawn(Spawn { id: 13, id2: 42 });
-                p.commit();
+        self.boot.core.publish(|p| {
+            match p.next_n(3) {
+                Some(vs) => {
+                    vs[0] = Message::Halt;
+                    vs[1] = Message::Unknown;
+                    vs[2] = Message::Spawn(Spawn { id: 13, id2: 42 });
+                    p.commit();
+                }
+                None => {}
             }
-            None => {}
-        }
+        });
         self.boot.init();
     }
 
+    fn connect(args: &Args<'a>) {
+        for i in 1..args.cores.expect("Please, specify number of cores.") {
+            let c = Core::new(i);
+            Host::connect_cores(&c);
+            host().borrow_mut().cores.push(c);
+        }
+    }
+
     pub fn park_cores(&mut self) {
-        for i in 0..self.args.cores.expect("Please, specify number of cores.") {
-            let t = thread::Builder::new()
+        for i in 1..self.args.cores.expect("Please, specify number of cores.") {
+            thread::Builder::new()
                 .name(format!("core_{}", i))
                 .spawn(move || {
                     let id = unsafe { libc::pthread_self() as isize };
-//                    let mut cpu = CpuSet::new();
-//                    cpu.set(1 << i);
-//                    sched::sched_setaffinity(id, &cpu);
-                    let c = Core::new(i);
-                    Host::connect_cores(&c);
-                    host().borrow_mut().cores.push(c);
-                    // host().borrow_mut().cores[i].park(); // temporary value created here ????
+                    let mut cpu = CpuSet::new();
+                    cpu.set(1 << i);
+                    sched::sched_setaffinity(id, &cpu);
+                    for c in &mut host().borrow_mut().cores {
+                        println!("park core_{}", i);
+                        c.park();
+                    }
                 })
                 .expect("Can't spawn new thread!");
         }

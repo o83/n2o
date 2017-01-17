@@ -50,7 +50,7 @@ impl<'a, T> Scheduler<'a, T>
         }
     }
 
-    pub fn run(&'a mut self) -> Poll<Context<'a>, task::Error> {
+    pub fn run(&mut self) -> Poll<Context<'a>, task::Error> {
         let f: *mut Self = self;
         loop {
             let h1: &mut Self = unsafe { &mut *f };
