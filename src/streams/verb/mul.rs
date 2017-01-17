@@ -29,6 +29,13 @@ impl<'ast> Mul<'ast> {
             .collect();
         AST::VecInt(a)
     }
+    #[target_feature = "+avx"]
+    fn vf_vf(l: &[f64], r: &[f64]) -> AST<'ast> {
+        let a:Vec<f64> = l.iter().zip(r)
+            .map(|(l,r)| l*r)
+            .collect();
+        AST::VecFloat(a)
+    }
 }
 
 impl<'ast> Iterator for Mul<'ast> {
@@ -36,6 +43,7 @@ impl<'ast> Iterator for Mul<'ast> {
     fn next(&mut self) -> Option<Self::Item> {
         match (self.lvalue, self.rvalue) {
             (&AST::Number(l), &AST::Number(r)) => Some(Self::a_a(l, r)),
+            (&AST::VecFloat(ref l), &AST::VecFloat(ref r)) => Some(Self::vf_vf(l, r)),
             (&AST::VecInt(ref l), &AST::VecInt(ref r)) => Some(Self::l_l(l, r)),
             _ => None,
         }

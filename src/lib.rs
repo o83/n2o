@@ -1,5 +1,3 @@
-#![feature(simd, simd_ffi, link_llvm_intrinsics)]
-#![feature(core_intrinsics)]
 #![feature(target_feature)]
 #![feature(iter_arith)]
 #![feature(fnbox)]

@@ -453,6 +453,17 @@ impl<'a> fmt::Display for vi64<'a> {    // cannot implement trait directly for V
     }
 }
 
+struct vf64<'a> (&'a Vec<f64>);
+
+impl<'a> fmt::Display for vf64<'a> {    // cannot implement trait directly for Vec<i64> :(
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let str=self.0.into_iter()
+            .map(|x| x.to_string())
+            .fold(String::new(), |acc, x| if acc == "" { x } else { format!("{};{}", acc, x) });
+        write!(f,"{}",str)
+    }
+}
+
 impl<'a> fmt::Display for AST<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -484,7 +495,7 @@ impl<'a> fmt::Display for AST<'a> {
             AST::Cond(ref c, ref a, ref b) => write!(f, "$[{};{};{}]", c, a, b),
             AST::Yield => write!(f, "Yield"),
             AST::VecInt(ref v) => write!(f, "#i[{}]", vi64(v)),
-            //AST::VecFloat(ref v) => write!(f, "#f[{}]", v),
+            AST::VecFloat(ref v) => write!(f, "#f[{}]", vf64(v)),
             //AST::VecAST(ref v) => write!(f, "#a[{}]", v),
             _ => write!(f, "Not implemented yet."),
         }
