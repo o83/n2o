@@ -24,16 +24,19 @@ impl<'ast> Mul<'ast> {
     }
 
     fn l_l(l: &[i64], r: &[i64]) -> AST<'ast> {
-        let a:Vec<i64> = l.iter().zip(r)
-            .map(|(l,r)| l*r)
+        let a: Vec<i64> = l.iter()
+            .zip(r)
+            .map(|(l, r)| l * r)
             .collect();
         AST::VecInt(a)
     }
 
     fn vf_vf(l: &[f64], r: &[f64]) -> AST<'ast> {
-        let a:Vec<f64> = l.iter().zip(r)
-            .map(|(l,r)| l*r)
+        let a: Vec<f64> = l.iter()
+            .zip(r)
+            .map(|(l, r)| l * r)
             .collect();
+        println!("VF: {:?}", a);
         AST::VecFloat(a)
     }
 }

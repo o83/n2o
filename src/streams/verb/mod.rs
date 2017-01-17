@@ -7,10 +7,7 @@ pub mod dot;
 
 use commands::ast::*;
 
-pub fn eval<'ast>(verb: Verb,
-                  left: &'ast AST<'ast>,
-                  right: &'ast AST<'ast>)
-                  -> Result<AST<'ast>, Error> {
+pub fn eval<'ast>(verb: Verb, left: &'ast AST<'ast>, right: &'ast AST<'ast>) -> Result<AST<'ast>, Error> {
     match verb {
         Verb::Plus => {
             let mut a = plus::new(left, right);
@@ -26,10 +23,6 @@ pub fn eval<'ast>(verb: Verb,
         }
         Verb::Divide => {
             let mut a = div::new(left, right);
-            Ok(a.next().unwrap())
-        }
-        Verb::Dot => {
-            let mut a = dot::new(left, right);
             Ok(a.next().unwrap())
         }
         Verb::Equal => {

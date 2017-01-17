@@ -214,6 +214,20 @@ pub enum AST<'a> {
     NameInt(u16),
     SymbolInt(u16),
     SequenceInt(u16),
+    Value(Value<'a>),
+}
+
+#[derive(PartialEq,Debug,Clone)]
+pub enum Value<'a> {
+    Number(i64),
+    Float(f64),
+    NameInt(u16),
+    SymbolInt(u16),
+    SequenceInt(u16),
+    VecInt(Vec<i64>),
+    VecFloat(Vec<f64>),
+    VecAST(Vec<AST<'a>>),
+    Ioverb(String),
 }
 
 #[derive(Debug)]
@@ -613,6 +627,12 @@ fn is_intlist<'a>(l: &'a AST<'a>) -> intlist_r {
                 len: 1,
             }
         }
+        &AST::Float(f64) => {
+            intlist_r {
+                isvec: true,
+                len: 1,
+            }
+        }
         x => {
             intlist_r {
                 isvec: false,
@@ -626,16 +646,24 @@ fn to_intlist<'a>(l: &'a AST<'a>, len: usize, arena: &'a Arena<'a>) -> &'a AST<'
     // converts list of integers to specialized vector
 
     // println!("to_intlist : {:?} {}", l, len);
-    let mut a: Vec<i64> = Vec::with_capacity(len);
+    let mut i: Vec<i64> = Vec::with_capacity(len);
+    let mut f: Vec<f64> = Vec::with_capacity(len);
     for v in l.into_iter() {
         match v {
             &AST::Number(x) => {
-                a.push(x);
+                i.push(x);
+            }
+            &AST::Float(x) => {
+                f.push(x);
             }
             _ => panic!("Unexpected non-integer type"), 
         }
     }
-    arena.ast(AST::VecInt(a))
+    if i.len() >= f.len() {
+        arena.ast(AST::VecInt(i))
+    } else {
+        arena.ast(AST::VecFloat(f))
+    }
 }
 
 fn postprocess<'a>(t: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
@@ -707,6 +735,12 @@ pub fn rev_list<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
 
 pub fn verb<'a>(v: Verb, l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
     match v {
+        Verb::Dot => {
+            match (l, r) {
+                (&AST::Number(x), &AST::Number(y)) => arena.ast(AST::Float(x as f64 + (y as f64 / 10.0))),
+                _ => arena.ast(AST::Verb(v, l, r)),
+            }
+        }
         Verb::Cast => {
             let rexpr = match r {
                 &AST::Dict(d) => {
