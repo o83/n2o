@@ -14,17 +14,11 @@ Features
 * MIO Compatible Network Server with Connections
 * Vectorizable SMP-aware stream combinators
 * MPSC, SPMC, SPSC queues with CAS-semantics on Ring Buffers
+* Zero-Copy Interpreter and Queues
 * Session Types and π-calculus semantics
-* 10-40ns latency
-* Zero-Copy Interpreter
+* 5-20ns latency
 * BERT protocol for VM stats
-
-Prerequisites
--------------
-
-```
-$ sudo apt-get install libhwloc-dev
-```
+* AVX Vectorization
 
 Test The O Language
 -------------------
@@ -36,6 +30,34 @@ Welcome to O-CPS Interpreter v0.11.0!
 > fac:{$[x=1;1;x*fac[x-1]]};fac[20]
 2432902008176640000
 >
+```
+
+Enable AVX Vectorization
+------------------------
+
+```
+$ cat ./cargo/config
+
+[target.x86_64-unknown-linux-gnu]
+rustflags="-C target-feature=+avx,+avx2"
+
+$ cargo build -- release
+
+$ objdump ./target/release/o -d | grep mulpd
+   223f1:	c5 f5 59 0c d3       	vmulpd (%rbx,%rdx,8),%ymm1,%ymm1
+   223f6:	c5 dd 59 64 d3 20    	vmulpd 0x20(%rbx,%rdx,8),%ymm4,%ymm4
+   22416:	c5 f5 59 4c d3 40    	vmulpd 0x40(%rbx,%rdx,8),%ymm1,%ymm1
+   2241c:	c5 dd 59 64 d3 60    	vmulpd 0x60(%rbx,%rdx,8),%ymm4,%ymm4
+   2264d:	c5 f5 59 0c d3       	vmulpd (%rbx,%rdx,8),%ymm1,%ymm1
+   22652:	c5 e5 59 5c d3 20    	vmulpd 0x20(%rbx,%rdx,8),%ymm3,%ymm3
+$ objdump ./target/release/o -d | grep vpmul
+   2251c:	c5 d5 f4 fb          	vpmuludq %ymm3,%ymm5,%ymm7
+   22525:	c4 41 55 f4 c0       	vpmuludq %ymm8,%ymm5,%ymm8
+   2253a:	c5 d5 f4 db          	vpmuludq %ymm3,%ymm5,%ymm3
+   22547:	c5 cd f4 ec          	vpmuludq %ymm4,%ymm6,%ymm5
+   22550:	c5 cd f4 ff          	vpmuludq %ymm7,%ymm6,%ymm7
+   22562:	c5 cd f4 e4          	vpmuludq %ymm4,%ymm6,%ymm4
+   22595:	c5 d5 f4 fb          	vpmuludq %ymm3,%ymm5,%ymm7
 ```
 
 Sample
@@ -70,17 +92,6 @@ fn console() {
 }
 ```
 
-
-Test Network Server
--------------------
-
-```
-$ cargo build
-$ cargo test
-$ ./target/debug/hub
->
-```
-
 Test WebSocket Server
 -------------------
 
@@ -96,13 +107,6 @@ Open Browser:
 
 ```
 $ open http://127.0.0.1:8001/etc/status/index.htm
-```
-
-Test Session Types
-------------------
-
-```
-$ ./target/debug/fix
 ```
 
 Reading
