@@ -22,14 +22,14 @@ impl<'ast> Mul<'ast> {
     fn a_l(l: &'ast AST<'ast>, r: &'ast AST<'ast>) -> AST<'ast> {
         AST::Number(1)
     }
-    #[target_feature = "+avx"]
+
     fn l_l(l: &[i64], r: &[i64]) -> AST<'ast> {
         let a:Vec<i64> = l.iter().zip(r)
             .map(|(l,r)| l*r)
             .collect();
         AST::VecInt(a)
     }
-    #[target_feature = "+avx"]
+
     fn vf_vf(l: &[f64], r: &[f64]) -> AST<'ast> {
         let a:Vec<f64> = l.iter().zip(r)
             .map(|(l,r)| l*r)
