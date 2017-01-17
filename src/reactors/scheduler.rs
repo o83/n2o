@@ -1,5 +1,7 @@
 use reactors::task::{self, Task, Context, Poll};
 use streams::intercore::ctx::Channel;
+use queues::publisher::Subscriber;
+use streams::intercore::api::Message;
 use std::mem;
 
 const TASKS_MAX_CNT: usize = 256;
@@ -37,7 +39,7 @@ impl<'a, T> Scheduler<'a, T>
         Scheduler {
             tasks: Vec::with_capacity(TASKS_MAX_CNT),
             ctxs: Vec::with_capacity(TASKS_MAX_CNT),
-            bus: c,
+            bus: Some(c),
         }
     }
 
@@ -91,5 +93,9 @@ impl<'a, T> Scheduler<'a, T>
                 }
             }
         }
+    }
+
+    pub fn subscribe(&mut self) -> Subscriber<Message> {
+        self.bus.as_mut().expect("This scheduler without bus!").publisher.subscribe()
     }
 }

@@ -1,7 +1,7 @@
 use reactors::scheduler::{Scheduler, TaskTermination};
 use streams::intercore::ctx::Channel;
 use reactors::job::Job;
-use queues::publisher::Publisher;
+use queues::publisher::Subscriber;
 use std::ffi::CString;
 use handle::{self, Handle};
 use streams::intercore::api::Message;
@@ -12,10 +12,6 @@ pub struct Core<'a> {
 }
 
 impl<'a> Core<'a> {
-    pub fn bus(&self) -> &mut Channel {
-        self.bus.borrow_mut()
-    }
-
     pub fn new(id: usize) -> Self {
         Core {
             id: id,
@@ -39,5 +35,9 @@ impl<'a> Core<'a> {
 
     pub fn park(&mut self) {
         self.scheduler.run();
+    }
+
+    pub fn subscribe(&mut self) -> Subscriber<Message> {
+        self.scheduler.subscribe()
     }
 }
