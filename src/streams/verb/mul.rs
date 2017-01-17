@@ -37,7 +37,6 @@ impl<'ast> Mul<'ast> {
             .zip(r)
             .map(|(l, r)| l * r)
             .collect();
-        println!("VF: {:?}", a);
         AST::Value(Value::VecFloat(a))
     }
 }

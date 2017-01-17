@@ -207,16 +207,16 @@ pub enum AST<'a> {
     Ioverb(String),
     Yield,
     Value(Value<'a>),
+    NameInt(u16),
 }
 
 #[derive(PartialEq,Debug,Clone)]
 pub enum Value<'a> {
     Nil,
-    Number(i64),
-    Float(f64),
-    NameInt(u16),
     SymbolInt(u16),
     SequenceInt(u16),
+    Number(i64),
+    Float(f64),
     VecInt(Vec<i64>),
     VecFloat(Vec<f64>),
     VecAST(Vec<AST<'a>>),
@@ -319,11 +319,11 @@ impl<'a> Arena<'a> {
     pub fn intern(&self, s: String) -> &'a AST<'a> {
         let names = unsafe { &mut *self.names.get() };
         if names.contains_key(&s) {
-            self.ast(AST::Value(Value::NameInt(names[&s])))
+            self.ast(AST::NameInt(names[&s]))
         } else {
             let id = names.len() as u16;
             names.insert(s, id);
-            self.ast(AST::Value(Value::NameInt(id)))
+            self.ast(AST::NameInt(id))
         }
     }
 
@@ -509,10 +509,10 @@ impl<'a> fmt::Display for AST<'a> {
             AST::Assign(ref a, ref b) => write!(f, "{}:{}", a, b),
             AST::Cond(ref c, ref a, ref b) => write!(f, "$[{};{};{}]", c, a, b),
             AST::Yield => write!(f, "Yield"),
-            AST::Value(ref v) =>
+            AST::NameInt(ref n) => write!(f, "^{}", n),
+            AST::Value(ref v) => {
                 match v {
                     &Value::Number(n) => write!(f, "{}", n),
-                    &Value::NameInt(ref n) => write!(f, "^{}", n),
                     &Value::SymbolInt(ref s) => write!(f, "{}", s),
                     &Value::SequenceInt(ref s) => write!(f, "{:?}", s),
                     &Value::VecInt(ref v) => write!(f, "#i[{}]", vi64(v)),
@@ -520,7 +520,8 @@ impl<'a> fmt::Display for AST<'a> {
                     // &Value::VecValue(ref v) => write!(f, "#a[{}]", v),
                     &Value::Ioverb(ref v) => write!(f, "{}", v),
                     _ => write!(f, "Not implemented yet."),
-                },
+                }
+            }
             _ => write!(f, "Not implemented yet."),
         }
 
@@ -529,13 +530,8 @@ impl<'a> fmt::Display for AST<'a> {
 
 pub fn extract_name<'a>(a: &'a AST<'a>) -> u16 {
     match a {
-        &AST::Value(ref x) => {
-            match x {
-                &Value::NameInt(s) => s,
-                _ => 0
-            }
-        },
-        x => 0,
+        &AST::NameInt(s) => s,
+        _ => 0,
     }
 }
 
@@ -605,15 +601,11 @@ fn is_intlist<'a>(l: &'a AST<'a>) -> intlist_r {
         isvec: false,
         len: 0,
     };
-    
+
     match l {
         &AST::Cons(a, b) => {
             let la = is_intlist(a);
-            let lb = if la.isvec {
-                is_intlist(b)
-            } else {
-                not_intlist
-            };
+            let lb = if la.isvec { is_intlist(b) } else { not_intlist };
             intlist_r {
                 isvec: la.isvec && lb.isvec,
                 len: la.len + lb.len,
@@ -624,7 +616,7 @@ fn is_intlist<'a>(l: &'a AST<'a>) -> intlist_r {
                 isvec: true,
                 len: 0,
             }
-        },
+        }
         &AST::Value(ref x) => {
             match x {
                 &Value::Number(i64) => {
@@ -638,11 +630,11 @@ fn is_intlist<'a>(l: &'a AST<'a>) -> intlist_r {
                         isvec: true,
                         len: 1,
                     }
-                },
-                x => not_intlist
+                }
+                x => not_intlist,
             }
-        },
-        x => not_intlist
+        }
+        x => not_intlist,
     }
 }
 
@@ -656,10 +648,10 @@ fn to_intlist<'a>(l: &'a AST<'a>, len: usize, arena: &'a Arena<'a>) -> &'a AST<'
         match v {
             &AST::Value(Value::Number(x)) => {
                 i.push(x);
-            },
+            }
             &AST::Value(Value::Float(x)) => {
                 f.push(x);
-            },
+            }
             _ => panic!("Unexpected non-number type"),
         }
     }
@@ -741,8 +733,9 @@ pub fn verb<'a>(v: Verb, l: &'a AST<'a>, r: &'a AST<'a>, arena: &'a Arena<'a>) -
     match v {
         Verb::Dot => {
             match (l, r) {
-                (&AST::Value(Value::Number(x)),
-                 &AST::Value(Value::Number(y))) => arena.ast(AST::Value(Value::Float(x as f64 + (y as f64 / 10.0)))),
+                (&AST::Value(Value::Number(x)), &AST::Value(Value::Number(y))) => {
+                    arena.ast(AST::Value(Value::Float(x as f64 + (y as f64 / 10.0))))
+                }
                 _ => arena.ast(AST::Verb(v, l, r)),
             }
         }

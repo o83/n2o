@@ -113,7 +113,7 @@ impl<'a> Interpreter<'a> {
             Lazy::Start => tick = try!(se1.evaluate_expr(se2.env.last(), ast, se3.arena.cont(Cont::Return))),
             _ => tick = se3.registers.clone(),
         }
-        println!("Counter: {:?}", ast);
+        // println!("Counter: {:?}", ast);
         loop {
             let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
             let mut counter = se1.counter;
@@ -139,7 +139,7 @@ impl<'a> Interpreter<'a> {
                 Lazy::Return(ast) => {
                     // println!("env: {:?}", se3.env.dump());
                     // println!("arena: {:?}", se4.arena.dump());
-                    println!("Result: {}", ast);
+                    // println!("Result: {}", ast);
                     se3.counter = counter + 1;
                     return Ok(ast);
                 }
@@ -168,13 +168,14 @@ impl<'a> Interpreter<'a> {
             &AST::Dict(x) => self.evaluate_dict(node, self.arena.nil(), x, cont),
             &AST::Call(c, a) => Ok(Lazy::Defer(node, a, self.arena.cont(Cont::Call(c, cont)))),
             &AST::Verb(ref verb, left, right) => {
+                // println!("Defer Verb: {:?} {:?}", left, right);
                 match (left, right) {
-                    (&AST::Value(Value::Number(_)), _) => {
+                    (&AST::Value(_), _) => {
                         Ok(Lazy::Defer(node,
                                        right,
                                        self.arena.cont(Cont::Verb(verb.clone(), left, 0, cont))))
                     }
-                    (_, &AST::Value(Value::Number(_))) => {
+                    (_, &AST::Value(_)) => {
                         Ok(Lazy::Defer(node,
                                        left,
                                        self.arena
@@ -188,7 +189,7 @@ impl<'a> Interpreter<'a> {
                     }
                 }
             }
-            &AST::Value(Value::NameInt(name)) => {
+            &AST::NameInt(name) => {
                 let l = self.lookup(node, name, &self.env);
                 match l {
                     Ok((v, f)) => self.run_cont(f, v, cont),
@@ -210,7 +211,7 @@ impl<'a> Interpreter<'a> {
             None => {
                 Err(Error::EvalError {
                     desc: "Identifier not found".to_string(),
-                    ast: format!("{:?}", AST::Value(Value::NameInt(name))),
+                    ast: format!("{:?}", AST::NameInt(name)),
                 })
             }
         }
@@ -235,13 +236,13 @@ impl<'a> Interpreter<'a> {
                               body,
                               self.arena.cont(Cont::Func(names, rev, body, cont)))
             }
-            &AST::Value(Value::NameInt(s)) => {
+            &AST::NameInt(s) => {
                 // println!("{:?}", s);
                 let v = self.lookup(node, s, &self.env);
                 match v {
                     Ok((c, f)) => {
                         match c {
-                            &AST::Value(Value::NameInt(n)) if n < self.arena.builtins => {
+                            &AST::NameInt(n) if n < self.arena.builtins => {
                                 let x = self.arena.ast(internals(n, args, &self.ctx));
                                 match x {
                                     &AST::Yield => self.run_cont(f, x, self.arena.cont(Cont::Yield(cont))),
@@ -371,7 +372,7 @@ impl<'a> Interpreter<'a> {
             &Cont::Cond(if_expr, else_expr, cont) => {
                 match val {
                     &AST::Value(Value::Number(0)) => Ok(Lazy::Defer(node, else_expr, cont)),
-                    &AST::Value(Value::Number(_)) => Ok(Lazy::Defer(node, if_expr, cont)),
+                    &AST::Value(_) => Ok(Lazy::Defer(node, if_expr, cont)),
                     x => {
                         Ok(Lazy::Defer(node,
                                        x,
@@ -381,7 +382,7 @@ impl<'a> Interpreter<'a> {
             }
             &Cont::Assign(name, cont) => {
                 match name {
-                    &AST::Value(Value::NameInt(s)) => {
+                    &AST::NameInt(s) => {
                         // println!("Assign: {:?}:{:?}", s, val);
                         try!(self.env.define(s, val));
                         self.evaluate_expr(node, val, cont)
@@ -410,9 +411,11 @@ impl<'a> Interpreter<'a> {
                                            self.arena
                                                .cont(Cont::Dict(new_acc, tail, cont)))
                     }
-                    &AST::Value(Value::Number(s)) => self.run_cont(node, self.arena.ast(AST::Cons(rest, new_acc)), cont),
+                    &AST::Value(Value::Number(s)) => {
+                        self.run_cont(node, self.arena.ast(AST::Cons(rest, new_acc)), cont)
+                    }
                     &AST::Nil => self.run_cont(node, new_acc, cont),
-                    &AST::Value(Value::NameInt(name)) => {
+                    &AST::NameInt(name) => {
                         match self.lookup(node, name, &self.env) {
                             Ok((v, f)) => self.run_cont(f, self.arena.ast(AST::Cons(v, new_acc)), cont),
                             Err(x) => Err(x),
@@ -429,31 +432,7 @@ impl<'a> Interpreter<'a> {
             &Cont::Verb(ref verb, right, swap, cont) => {
                 // println!("Cont Verb: {:?}", val);
                 match (right, val) {
-                    (&AST::Value(Value::Number(_)), &AST::Value(Value::Number(_))) => {
-                        match swap {
-                            0 => {
-                                let a = verb::eval(verb.clone(), right, val).unwrap();
-                                self.run_cont(node, self.arena.ast(a), cont)
-                            }
-                            _ => {
-                                let a = verb::eval(verb.clone(), val, right).unwrap();
-                                self.run_cont(node, self.arena.ast(a), cont)
-                            }
-                        }
-                    }
-                    (&AST::Value(Value::VecInt(_)), &AST::Value(Value::Number(_))) => {
-                        match swap {
-                            0 => {
-                                let a = verb::eval(verb.clone(), right, val).unwrap();
-                                self.run_cont(node, self.arena.ast(a), cont)
-                            }
-                            _ => {
-                                let a = verb::eval(verb.clone(), val, right).unwrap();
-                                self.run_cont(node, self.arena.ast(a), cont)
-                            }
-                        }
-                    }
-                    (&AST::Value(Value::VecInt(_)), &AST::Value(Value::VecInt(_))) => {
+                    (&AST::Value(_), &AST::Value(_)) => {
                         match swap {
                             0 => {
                                 let a = verb::eval(verb.clone(), right, val).unwrap();
