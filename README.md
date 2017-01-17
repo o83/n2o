@@ -19,6 +19,7 @@ Features
 * 5-20ns latency
 * BERT protocol for VM stats
 * AVX Vectorization
+* Dedicated InterCore Bus Protocol (Star Topology)
 
 Test The O Language
 -------------------
@@ -41,7 +42,7 @@ $ cat ./cargo/config
 [target.x86_64-unknown-linux-gnu]
 rustflags="-C target-feature=+avx,+avx2"
 
-$ cargo build -- release
+$ cargo build --release
 
 $ objdump ./target/release/o -d | grep mulpd
    223f1:	c5 f5 59 0c d3       	vmulpd (%rbx,%rdx,8),%ymm1,%ymm1
