@@ -75,8 +75,8 @@ impl<'a> Host<'a> {
 
     fn connect_w_host(core: &'a mut Core) {
         let s0 = host().borrow_mut().boot.subscribe();
-        let s1 = core.subscribe();
-        host().borrow_mut().boot.add_subscriber(s1);
+        // let s1 = core.subscribe();
+        // host().borrow_mut().boot.add_subscriber(s1);
         core.add_subscriber(s0);
         host().borrow_mut().boot.add_selected(Selector::Sb(core.subscribe()));
     }
@@ -114,6 +114,7 @@ impl<'a> Host<'a> {
     fn connect(args: &Args<'a>) {
         for i in 1..args.cores.expect("Please, specify number of cores.") {
             let c = Channel {
+                id: i,
                 publisher: Publisher::with_mirror(CString::new(format!("/ipc_{}", i)).unwrap(), 8),
                 subscribers: Vec::new(),
             };

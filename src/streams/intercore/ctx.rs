@@ -14,6 +14,7 @@ pub struct Ctx {
 }
 
 pub struct Channel {
+    pub id: usize,
     pub publisher: Publisher<Message>,
     pub subscribers: Vec<Subscriber<Message>>,
 }

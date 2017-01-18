@@ -29,6 +29,7 @@ impl<'a> Boot<'a> {
             scheduler: Scheduler::new(),
             ctx: ctx,
             bus: Channel {
+                id: 0,
                 publisher: Publisher::with_mirror(CString::new(format!("/boot_{}", 0)).unwrap(), 8),
                 subscribers: Vec::new(),
             },
