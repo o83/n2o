@@ -3,6 +3,7 @@ use streams::intercore::ctx::Ctx;
 use reactors::system::IO;
 use reactors::selector::{Selector, Async, Pool};
 use reactors::scheduler::{Scheduler, TaskTermination, TaskId};
+use reactors::job::Job;
 use streams::intercore::api::Message;
 use queues::publisher::{Publisher, Subscriber};
 use reactors::cpstask::CpsTask;
@@ -13,7 +14,7 @@ use std::str;
 
 pub struct Boot<'a> {
     io: IO,
-    scheduler: Scheduler<'a, CpsTask<'a>>,
+    scheduler: Scheduler<'a>,
     ctx: Rc<Ctx>,
     publisher: Publisher<Message>,
 }
@@ -57,10 +58,11 @@ impl<'a> Boot<'a> {
     }
 
     pub fn init(&mut self) {
-        let cps = CpsTask::new(self.ctx.clone());
         let h: *mut Boot<'a> = self;
         let h0: &mut Boot<'a> = unsafe { &mut *h };
-        let task_id = h0.scheduler.spawn(cps, TaskTermination::Corecursive, None);
+        let task_id = h0.scheduler.spawn(Job::Cps(CpsTask::new(self.ctx.clone())),
+                                         TaskTermination::Corecursive,
+                                         None);
         loop {
             let h1: &mut Boot<'a> = unsafe { &mut *h };
             let h2: &mut Boot<'a> = unsafe { &mut *h };

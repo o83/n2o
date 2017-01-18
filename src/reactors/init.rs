@@ -16,7 +16,6 @@ use std::ffi::CString;
 use streams::intercore::ctx::Channel;
 use queues::pubsub::PubSub;
 use reactors::scheduler::Scheduler;
-use reactors::job::Job;
 use sys;
 
 struct Args<'a> {
@@ -37,7 +36,7 @@ fn args<'a>() -> Args<'a> {
 pub struct Host<'a> {
     args: Args<'a>,
     boot: Handle<Boot<'a>>,
-    scheds: Vec<Scheduler<'a, Job<'a>>>,
+    scheds: Vec<Scheduler<'a>>,
 }
 
 impl<'a> Host<'a> {
@@ -61,20 +60,20 @@ impl<'a> Host<'a> {
         Ok(())
     }
 
-    fn connect_w(c1: &mut Scheduler<'a, Job<'a>>, c2: &mut Scheduler<'a, Job<'a>>) {
+    fn connect_w(c1: &mut Scheduler<'a>, c2: &mut Scheduler<'a>) {
         let s1 = c1.subscribe();
         let s2 = c2.subscribe();
         c1.add_subscriber(s2);
         c2.add_subscriber(s1);
     }
 
-    fn connect_w_host(sched: &'a mut Scheduler<'static, Job<'static>>) {
+    fn connect_w_host(sched: &'a mut Scheduler<'static>) {
         let s0 = host().borrow_mut().boot.subscribe();
         sched.add_subscriber(s0);
         host().borrow_mut().boot.add_selected(Selector::Sb(sched.subscribe()));
     }
 
-    fn connect_scheds(sched: &'a mut Scheduler<'static, Job<'static>>) {
+    fn connect_scheds(sched: &'a mut Scheduler<'static>) {
         Host::connect_w_host(sched);
         for s in &mut host().borrow_mut().scheds {
             Host::connect_w(s, sched);
@@ -100,7 +99,7 @@ impl<'a> Host<'a> {
                 publisher: Publisher::with_mirror(CString::new(format!("/pub_{}", i)).unwrap(), 8),
                 subscribers: Vec::new(),
             };
-            let mut sched = Scheduler::with_channel(chan);
+            let mut sched = Scheduler::new().set_channel(chan);
             Host::connect_scheds(&mut sched);
             host().borrow_mut().scheds.push(sched);
         }
