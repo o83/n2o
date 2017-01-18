@@ -77,6 +77,12 @@ impl<'a> Boot<'a> {
             }
         }
     }
+
+    pub fn publish<F, R>(&mut self, mut f: F) -> R
+        where F: FnMut(&mut Publisher<Message>) -> R
+    {
+        f(&mut self.bus.publisher)
+    }
 }
 
 impl<'a> PubSub<Message> for Boot<'a> {

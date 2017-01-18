@@ -97,17 +97,17 @@ impl<'a> Host<'a> {
         self.boot.add_selected(w);
         Host::connect(&self.args);
         self.park_cores();
-        // self.boot.core.publish(|p| {
-        //     match p.next_n(3) {
-        //         Some(vs) => {
-        //             vs[0] = Message::Halt;
-        //             vs[1] = Message::Unknown;
-        //             vs[2] = Message::Spawn(Spawn { id: 13, id2: 42 });
-        //             p.commit();
-        //         }
-        //         None => {}
-        //     }
-        // });
+        self.boot.publish(|p| {
+            match p.next_n(3) {
+                Some(vs) => {
+                    vs[0] = Message::Halt;
+                    vs[1] = Message::Unknown;
+                    vs[2] = Message::Spawn(Spawn { id: 13, id2: 42 });
+                    p.commit();
+                }
+                None => {}
+            }
+        });
         self.boot.init();
     }
 
