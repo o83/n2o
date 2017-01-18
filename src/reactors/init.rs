@@ -17,7 +17,6 @@ use std::net::SocketAddr;
 use reactors::selector::Selector;
 use std::io::{self, BufReader, BufRead};
 // use nix::sched::{self, CpuSet};
-use reactors::intercoretask::IntercoreTask;
 use reactors::scheduler::TaskTermination;
 use reactors::job::Job;
 use queues::publisher::{Publisher, Subscriber};
