@@ -65,28 +65,21 @@ impl<'a> Host<'a> {
         Ok(())
     }
 
-    fn connect_w(c1: &Core, c2: &Core) {
-        // let s = c1.bus().publisher.subscribe();
-        // c1.bus().subscribers.push(s);
-        // let s = c1.bus().publisher.subscribe();
-        // c2.bus().subscribers.push(s);
+    fn connect_w(c1: &mut Core, c2: &mut Core) {
+        let s1 = c1.subscribe();
+        let s2 = c2.subscribe();
+        c1.add_subscriber(s2);
+        c2.add_subscriber(s1);
     }
 
-    fn spawn_intercore_tasks() {
-        println!("Cores count: {:?}", host().borrow_mut().cores.len());
-        for (i, c) in host().borrow_mut().cores.iter_mut().enumerate() {
-            // let p = Publisher::with_mirror(CString::new(format!("/ipc_{}", i)).unwrap(), 8);
-            // let s: Vec<Subscriber<Message>> = Vec::new();
-            // let mut j = Job::Ipc(IntercoreTask::new(i, p, s));
-
-            // c.spawn_task(j, TaskTermination::Recursive, None);
-        }
+    fn connect_w_host(core: &'a mut Core) {
+        let s1 = core.subscribe();
     }
 
-    fn connect_cores(core: &'a Core) {
-        // Host::connect_w(core, &host().borrow_mut().boot.borrow().core);
-        for c in &host().borrow_mut().cores {
-            // Host::connect_w(c, &core);
+    fn connect_cores(core: &'a mut Core) {
+        Host::connect_w_host(core);
+        for c in &mut host().borrow_mut().cores {
+            Host::connect_w(c, core);
         }
     }
 
@@ -98,7 +91,6 @@ impl<'a> Host<'a> {
         self.boot.add_selected(o);
         self.boot.add_selected(w);
         Host::connect(&self.args);
-        // Host::spawn_intercore_tasks();
         self.park_cores();
         // self.boot.core.publish(|p| {
         //     match p.next_n(3) {
@@ -120,8 +112,8 @@ impl<'a> Host<'a> {
                 publisher: Publisher::with_mirror(CString::new(format!("/ipc_{}", i)).unwrap(), 8),
                 subscribers: Vec::new(),
             };
-            let c = Core::with_channel(i, c);
-            // Host::connect_cores(&c);
+            let mut c = Core::with_channel(i, c);
+            Host::connect_cores(&mut c);
             host().borrow_mut().cores.push(c);
         }
     }

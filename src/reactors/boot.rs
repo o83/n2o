@@ -3,7 +3,11 @@ use streams::intercore::ctx::Ctx;
 use reactors::system::IO;
 use reactors::selector::{Selector, Async, Pool};
 use reactors::scheduler::{Scheduler, TaskTermination, TaskId};
+use streams::intercore::ctx::Channel;
+use streams::intercore::api::Message;
+use queues::publisher::Publisher;
 use reactors::cpstask::CpsTask;
+use std::ffi::CString;
 use handle;
 use std::str;
 use reactors::core::Core;
@@ -13,6 +17,7 @@ pub struct Boot<'a> {
     io: IO,
     scheduler: Scheduler<'a, CpsTask<'a>>,
     ctx: Rc<Ctx>,
+    pub bus: Channel,
 }
 
 impl<'a> Boot<'a> {
@@ -22,6 +27,10 @@ impl<'a> Boot<'a> {
             io: IO::new(),
             scheduler: Scheduler::new(),
             ctx: ctx,
+            bus: Channel {
+                publisher: Publisher::with_mirror(CString::new(format!("/boot_{}", 0)).unwrap(), 8),
+                subscribers: Vec::new(),
+            },
         }
     }
 
