@@ -123,7 +123,7 @@ impl<'a> Host<'a> {
     }
 
     pub fn park_cores(&mut self) {
-        for i in 1..self.args.cores.expect("Please, specify number of cores.") - 1 {
+        for i in 1..self.args.cores.expect("Please, specify number of cores.") {
             thread::Builder::new()
                 .name(format!("core_{}", i))
                 .spawn(move || {
@@ -131,7 +131,7 @@ impl<'a> Host<'a> {
                     // let mut cpu = CpuSet::new();
                     // cpu.set(1 << i);
                     // sched::sched_setaffinity(id, &cpu);
-                    host().borrow_mut().cores.get_mut(i).expect(&format!("No core at {:?}", i)).park();
+                    host().borrow_mut().cores.get_mut(i - 1).expect(&format!("No core at {:?}", i)).park();
                 })
                 .expect("Can't spawn new thread!");
         }
