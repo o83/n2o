@@ -22,6 +22,7 @@ use reactors::job::Job;
 use queues::publisher::{Publisher, Subscriber};
 use std::ffi::CString;
 use streams::intercore::ctx::Channel;
+use queues::pubsub::PubSub;
 
 struct Args<'a> {
     raw: Vec<String>,
@@ -74,6 +75,7 @@ impl<'a> Host<'a> {
 
     fn connect_w_host(core: &'a mut Core) {
         let s1 = core.subscribe();
+
     }
 
     fn connect_cores(core: &'a mut Core) {

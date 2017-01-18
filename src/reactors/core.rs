@@ -5,6 +5,7 @@ use queues::publisher::Subscriber;
 use std::ffi::CString;
 use handle::{self, Handle};
 use streams::intercore::api::Message;
+use queues::pubsub::PubSub;
 
 pub struct Core<'a> {
     id: usize,
@@ -29,12 +30,14 @@ impl<'a> Core<'a> {
     pub fn park(&mut self) {
         self.scheduler.run();
     }
+}
 
-    pub fn subscribe(&mut self) -> Subscriber<Message> {
+impl<'a> PubSub<Message> for Core<'a> {
+    fn subscribe(&mut self) -> Subscriber<Message> {
         self.scheduler.subscribe()
     }
 
-    pub fn add_subscriber(&mut self, s: Subscriber<Message>) {
+    fn add_subscriber(&mut self, s: Subscriber<Message>) {
         self.scheduler.add_subscriber(s);
     }
 }

@@ -1,6 +1,7 @@
 use reactors::task::{self, Task, Context, Poll};
 use streams::intercore::ctx::Channel;
 use queues::publisher::Subscriber;
+use queues::pubsub::PubSub;
 use streams::intercore::api::Message;
 use std::mem;
 
@@ -94,12 +95,14 @@ impl<'a, T> Scheduler<'a, T>
             }
         }
     }
+}
 
-    pub fn subscribe(&mut self) -> Subscriber<Message> {
+impl<'a, T> PubSub<Message> for Scheduler<'a, T> {
+    fn subscribe(&mut self) -> Subscriber<Message> {
         self.bus.as_mut().expect("This scheduler without bus!").publisher.subscribe()
     }
 
-    pub fn add_subscriber(&mut self, s: Subscriber<Message>) {
+    fn add_subscriber(&mut self, s: Subscriber<Message>) {
         self.bus.as_mut().expect("This scheduler without bus!").subscribers.push(s);
     }
 }
