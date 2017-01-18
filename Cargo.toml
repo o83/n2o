@@ -1,11 +1,11 @@
 [package]
 name = "kernel"
-version = "0.12.0"
+version = "1.1.0"
 authors = ["Maxim Sokhatskyi <maxim@synrc.com>"]
 license = "MIT"
 repository = "https://github.com/AlgoTradingHub/kernel"
 homepage = "https://github.com/AlgoTradingHub/kernel"
-documentation = "http://5ht.co/kernel.htm"
+documentation = "http://platform.rs"
 description = """
 Abstract Reactive Streams
 """
@@ -14,7 +14,6 @@ build = "build.rs"
 [[bin]]
 name = "o"
 path = "src/apps/host.rs"
-
 
 [dependencies]
 net2            = "0.2.19"
