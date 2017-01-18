@@ -5,8 +5,9 @@ use reactors::selector::{Selector, Async, Pool};
 use reactors::scheduler::{Scheduler, TaskTermination, TaskId};
 use streams::intercore::ctx::Channel;
 use streams::intercore::api::Message;
-use queues::publisher::Publisher;
+use queues::publisher::{Publisher, Subscriber};
 use reactors::cpstask::CpsTask;
+use queues::pubsub::PubSub;
 use std::ffi::CString;
 use handle;
 use std::str;
@@ -75,5 +76,15 @@ impl<'a> Boot<'a> {
                 Async::NotReady => (),
             }
         }
+    }
+}
+
+impl<'a> PubSub<Message> for Boot<'a> {
+    fn subscribe(&mut self) -> Subscriber<Message> {
+        self.bus.publisher.subscribe()
+    }
+
+    fn add_subscriber(&mut self, s: Subscriber<Message>) {
+        self.bus.subscribers.push(s);
     }
 }
