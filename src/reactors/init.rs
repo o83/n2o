@@ -1,24 +1,17 @@
-// use libc;
 use std::mem;
 use std::rc::Rc;
 use std::env;
 use std::thread;
 use std::fs::File;
 use streams::intercore::ctx::Ctx;
-use streams::intercore::api::{Message, Spawn};
 use reactors::boot::Boot;
 use handle::{self, Handle};
 use std::sync::{Arc, Once, ONCE_INIT};
 use std::cell::UnsafeCell;
 use reactors::core::Core;
 use reactors::console::Console;
-use reactors::ws::WsServer;
-use std::net::SocketAddr;
 use reactors::selector::Selector;
 use std::io::{self, BufReader, BufRead};
-// use nix::sched::{self, CpuSet};
-// use reactors::scheduler::TaskTermination;
-// use reactors::job::Job;
 use queues::publisher::Publisher;
 use std::ffi::CString;
 use streams::intercore::ctx::Channel;
@@ -89,23 +82,12 @@ impl<'a> Host<'a> {
     pub fn run(&mut self) {
         self.init();
         let mut o = Selector::Rx(Console::new());
-        let addr = "0.0.0.0:9001".parse::<SocketAddr>().ok().expect("Parser Error");
-        let mut w = Selector::Ws(WsServer::new(&addr));
+        // let addr = "0.0.0.0:9001".parse::<SocketAddr>().ok().expect("Parser Error");
+        // let mut w = Selector::Ws(WsServer::new(&addr));
+        // self.boot.add_selected(w);
         self.boot.add_selected(o);
-        self.boot.add_selected(w);
         Host::connect(&self.args);
         self.park_cores();
-        self.boot.publish(|p| {
-            match p.next_n(3) {
-                Some(vs) => {
-                    vs[0] = Message::Halt;
-                    vs[1] = Message::Unknown;
-                    vs[2] = Message::Spawn(Spawn { id: 13, id2: 42 });
-                    p.commit();
-                }
-                None => {}
-            }
-        });
         self.boot.init();
     }
 
