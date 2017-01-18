@@ -3,7 +3,6 @@ use streams::intercore::ctx::Ctx;
 use reactors::system::IO;
 use reactors::selector::{Selector, Async, Pool};
 use reactors::scheduler::{Scheduler, TaskTermination, TaskId};
-use streams::intercore::ctx::Channel;
 use streams::intercore::api::Message;
 use queues::publisher::{Publisher, Subscriber};
 use reactors::cpstask::CpsTask;
@@ -16,7 +15,7 @@ pub struct Boot<'a> {
     io: IO,
     scheduler: Scheduler<'a, CpsTask<'a>>,
     ctx: Rc<Ctx>,
-    bus: Channel,
+    publisher: Publisher<Message>,
 }
 
 impl<'a> Boot<'a> {
@@ -25,11 +24,7 @@ impl<'a> Boot<'a> {
             io: IO::new(),
             scheduler: Scheduler::new(),
             ctx: ctx,
-            bus: Channel {
-                id: 0,
-                publisher: Publisher::with_mirror(CString::new(format!("/boot_{}", 0)).unwrap(), 8),
-                subscribers: Vec::new(),
-            },
+            publisher: Publisher::with_mirror(CString::new(format!("/boot_{}", 0)).unwrap(), 8),
         }
     }
 
@@ -79,16 +74,16 @@ impl<'a> Boot<'a> {
     pub fn publish<F, R>(&mut self, mut f: F) -> R
         where F: FnMut(&mut Publisher<Message>) -> R
     {
-        f(&mut self.bus.publisher)
+        f(&mut self.publisher)
     }
 }
 
 impl<'a> PubSub<Message> for Boot<'a> {
     fn subscribe(&mut self) -> Subscriber<Message> {
-        self.bus.publisher.subscribe()
+        self.publisher.subscribe()
     }
 
     fn add_subscriber(&mut self, s: Subscriber<Message>) {
-        self.bus.subscribers.push(s);
+        unimplemented!();
     }
 }
