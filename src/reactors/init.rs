@@ -1,4 +1,4 @@
-use libc;
+// use libc;
 use std::mem;
 use std::rc::Rc;
 use std::env;
@@ -17,9 +17,9 @@ use std::net::SocketAddr;
 use reactors::selector::Selector;
 use std::io::{self, BufReader, BufRead};
 // use nix::sched::{self, CpuSet};
-use reactors::scheduler::TaskTermination;
-use reactors::job::Job;
-use queues::publisher::{Publisher, Subscriber};
+// use reactors::scheduler::TaskTermination;
+// use reactors::job::Job;
+use queues::publisher::Publisher;
 use std::ffi::CString;
 use streams::intercore::ctx::Channel;
 use queues::pubsub::PubSub;
@@ -75,8 +75,6 @@ impl<'a> Host<'a> {
 
     fn connect_w_host(core: &'a mut Core) {
         let s0 = host().borrow_mut().boot.subscribe();
-        // let s1 = core.subscribe();
-        // host().borrow_mut().boot.add_subscriber(s1);
         core.add_subscriber(s0);
         host().borrow_mut().boot.add_selected(Selector::Sb(core.subscribe()));
     }
@@ -113,29 +111,27 @@ impl<'a> Host<'a> {
 
     fn connect(args: &Args<'a>) {
         for i in 1..args.cores.expect("Please, specify number of cores.") {
-            let c = Channel {
+            let chan = Channel {
                 id: i,
                 publisher: Publisher::with_mirror(CString::new(format!("/ipc_{}", i)).unwrap(), 8),
                 subscribers: Vec::new(),
             };
-            let mut c = Core::with_channel(i, c);
-            Host::connect_cores(&mut c);
-            host().borrow_mut().cores.push(c);
+            let mut core = Core::with_channel(i, chan);
+            Host::connect_cores(&mut core);
+            host().borrow_mut().cores.push(core);
         }
     }
 
     pub fn park_cores(&mut self) {
-        for i in 1..self.args.cores.expect("Please, specify number of cores.") {
+        for i in 1..self.args.cores.expect("Please, specify number of cores.") - 1 {
             thread::Builder::new()
                 .name(format!("core_{}", i))
                 .spawn(move || {
-                    let id = unsafe { libc::pthread_self() as isize };
+                    // let id = unsafe { libc::pthread_self() as isize };
                     // let mut cpu = CpuSet::new();
                     // cpu.set(1 << i);
                     // sched::sched_setaffinity(id, &cpu);
-                    for c in &mut host().borrow_mut().cores {
-                        c.park();
-                    }
+                    host().borrow_mut().cores.get_mut(i).expect(&format!("No core at {:?}", i)).park();
                 })
                 .expect("Can't spawn new thread!");
         }

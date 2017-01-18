@@ -1,4 +1,4 @@
-use queues::publisher::{Publisher, Subscriber};
+use queues::publisher::Subscriber;
 
 pub trait PubSub<T> {
     fn subscribe(&mut self) -> Subscriber<T>;

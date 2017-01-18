@@ -1,9 +1,7 @@
-use reactors::scheduler::{Scheduler, TaskTermination};
+use reactors::scheduler::Scheduler;
 use streams::intercore::ctx::Channel;
 use reactors::job::Job;
 use queues::publisher::Subscriber;
-use std::ffi::CString;
-use handle::{self, Handle};
 use streams::intercore::api::Message;
 use queues::pubsub::PubSub;
 

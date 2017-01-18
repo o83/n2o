@@ -68,9 +68,6 @@ impl<'a, T> Scheduler<'a, T>
     fn poll_bus(&mut self) {
         if let Some(ref bus) = self.bus {
             for s in &bus.subscribers {
-                // if bus.id == 1 {
-                //     return;
-                // }
                 match s.recv() {
                     Some(v) => {
                         println!("poll bus on core_{} {:?}", bus.id, v);
