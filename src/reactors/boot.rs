@@ -11,20 +11,17 @@ use queues::pubsub::PubSub;
 use std::ffi::CString;
 use handle;
 use std::str;
-use reactors::core::Core;
 
 pub struct Boot<'a> {
-    pub core: Core<'a>,
     io: IO,
     scheduler: Scheduler<'a, CpsTask<'a>>,
     ctx: Rc<Ctx>,
-    pub bus: Channel,
+    bus: Channel,
 }
 
 impl<'a> Boot<'a> {
     pub fn new(ctx: Rc<Ctx>) -> Self {
         Boot {
-            core: Core::new(0), // predefined 0 id
             io: IO::new(),
             scheduler: Scheduler::new(),
             ctx: ctx,
