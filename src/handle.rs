@@ -48,3 +48,10 @@ pub fn into_raw<T>(t: &mut T) -> *mut T {
 pub fn from_raw<'a, T: 'a>(t: *mut T) -> &'a mut T {
     unsafe { &mut *t }
 }
+
+#[inline]
+pub fn with<'a, T, F, R>(t: &'a mut T, mut f: F) -> R
+    where F: FnMut(*mut T) -> R + 'a
+{
+    f(t as *mut T)
+}
