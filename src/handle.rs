@@ -31,9 +31,20 @@ impl<T> DerefMut for Handle<T> {
     }
 }
 
+#[inline]
 pub fn split<T>(t: &mut T) -> (&mut T, &mut T) {
     let f: *mut T = t;
     let uf: &mut T = unsafe { &mut *f };
     let us: &mut T = unsafe { &mut *f };
     (uf, us)
+}
+
+#[inline]
+pub fn into_raw<T>(t: &mut T) -> *mut T {
+    t as *mut T
+}
+
+#[inline]
+pub fn from_raw<'a, T: 'a>(t: *mut T) -> &'a mut T {
+    unsafe { &mut *t }
 }
