@@ -13,7 +13,7 @@ pub struct Environment<'a> {
 
 impl<'a> Environment<'a> {
     pub fn new_root() -> Result<Environment<'a>, Error> {
-        let mut s = Tree::with_capacity(2048 * 2048 * 540 as usize);
+        let mut s = Tree::with_capacity(10000 as usize);
         Ok(Environment { tree: UnsafeCell::new(s) })
     }
 
