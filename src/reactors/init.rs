@@ -8,7 +8,7 @@ use reactors::boot::Boot;
 use handle::{self, Handle};
 use std::sync::{Arc, Once, ONCE_INIT};
 use std::cell::UnsafeCell;
-use reactors::core::Core;
+// use reactors::core::Core;
 use reactors::console::Console;
 use reactors::selector::Selector;
 use std::io::{self, BufReader, BufRead};
@@ -16,6 +16,8 @@ use queues::publisher::Publisher;
 use std::ffi::CString;
 use streams::intercore::ctx::Channel;
 use queues::pubsub::PubSub;
+use reactors::scheduler::Scheduler;
+use reactors::job::Job;
 
 struct Args<'a> {
     raw: Vec<String>,
@@ -35,7 +37,7 @@ fn args<'a>() -> Args<'a> {
 pub struct Host<'a> {
     args: Args<'a>,
     boot: Handle<Boot<'a>>,
-    cores: Vec<Core<'a>>,
+    scheds: Vec<Scheduler<'a, Job<'a>>>,
 }
 
 impl<'a> Host<'a> {
@@ -44,7 +46,7 @@ impl<'a> Host<'a> {
         ctxs.push(Rc::new(Ctx::new()));
         Host {
             args: args(),
-            cores: Vec::new(),
+            scheds: Vec::new(),
             boot: handle::new(Boot::new(ctxs.last().expect("There are no ctx's in store.").clone())),
         }
     }
@@ -59,23 +61,23 @@ impl<'a> Host<'a> {
         Ok(())
     }
 
-    fn connect_w(c1: &mut Core, c2: &mut Core) {
+    fn connect_w(c1: &mut Scheduler<'a, Job<'a>>, c2: &mut Scheduler<'a, Job<'a>>) {
         let s1 = c1.subscribe();
         let s2 = c2.subscribe();
         c1.add_subscriber(s2);
         c2.add_subscriber(s1);
     }
 
-    fn connect_w_host(core: &'a mut Core) {
+    fn connect_w_host(sched: &'a mut Scheduler<'static, Job<'static>>) {
         let s0 = host().borrow_mut().boot.subscribe();
-        core.add_subscriber(s0);
-        host().borrow_mut().boot.add_selected(Selector::Sb(core.subscribe()));
+        sched.add_subscriber(s0);
+        host().borrow_mut().boot.add_selected(Selector::Sb(sched.subscribe()));
     }
 
-    fn connect_cores(core: &'a mut Core) {
-        Host::connect_w_host(core);
-        for c in &mut host().borrow_mut().cores {
-            Host::connect_w(c, core);
+    fn connect_scheds(sched: &'a mut Scheduler<'static, Job<'static>>) {
+        Host::connect_w_host(sched);
+        for s in &mut host().borrow_mut().scheds {
+            Host::connect_w(s, sched);
         }
     }
 
@@ -87,7 +89,7 @@ impl<'a> Host<'a> {
         // self.boot.add_selected(w);
         self.boot.add_selected(o);
         Host::connect(&self.args);
-        self.park_cores();
+        self.park_scheds();
         self.boot.init();
     }
 
@@ -98,13 +100,13 @@ impl<'a> Host<'a> {
                 publisher: Publisher::with_mirror(CString::new(format!("/ipc_{}", i)).unwrap(), 8),
                 subscribers: Vec::new(),
             };
-            let mut core = Core::with_channel(i, chan);
-            Host::connect_cores(&mut core);
-            host().borrow_mut().cores.push(core);
+            let mut sched = Scheduler::with_channel(chan);
+            Host::connect_scheds(&mut sched);
+            host().borrow_mut().scheds.push(sched);
         }
     }
 
-    pub fn park_cores(&mut self) {
+    pub fn park_scheds(&mut self) {
         for i in 1..self.args.cores.expect("Please, specify number of cores.") {
             thread::Builder::new()
                 .name(format!("core_{}", i))
@@ -113,7 +115,7 @@ impl<'a> Host<'a> {
                     // let mut cpu = CpuSet::new();
                     // cpu.set(1 << i);
                     // sched::sched_setaffinity(id, &cpu);
-                    host().borrow_mut().cores.get_mut(i - 1).expect(&format!("No core at {:?}", i)).park();
+                    host().borrow_mut().scheds.get_mut(i - 1).expect(&format!("There is scheduler at {:?}", i)).run();
                 })
                 .expect("Can't spawn new thread!");
         }
