@@ -78,6 +78,7 @@ impl<'a> Host<'a> {
         let s1 = core.subscribe();
         host().borrow_mut().boot.add_subscriber(s1);
         core.add_subscriber(s0);
+        host().borrow_mut().boot.add_selected(Selector::Sb(core.subscribe()));
     }
 
     fn connect_cores(core: &'a mut Core) {
