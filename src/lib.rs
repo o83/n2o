@@ -48,6 +48,7 @@ pub mod args;
 pub mod streams;
 pub mod queues;
 pub mod handle;
+pub mod sys;
 
 #[macro_use]
 extern crate libc;

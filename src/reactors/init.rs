@@ -8,7 +8,6 @@ use reactors::boot::Boot;
 use handle::{self, Handle};
 use std::sync::{Arc, Once, ONCE_INIT};
 use std::cell::UnsafeCell;
-// use reactors::core::Core;
 use reactors::console::Console;
 use reactors::selector::Selector;
 use std::io::{self, BufReader, BufRead};
@@ -18,6 +17,7 @@ use streams::intercore::ctx::Channel;
 use queues::pubsub::PubSub;
 use reactors::scheduler::Scheduler;
 use reactors::job::Job;
+use sys;
 
 struct Args<'a> {
     raw: Vec<String>,
@@ -97,7 +97,7 @@ impl<'a> Host<'a> {
         for i in 1..args.cores.expect("Please, specify number of cores.") {
             let chan = Channel {
                 id: i,
-                publisher: Publisher::with_mirror(CString::new(format!("/ipc_{}", i)).unwrap(), 8),
+                publisher: Publisher::with_mirror(CString::new(format!("/pub_{}", i)).unwrap(), 8),
                 subscribers: Vec::new(),
             };
             let mut sched = Scheduler::with_channel(chan);
@@ -107,15 +107,12 @@ impl<'a> Host<'a> {
     }
 
     pub fn park_scheds(&mut self) {
-        for i in 1..self.args.cores.expect("Please, specify number of cores.") {
+        for i in 0..self.args.cores.expect("Please, specify number of cores.") - 1 {
             thread::Builder::new()
-                .name(format!("core_{}", i))
+                .name(format!("core_{}", i + 1))
                 .spawn(move || {
-                    // let id = unsafe { libc::pthread_self() as isize };
-                    // let mut cpu = CpuSet::new();
-                    // cpu.set(1 << i);
-                    // sched::sched_setaffinity(id, &cpu);
-                    host().borrow_mut().scheds.get_mut(i - 1).expect(&format!("There is scheduler at {:?}", i)).run();
+                    sys::set_affinity(1 << i);
+                    host().borrow_mut().scheds.get_mut(i).expect(&format!("There is scheduler at {:?}", i)).run();
                 })
                 .expect("Can't spawn new thread!");
         }
