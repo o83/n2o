@@ -123,6 +123,7 @@ Credits
 * Viktor Sovietov, Core Suggestions
 * Anton Kundenko, Stream Processing
 * Ievgenii Lysiuchenko, Optimizations, System Programming
+* Denis Golovan, Vectorization, KCell, Interpreter
 * Mykola Oleksiienko, K expertise
 * Maxim Sokhatsky, General View
 
