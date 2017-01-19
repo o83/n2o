@@ -122,7 +122,7 @@ impl<'a> Interpreter<'a> {
                     if counter % PREEMPTION == 0 {
                         se4.registers = tick;
                         se3.counter = counter + 1;
-                        return Ok(se4.arena.ast(AST::Yield));
+                        return Ok(se4.arena.yield_());
                     } else {
                         tick = try!({
                             se3.counter = counter + 1;
@@ -134,12 +134,22 @@ impl<'a> Interpreter<'a> {
                 Lazy::Continuation(node, ast, cont) => {
                     se4.registers = Lazy::Defer(node, ast, cont);
                     se3.counter = counter + 1;
-                    return Ok(se4.arena.ast(AST::Yield));
+                    return Ok(se4.arena.yield_());
                 }
                 Lazy::Return(ast) => {
+                    // DEBUG
                     // println!("env: {:?}", se3.env.dump());
                     // println!("arena: {:?}", se4.arena.dump());
-                    // println!("Result: {}", ast);
+                    // INFO
+                    println!("Instructions: {}", counter);
+                    let conts = unsafe { &*se4.arena.conts.get() };
+                    let l = conts.len();
+                    let asts = unsafe { &*se4.arena.asts.get() };
+                    let a = asts.len();
+                    println!("Conts: {}", l);
+                    println!("ASTs: {}", a);
+                    println!("ENV: ({},{})", se4.env.len().0, se4.env.len().1);
+                    // NORMAL
                     se3.counter = counter + 1;
                     return Ok(ast);
                 }

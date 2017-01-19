@@ -27,6 +27,11 @@ impl<'a> Environment<'a> {
         tree.dump()
     }
 
+    pub fn len(&'a self) -> (usize,usize) {
+        let tree = unsafe { &*self.tree.get() };
+        tree.len()
+    }
+
     pub fn new_child(&'a self, n: &'a Node<'a>) -> &'a Node<'a> {
         let tree = unsafe { &mut *self.tree.get() };
         tree.append_node(n)

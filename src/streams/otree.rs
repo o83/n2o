@@ -37,6 +37,10 @@ impl<'a, T: Debug> Tree<'a, T> {
         }
     }
 
+    pub fn len(&'a self) -> (usize,usize) {
+        (self.nodes.len(),self.items.len())
+    }
+
     pub fn dump(&'a self) {
         for i in self.items[0..self.items.len()].iter() {
             println!("item {:?}", i);

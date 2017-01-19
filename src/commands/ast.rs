@@ -293,6 +293,10 @@ impl<'a> Arena<'a> {
         unsafe { &(*self.asts.get())[1] } // see Arena::init for details
     }
 
+    pub fn yield_(&'a self) -> &'a AST<'a> {
+        unsafe { &(*self.asts.get())[2] } // see Arena::init for details
+    }
+
     pub fn dump(&'a self) {
         let x = unsafe { &mut *self.asts.get() };
         for i in x.iter() {
@@ -357,6 +361,7 @@ impl<'a> Arena<'a> {
         assert!(a.len() == 0);
         a.push(AST::Nil);       // Nil - index 0
         a.push(AST::Any);       // Any - index 1
+        a.push(AST::Yield);     // Yield - index 2
         (a.len() as u16, asts)
     }
 
