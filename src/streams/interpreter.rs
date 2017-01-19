@@ -77,12 +77,14 @@ impl<'a> Interpreter<'a> {
         let snd = s1.arena.intern("snd".to_string());
         let rcv = s1.arena.intern("rcv".to_string());
         let spawn = s1.arena.intern("spawn".to_string());
+        let select = s1.arena.intern("select".to_string());
         s1.env.define(ast::extract_name(print), print);
         s1.env.define(ast::extract_name(publ), publ);
         s1.env.define(ast::extract_name(subs), subs);
         s1.env.define(ast::extract_name(snd), snd);
         s1.env.define(ast::extract_name(rcv), rcv);
         s1.env.define(ast::extract_name(spawn), spawn);
+        s1.env.define(ast::extract_name(select), select);
         let x = unsafe { &mut *s1.arena.asts.get() };
         s2.arena.builtins = x.len() as u16;
     }

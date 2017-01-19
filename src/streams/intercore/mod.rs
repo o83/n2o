@@ -13,6 +13,7 @@ pub fn internals<'a>(f_id: u16, args: &'a AST<'a>, ctx: &Ctx) -> AST<'a> {
         3 => snd_(args, ctx),
         4 => rcv_(args, ctx),
         5 => spawn_(args, ctx), // args should include Host
+        6 => select_(args, ctx),
         _ => panic!("unknown internal func"),
     }
 }
@@ -25,4 +26,8 @@ pub fn print<'a>(args: &'a AST<'a>, ctx: &Ctx) -> AST<'a> {
 pub fn spawn_<'a>(args: &'a AST<'a>, ctx: &Ctx) -> AST<'a> {
     println!("{:?}", args);
     AST::Nil
+}
+
+pub fn select_<'a>(args: &'a AST<'a>, ctx: &Ctx) -> AST<'a> {
+    AST::NameInt(1)
 }

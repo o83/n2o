@@ -8,6 +8,9 @@ use streams::intercore::api::Message;
 use queues::publisher::{Publisher, Subscriber};
 use reactors::cpstask::CpsTask;
 use queues::pubsub::PubSub;
+// use reactors::ws::WsServer;
+// use reactors::console::Console;
+// use std::net::SocketAddr;
 use std::ffi::CString;
 use handle;
 use std::str;
@@ -32,6 +35,11 @@ impl<'a> Boot<'a> {
     }
 
     #[inline]
+    fn handle_builtin(&'a mut self, t: TaskId, b: &'a [u8]) {
+        //
+    }
+
+    #[inline]
     fn handle_raw(&'a mut self, t: TaskId, b: &'a [u8]) {
         if b.len() == 0 {
             return;
@@ -44,14 +52,24 @@ impl<'a> Boot<'a> {
         let (s1, s2) = handle::split(self);
         s1.scheduler.exec(t, Some(x));
         let r = s2.scheduler.run();
+        // check and handle builtin
         s2.io.write_all(format!("{:?}\n", r).as_bytes());
+    }
+
+    #[inline]
+    fn handle_msg(&'a mut self, t: TaskId, b: &[Message]) {
+        for msg in b {
+            match *msg {                
+                ref x => println!("Unsupported intercore Message: {:?}", x),
+            }
+        }
     }
 
     #[inline]
     fn ready(&'a mut self, p: Pool<'a>, t: TaskId) {
         match p {
             Pool::Raw(b) => self.handle_raw(t, b),
-            Pool::Msg(x) => println!("Intercore: {:?}", x.buf),
+            Pool::Msg(b) => self.handle_msg(t, b.buf),
         }
     }
 
