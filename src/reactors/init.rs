@@ -46,7 +46,7 @@ impl<'a> Host<'a> {
         Host {
             args: args(),
             scheds: Vec::new(),
-            boot: handle::new(Boot::new(ctxs.last().expect("There are no ctx's in store.").clone())),
+            boot: handle::new(Boot::new()),
         }
     }
 

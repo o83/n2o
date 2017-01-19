@@ -15,16 +15,14 @@ use std::str;
 pub struct Boot<'a> {
     io: IO,
     scheduler: Scheduler<'a>,
-    ctx: Rc<Ctx>,
     publisher: Publisher<Message>,
 }
 
 impl<'a> Boot<'a> {
-    pub fn new(ctx: Rc<Ctx>) -> Self {
+    pub fn new() -> Self {
         Boot {
             io: IO::new(),
             scheduler: Scheduler::new(),
-            ctx: ctx,
             publisher: Publisher::with_mirror(CString::new(format!("/boot_{}", 0)).unwrap(), 8),
         }
     }
@@ -60,7 +58,7 @@ impl<'a> Boot<'a> {
     pub fn init(&mut self) {
         let h: *mut Boot<'a> = self;
         let h0: &mut Boot<'a> = unsafe { &mut *h };
-        let task_id = h0.scheduler.spawn(Job::Cps(CpsTask::new(self.ctx.clone())),
+        let task_id = h0.scheduler.spawn(Job::Cps(CpsTask::new(Rc::new(Ctx::new()))),
                                          TaskTermination::Corecursive,
                                          None);
         loop {
