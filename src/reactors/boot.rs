@@ -56,16 +56,12 @@ impl<'a> Boot<'a> {
     }
 
     pub fn init(&mut self) {
-        let h: *mut Boot<'a> = self;
-        let h0: &mut Boot<'a> = unsafe { &mut *h };
-        let task_id = h0.scheduler.spawn(Job::Cps(CpsTask::new(Rc::new(Ctx::new()))),
-                                         TaskTermination::Corecursive,
-                                         None);
+        let h = handle::into_raw(self);
+        let j = Job::Cps(CpsTask::new(Rc::new(Ctx::new())));
+        let task_id = handle::from_raw(h).scheduler.spawn(j, TaskTermination::Corecursive, None);
         loop {
-            let h1: &mut Boot<'a> = unsafe { &mut *h };
-            let h2: &mut Boot<'a> = unsafe { &mut *h };
-            match h1.io.poll() {
-                Async::Ready((_, p)) => h2.ready(p, task_id),
+            match handle::from_raw(h).io.poll() {
+                Async::Ready((_, p)) => handle::from_raw(h).ready(p, task_id),
                 Async::NotReady => (),
             }
         }
