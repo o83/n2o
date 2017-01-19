@@ -5,8 +5,7 @@ use streams::{verb, env, otree};
 use commands::ast::{self, Error, AST, Verb, Adverb, Arena, Value};
 use streams::intercore::ctx::Ctx;
 use streams::intercore::internals;
-use std::cell::UnsafeCell;
-use handle::split;
+use handle;
 use std::rc::Rc;
 
 const PREEMPTION: u64 = 1000000;
@@ -71,7 +70,7 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn define_primitives(&'a mut self) {
-        let (s1, s2) = split(self);
+        let (s1, s2) = handle::split(self);
         let print = s1.arena.intern("print".to_string());
         let publ = s1.arena.intern("pub".to_string());
         let subs = s1.arena.intern("sub".to_string());
@@ -93,7 +92,7 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn load(&'a mut self, ast: &'a AST<'a>) {
-        let (s1, s2) = split(self);
+        let (s1, s2) = handle::split(self);
         match s2.registers {
             Lazy::Continuation(node, _, cont) => {
                 s1.env = env::Environment::new_root().unwrap();
@@ -104,37 +103,38 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn run(&'a mut self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
-        let uc = UnsafeCell::new(self);
-        let se1: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-        let se2: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-        let se3: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
+        use handle::{into_raw, from_raw};
+        let h = into_raw(self);
         let mut tick;
-        match se3.registers {
-            Lazy::Start => tick = try!(se1.evaluate_expr(se2.env.last(), ast, se3.arena.cont(Cont::Return))),
-            _ => tick = se3.registers.clone(),
+        match from_raw(h).registers {
+            Lazy::Start => {
+                tick = try!(from_raw(h).evaluate_expr(from_raw(h).env.last(),
+                                                      ast,
+                                                      from_raw(h).arena.cont(Cont::Return)))
+            }
+            _ => tick = from_raw(h).registers.clone(),
         }
         // println!("Counter: {:?}", ast);
         loop {
-            let se4: &mut Interpreter<'a> = unsafe { &mut *uc.get() };
-            let mut counter = se1.counter;
+            let mut counter = from_raw(h).counter;
             match tick {
                 Lazy::Defer(node, ast, cont) => {
                     if counter % PREEMPTION == 0 {
-                        se4.registers = tick;
-                        se3.counter = counter + 1;
-                        return Ok(se4.arena.yield_());
+                        from_raw(h).registers = tick;
+                        from_raw(h).counter = counter + 1;
+                        return Ok(from_raw(h).arena.yield_());
                     } else {
                         tick = try!({
-                            se3.counter = counter + 1;
-                            se4.handle_defer(node, ast, cont)
+                            from_raw(h).counter = counter + 1;
+                            from_raw(h).handle_defer(node, ast, cont)
                         })
                     }
                 }
                 Lazy::Start => break,
                 Lazy::Continuation(node, ast, cont) => {
-                    se4.registers = Lazy::Defer(node, ast, cont);
-                    se3.counter = counter + 1;
-                    return Ok(se4.arena.yield_());
+                    from_raw(h).registers = Lazy::Defer(node, ast, cont);
+                    from_raw(h).counter = counter + 1;
+                    return Ok(from_raw(h).arena.yield_());
                 }
                 Lazy::Return(ast) => {
                     // DEBUG
@@ -142,15 +142,17 @@ impl<'a> Interpreter<'a> {
                     // println!("arena: {:?}", se4.arena.dump());
                     // INFO
                     println!("Instructions: {}", counter);
-                    let conts = unsafe { &*se4.arena.conts.get() };
+                    let conts = unsafe { &*from_raw(h).arena.conts.get() };
                     let l = conts.len();
-                    let asts = unsafe { &*se4.arena.asts.get() };
+                    let asts = unsafe { &*from_raw(h).arena.asts.get() };
                     let a = asts.len();
                     println!("Conts: {}", l);
                     println!("ASTs: {}", a);
-                    println!("ENV: ({},{})", se4.env.len().0, se4.env.len().1);
+                    println!("ENV: ({},{})",
+                             from_raw(h).env.len().0,
+                             from_raw(h).env.len().1);
                     // NORMAL
-                    se3.counter = counter + 1;
+                    from_raw(h).counter = counter + 1;
                     return Ok(ast);
                 }
             }

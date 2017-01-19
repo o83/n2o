@@ -8,7 +8,7 @@ use streams::intercore::api::Message;
 use streams::intercore::ctx::Ctx;
 use std::rc::Rc;
 use std::mem;
-use handle::*;
+use handle;
 
 const TASKS_MAX_CNT: usize = 256;
 
@@ -66,12 +66,12 @@ impl<'a> Scheduler<'a> {
 
     #[inline]
     fn poll_bus(&'a mut self) {
-        if let Some(ref bus) = with(self, |h| h.bus.as_ref()) {
+        if let Some(ref bus) = handle::with(self, |h| h.bus.as_ref()) {
             for s in &bus.subscribers {
                 match s.recv() {
                     Some(v) => {
                         println!("poll bus on core_{} {:?}", bus.id, v);
-                        with(self, |h| {
+                        handle::with(self, |h| {
                             h.spawn(Job::Cps(CpsTask::new(Rc::new(Ctx::new()))),
                                     TaskTermination::Recursive,
                                     None)
@@ -85,20 +85,20 @@ impl<'a> Scheduler<'a> {
     }
 
     pub fn run(&mut self) -> Poll<Context<'a>, task::Error> {
-        let h = into_raw(self);
+        let h = handle::into_raw(self);
         loop {
-            from_raw(h).poll_bus();
-            for (i, t) in from_raw(h).tasks.iter_mut().enumerate() {
-                let c = from_raw(h).ctxs.get_mut(i).expect("Scheduler: can't retrieve a ctx.");
+            handle::from_raw(h).poll_bus();
+            for (i, t) in handle::from_raw(h).tasks.iter_mut().enumerate() {
+                let c = handle::from_raw(h).ctxs.get_mut(i).expect("Scheduler: can't retrieve a ctx.");
                 let mut ctx = mem::replace(c, Context::Nil);
                 match t.0.poll(ctx) {
                     Poll::Yield(..) => (),
                     Poll::End(v) => {
-                        from_raw(h).terminate(t.1, i);
+                        handle::from_raw(h).terminate(t.1, i);
                         return Poll::End(v);
                     }
                     Poll::Err(e) => {
-                        from_raw(h).terminate(t.1, i);
+                        handle::from_raw(h).terminate(t.1, i);
                         return Poll::Err(e);
                     }
                 }
