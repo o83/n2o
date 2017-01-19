@@ -66,15 +66,15 @@ impl<'a> Scheduler<'a> {
 
     #[inline]
     fn poll_bus(&'a mut self) {
-        if let Some(ref bus) = with(self, |h| from_raw(h).bus.as_ref()) {
+        if let Some(ref bus) = with(self, |h| h.bus.as_ref()) {
             for s in &bus.subscribers {
                 match s.recv() {
                     Some(v) => {
                         println!("poll bus on core_{} {:?}", bus.id, v);
                         with(self, |h| {
-                            from_raw(h).spawn(Job::Cps(CpsTask::new(Rc::new(Ctx::new()))),
-                                              TaskTermination::Recursive,
-                                              None)
+                            h.spawn(Job::Cps(CpsTask::new(Rc::new(Ctx::new()))),
+                                    TaskTermination::Recursive,
+                                    None)
                         });
                         s.commit();
                     }
