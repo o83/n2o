@@ -53,6 +53,5 @@ pub fn from_raw<'a, T: 'a>(t: *mut T) -> &'a mut T {
 pub fn with<'a, T: 'a, F: 'a, R: 'a>(t: &mut T, mut f: F) -> R
     where F: FnMut(&'a mut T) -> R + 'a
 {
-    let h: *mut T = t;
-    f(unsafe { &mut *h })
+    f(unsafe { &mut *(t as *mut T) })
 }
