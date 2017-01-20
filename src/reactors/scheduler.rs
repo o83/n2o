@@ -73,10 +73,10 @@ impl<'a> Scheduler<'a> {
                 match s.recv() {
                     Some(&Message::Spawn(ref v)) if v.to == bus.id => {
                         println!("poll bus on core_{} {:?}", bus.id, v);
-                        handle::with(self, |h| {
-                            h.spawn(Job::Cps(CpsTask::new(Rc::new(Ctx::new()))),
-                                    TaskTermination::Recursive,
-                                    Some(&v.txt))
+                        handle::with_raw(self, |h| {
+                            handle::from_raw(h).spawn(Job::Cps(CpsTask::new(Rc::new(Ctx::new()))),
+                                                      TaskTermination::Recursive,
+                                                      Some(&v.txt))
                         });
                         s.commit();
                     }

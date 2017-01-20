@@ -55,3 +55,10 @@ pub fn with<'a, T: 'a, F: 'a, R: 'a>(t: &mut T, mut f: F) -> R
 {
     f(unsafe { &mut *(t as *mut T) })
 }
+
+#[inline]
+pub fn with_raw<T, F, R>(t: &mut T, mut f: F) -> R
+    where F: FnMut(*mut T) -> R
+{
+    f(t as *mut T)
+}
