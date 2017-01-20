@@ -1,4 +1,5 @@
 use commands::ast::AST;
+use streams::intercore::api::Message;
 
 #[derive(Debug)]
 pub enum Poll<T, E> {
@@ -15,8 +16,9 @@ pub enum Error {
 
 #[derive(Debug)]
 pub enum Context<'a> {
-    Cont(usize),
+    Cont(usize, Message),
     Node(&'a AST<'a>),
+    IntercoreNode(Message),
     Nil,
 }
 

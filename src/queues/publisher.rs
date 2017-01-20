@@ -108,7 +108,6 @@ impl<T: Send> Clone for UncheckedUnsafeArc<T> {
     }
 }
 
-
 pub struct Publisher<T> {
     ring: Arc<RingBuffer<T>>,
     next_seq_cache: Cell<Sequence>,
@@ -198,7 +197,6 @@ impl<T> Publisher<T> {
     }
 }
 
-#[derive(PartialEq)]
 pub struct Subscriber<T> {
     ring: Arc<RingBuffer<T>>,
     token: usize,

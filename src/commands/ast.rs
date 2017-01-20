@@ -205,7 +205,6 @@ pub enum AST<'a> {
     Verb(Verb, &'a AST<'a>, &'a AST<'a>),
     Adverb(Adverb, &'a AST<'a>, &'a AST<'a>),
     Table(&'a AST<'a>, &'a AST<'a>),
-    InterCore(Message),
     Ioverb(String),
     Yield,
     Value(Value<'a>),
