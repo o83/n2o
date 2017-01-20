@@ -198,6 +198,7 @@ impl<T> Publisher<T> {
     }
 }
 
+#[derive(PartialEq)]
 pub struct Subscriber<T> {
     ring: Arc<RingBuffer<T>>,
     token: usize,
