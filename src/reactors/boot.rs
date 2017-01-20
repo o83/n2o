@@ -59,7 +59,7 @@ impl<'a> Boot<'a> {
     #[inline]
     fn handle_msg(&'a mut self, t: TaskId, b: &[Message]) {
         for msg in b {
-            match *msg {                
+            match *msg {
                 ref x => println!("Unsupported intercore Message: {:?}", x),
             }
         }
@@ -78,6 +78,12 @@ impl<'a> Boot<'a> {
         let j = Job::Cps(CpsTask::new(Rc::new(Ctx::new())));
         let task_id = handle::from_raw(h).scheduler.spawn(j, TaskTermination::Corecursive, None);
         loop {
+            // consider doing poll_bus here if someone send you a message
+            // Scaling:
+            // BUS-IO-BUS-IO-... 1:1 sequence for Boot core
+            // On pure IO cores it could be 1:10 or 1:100 in favor of IO
+            // There should be an InterCore message which regulate this proportion at any core
+            // introduce ctx::Channel instead of Publisher to Boot struct
             match handle::from_raw(h).io.poll() {
                 Async::Ready((_, p)) => handle::from_raw(h).ready(p, task_id),
                 Async::NotReady => (),

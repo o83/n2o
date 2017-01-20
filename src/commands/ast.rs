@@ -284,6 +284,13 @@ impl<'a> Arena<'a> {
         }
     }
 
+    pub fn ast_len(&'a self) -> usize {
+        unsafe { &*self.asts.get() }.len()
+    }
+
+    pub fn cont_len(&'a self) -> usize {
+        unsafe { &*self.conts.get() }.len()
+    }
 
     pub fn nil(&'a self) -> &'a AST<'a> {
         unsafe { &(*self.asts.get())[0] } // see Arena::init for details

@@ -144,12 +144,8 @@ impl<'a> Interpreter<'a> {
                     // println!("arena: {:?}", se4.arena.dump());
                     // INFO
                     println!("Instructions: {}", counter);
-                    let conts = unsafe { &*from_raw(h).arena.conts.get() };
-                    let l = conts.len();
-                    let asts = unsafe { &*from_raw(h).arena.asts.get() };
-                    let a = asts.len();
-                    println!("Conts: {}", l);
-                    println!("ASTs: {}", a);
+                    println!("Conts: {}", from_raw(h).arena.cont_len());
+                    println!("ASTs: {}", from_raw(h).arena.ast_len());
                     println!("ENV: ({},{})",
                              from_raw(h).env.len().0,
                              from_raw(h).env.len().1);
