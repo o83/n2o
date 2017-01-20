@@ -7,6 +7,7 @@ use streams::intercore::ctx::Ctx;
 use streams::intercore::internals;
 use handle;
 use std::rc::Rc;
+use reactors::task::Context;
 
 const PREEMPTION: u64 = 1000000;
 
@@ -253,10 +254,13 @@ impl<'a> Interpreter<'a> {
                     Ok((c, f)) => {
                         match c {
                             &AST::NameInt(n) if n < self.arena.builtins => {
-                                let x = self.arena.ast(internals(n, args, &self.ctx));
+                                let x = internals(n, args, &self.arena);
                                 match x {
-                                    &AST::Yield => self.run_cont(f, x, self.arena.cont(Cont::Yield(cont))),
-                                    _ => self.run_cont(f, x, cont),
+                                    Context::Node(&AST::Yield) => {
+                                        self.run_cont(f, self.arena.yield_(), self.arena.cont(Cont::Yield(cont)))
+                                    }
+                                    Context::Node(x) => self.run_cont(f, x, cont),
+                                    _ => panic!("TODO"),
                                 }
                             }
                             _ => self.evaluate_fun(f, c, args, cont),

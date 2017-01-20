@@ -1,79 +1,43 @@
 use super::ctx::Ctx;
-use commands::ast::AST;
+use commands::ast::{AST, Arena};
 use commands::ast::Value;
 use queues::publisher::Publisher;
+use reactors::task::Context;
 
-pub fn pub_<'a>(args: &'a AST<'a>, ctx: &Ctx) -> AST<'a> {
+pub fn pub_<'a>(args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     println!("publishers {:?}", args);
-    let pubs = ctx.publishers();
     let cap = match args {
         &AST::Value(Value::Number(n)) => n,
         _ => 1024,
     } as usize;
-    pubs.push(Publisher::with_capacity(cap));
-    AST::Value(Value::Number(pubs.len() as i64 - 1))
+    Context::Node(arena.ast(AST::Value(Value::Number(13))))
 }
 
-pub fn sub_<'a>(args: &'a AST<'a>, ctx: &Ctx) -> AST<'a> {
+pub fn sub_<'a>(args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     println!("subscribers {:?}", args);
-    let subs = ctx.subscribers();
-    let pubs = ctx.publishers();
-    match args {
-        &AST::Value(Value::Number(n)) if n < pubs.len() as i64 => {
-            if let Some(p) = pubs.get_mut(n as usize) {
-                subs.push(p.subscribe())
-            }
-        }
-        _ => panic!("oops!"),
-    }
-    AST::Value(Value::Number(subs.len() as i64 - 1))
+    Context::Node(arena.ast(AST::Value(Value::Number(14))))
 }
 
-pub fn snd_<'a>(args: &'a AST<'a>, ctx: &Ctx) -> AST<'a> {
-    let pubs = ctx.publishers();
+pub fn snd_<'a>(args: &AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     // println!("SND {:?}", args);
     match args {
         &AST::Cons(&AST::Value(Value::Number(val)), tail) => {
             match tail {
-                &AST::Cons(&AST::Value(Value::Number(cursor_id)), tail) => {
-                    if let Some(p) = pubs.get_mut(cursor_id as usize) {
-                        match p.next() {
-                            Some(v) => {
-                                *v = val as u64;
-                                println!("snd_{} {:?}", cursor_id, v);
-                                p.commit();
-                            }
-                            None => return AST::Yield,
-                        }
-                    }
-                }
+                &AST::Cons(&AST::Value(Value::Number(cursor_id)), tail) => {}
                 _ => panic!("oops!"),
             }
         }
         _ => panic!("oops!"),
     }
-    AST::Nil
+    Context::Node(arena.nil())
 }
 
-pub fn rcv_<'a>(args: &'a AST<'a>, ctx: &Ctx) -> AST<'a> {
-    let subs = ctx.subscribers();
+pub fn rcv_<'a>(args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     let mut res = 0u64;
-    // println!("RECV {:?}", args);
+    println!("RECV {:?}", args);
     match args {
-        &AST::Value(Value::Number(n)) => {
-            if let Some(s) = subs.get_mut(n as usize) {
-                // println!("SOME {:?}", s);
-                match s.recv() {
-                    Some(v) => {
-                        res = *v;
-                        println!("rcv_{} {:?}", n, res);
-                        s.commit();
-                    }
-                    None => return AST::Yield,
-                }
-            }
-        }
+        &AST::Value(Value::Number(n)) => {}
         _ => panic!("oops!"),
     }
-    AST::Value(Value::Number(res as i64))
+    Context::Node(arena.ast(AST::Value(Value::Number(res as i64))))
 }
