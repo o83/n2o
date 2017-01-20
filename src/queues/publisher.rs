@@ -138,7 +138,7 @@ impl<T> Publisher<T> {
         }
     }
 
-    pub fn subscribe(&mut self) -> Subscriber<T> {
+    pub fn subscribe(&self) -> Subscriber<T> {
         let head = self.head().load();
         unsafe {
             self.cursors.get().push(Cursor::new(head));
