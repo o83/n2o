@@ -73,17 +73,10 @@ impl<'a> Scheduler<'a> {
                 match s.recv() {
                     Some(&Message::Spawn(ref v)) if v.to == bus.id => {
                         println!("poll bus on core_{} {:?}", bus.id, v);
-<<<<<<< Updated upstream
                         handle::with(self, |h| {
                             h.spawn(Job::Cps(CpsTask::new(Rc::new(Ctx::new()))),
                                     TaskTermination::Recursive,
-                                    None)
-=======
-                        with(self, |h| {
-                            from_raw(h).spawn(Job::Cps(CpsTask::new(Rc::new(Ctx::new()))),
-                                              TaskTermination::Recursive,
-                                              Some(&v.txt))
->>>>>>> Stashed changes
+                                    Some(&v.txt))
                         });
                         s.commit();
                     }
@@ -128,11 +121,8 @@ impl<'a> Scheduler<'a> {
     }
 
     pub fn run(&mut self) -> Poll<Context<'a>, task::Error> {
-<<<<<<< Updated upstream
         let h = handle::into_raw(self);
-=======
-        let h = into_raw(self);
-        if let Some(ref bus) = with(self, |h| from_raw(h).bus.as_ref()) {
+        if let Some(ref bus) = handle::with(self, |h| h.bus.as_ref()) {
             if let Some(v) = bus.publisher.next() {
                 *v = Message::Pub(Pub {
                     from: bus.id,
@@ -157,7 +147,6 @@ impl<'a> Scheduler<'a> {
                 bus.publisher.commit();
             }
         }
->>>>>>> Stashed changes
         loop {
             handle::from_raw(h).poll_bus();
             for (i, t) in handle::from_raw(h).tasks.iter_mut().enumerate() {
