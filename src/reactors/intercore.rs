@@ -1,9 +1,11 @@
 
 use queues::publisher::{Publisher, Subscriber};
 use streams::intercore::ctx::{Ctx, Channel};
-use streams::intercore::api::{Message, Ack};
+use streams::intercore::api::{Message, AckSub};
 use reactors::cpstask::CpsTask;
+use reactors::task::Context;
 use reactors::job::Job;
+use reactors::task::Task;
 use reactors::scheduler::{Scheduler, TaskTermination};
 use handle;
 use std::rc::Rc;
@@ -21,12 +23,13 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
                                           Some(&v.txt))
             });
             s.commit();
+            Context::Nil
         }
         Some(&Message::Pub(ref pb)) if pb.to == bus.id => {
             println!("poll bus on core_{} {:?}", bus.id, pb);
             s.commit();
             if let Some(v) = bus.publisher.next() {
-                *v = Message::Ack(Ack {
+                *v = Message::AckSub(AckSub {
                     from: bus.id,
                     to: pb.from,
                     task_id: pb.task_id,
@@ -40,21 +43,30 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
                 }
                 bus.publisher.commit();
             }
+            Context::Nil
         }
 
         Some(&Message::Sub(ref sb)) if sb.to == bus.id => {
             // println!("poll bus on core_{} {:?}", bus.id, sb);
             s.commit();
+            Context::Nil
         } 
 
-        Some(&Message::Ack(ref a)) => {
+        Some(&Message::AckSub(ref a)) => {
             println!("ACK on core_");
             if let Some(v) = a.subs.recv() {
                 println!("ACK on core_{} {:?}", bus.id, v);
                 a.subs.commit();
             }
             s.commit();
+            match handle::from_raw(sched).tasks.get_mut(a.to) {
+                Some(t) => {
+                    t.0.poll(Context::IntercoreNode(Message::AckSub(a.clone())));
+                }
+                None => (),
+            };
+            Context::Nil
         } 
-        _ => (),
-    }
+        _ => Context::Nil,
+    };
 }

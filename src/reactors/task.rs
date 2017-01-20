@@ -22,6 +22,7 @@ pub enum Context<'a> {
     Nil,
 }
 
+
 pub trait Task<'a> {
     fn init(&'a mut self, input: Option<&'a str>);
     fn exec(&'a mut self, input: Option<&'a str>);

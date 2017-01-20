@@ -23,7 +23,7 @@ pub enum TaskTermination {
 }
 
 #[derive(Debug)]
-pub struct T3<T>(T, TaskTermination);
+pub struct T3<T>(pub T, pub TaskTermination);
 
 pub struct Scheduler<'a> {
     pub tasks: Vec<T3<Job<'a>>>,
@@ -107,8 +107,7 @@ impl<'a> Scheduler<'a> {
             handle::from_raw(h).poll_bus();
             for (i, t) in handle::from_raw(h).tasks.iter_mut().enumerate() {
                 let c = handle::from_raw(h).ctxs.get_mut(i).expect("Scheduler: can't retrieve a ctx.");
-                let mut ctx = mem::replace(c, Context::Nil);
-                match t.0.poll(ctx) {
+                match t.0.poll(Context::Nil) {
                     Poll::Yield(..) => (),
                     Poll::End(v) => {
                         handle::from_raw(h).terminate(t.1, i);

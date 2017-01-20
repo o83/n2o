@@ -26,7 +26,7 @@ pub struct Spawn {
 }
 
 #[derive(Debug,Clone)]
-pub struct Ack {
+pub struct AckSub {
     pub from: usize,
     pub to: usize,
     pub task_id: usize,
@@ -35,11 +35,28 @@ pub struct Ack {
 }
 
 #[derive(Debug,Clone)]
+pub struct AckPub {
+    pub from: usize,
+    pub to: usize,
+    pub task_id: usize,
+    pub result_id: usize,
+}
+
+#[derive(Debug,Clone)]
+pub struct AckSpawn {
+    pub from: usize,
+    pub to: usize,
+    pub task_id: usize,
+}
+
+#[derive(Debug,Clone)]
 pub enum Message {
     Pub(Pub),
     Sub(Sub),
     Spawn(Spawn),
-    Ack(Ack),
+    AckSub(AckSub),
+    AckPub(AckPub),
+    AckSpawn(AckSpawn),
     Halt,
     Unknown,
 }
