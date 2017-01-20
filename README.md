@@ -25,7 +25,7 @@ Test The O Language
 -------------------
 
 ```
-$ cargo build ; rlwrap ./target/debug/console
+$ cargo build ; rlwrap ./target/debug/o
     Finished debug [unoptimized + debuginfo] target(s) in 0.0 secs
 Welcome to O-CPS Interpreter v0.11.0!
 > fac:{$[x=1;1;x*fac[x-1]]};fac[20]
