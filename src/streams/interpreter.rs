@@ -105,7 +105,7 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn run(&'a mut self, ast: &'a AST<'a>) -> Result<&'a AST<'a>, Error> {
+    pub fn run(&'a mut self, ast: &'a AST<'a>, xchg: Context<'a>) -> Result<&'a AST<'a>, Error> {
         use handle::{into_raw, from_raw};
         let h = into_raw(self);
         let mut tick;

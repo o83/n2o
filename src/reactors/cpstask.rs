@@ -19,8 +19,8 @@ impl<'a> CpsTask<'a> {
     }
 
     #[inline]
-    fn run(&'a mut self, n: &'a AST<'a>) -> Poll<Context<'a>, Error> {
-        let r = self.interpreter.run(n);
+    fn run(&'a mut self, n: &'a AST<'a>, xchg: Context<'a>) -> Poll<Context<'a>, Error> {
+        let r = self.interpreter.run(n, xchg);
         match r {
             Ok(r) => {
                 match *r {
@@ -61,8 +61,8 @@ impl<'a> Task<'a> for CpsTask<'a> {
         match self.ast {
             Some(a) => {
                 match c {
-                    Context::Node(n) => self.run(n),
-                    Context::Nil => self.run(a),
+                    Context::Node(n) => self.run(n, c),
+                    Context::Nil => self.run(a, c),
                     _ => Poll::Err(Error::WrongContext),
                 }
             }
