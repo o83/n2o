@@ -1,7 +1,7 @@
 
 use queues::publisher::{Publisher, Subscriber};
-use streams::intercore::ctx::{Ctx, Channel};
-use streams::intercore::api::{Message, AckSub};
+use intercore::bus::{Ctx, Channel};
+use intercore::message::{Message, AckSub};
 use reactors::cpstask::CpsTask;
 use reactors::task::Context;
 use reactors::job::Job;
@@ -9,6 +9,8 @@ use reactors::task::Task;
 use reactors::scheduler::{Scheduler, TaskTermination};
 use handle;
 use std::rc::Rc;
+
+// The Server of InterCore protocol is handled in Scheduler context
 
 pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
                             message: Option<&'a Message>,
@@ -50,7 +52,7 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
             // println!("poll bus on core_{} {:?}", bus.id, sb);
             s.commit();
             Context::Nil
-        } 
+        }
 
         Some(&Message::AckSub(ref a)) => {
             println!("ACK on core_");
@@ -61,7 +63,7 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
             s.commit();
             match handle::from_raw(sched).tasks.get_mut(a.to) {
                 Some(t) => {
-                    t.0.poll(Context::IntercoreNode(Message::AckSub(a.clone())));
+                    t.0.poll(Context::Intercore(Message::AckSub(a.clone())));
                 }
                 None => (),
             };

@@ -3,19 +3,18 @@ use std::rc::Rc;
 use std::env;
 use std::thread;
 use std::fs::File;
-use streams::intercore::ctx::Ctx;
-use reactors::boot::Boot;
-use handle::{self, Handle};
 use std::sync::{Arc, Once, ONCE_INIT};
 use std::cell::UnsafeCell;
+use std::io::{self, BufReader, BufRead};
+use std::ffi::CString;
+use intercore::bus::{Ctx,Channel};
+use reactors::boot::Boot;
 use reactors::console::Console;
 use reactors::selector::Selector;
-use std::io::{self, BufReader, BufRead};
-use queues::publisher::Publisher;
-use std::ffi::CString;
-use streams::intercore::ctx::Channel;
-use queues::pubsub::PubSub;
 use reactors::scheduler::Scheduler;
+use handle::{self, Handle};
+use queues::publisher::Publisher;
+use queues::pubsub::PubSub;
 use sys;
 
 struct Args<'a> {

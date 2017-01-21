@@ -53,10 +53,12 @@ pub struct AckSpawn {
 pub enum Message {
     Pub(Pub),
     Sub(Sub),
+    Print(String),
     Spawn(Spawn),
     AckSub(AckSub),
     AckPub(AckPub),
     AckSpawn(AckSpawn),
+    Select(String,u16),
     Halt,
     Unknown,
 }

@@ -5,4 +5,3 @@ pub mod interpreter;
 pub mod env;
 pub mod stack;
 pub mod otree;
-pub mod intercore;

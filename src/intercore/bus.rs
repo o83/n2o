@@ -1,7 +1,7 @@
 use queues::publisher::Publisher;
 use queues::publisher::Subscriber;
 use core::cell::UnsafeCell;
-use streams::intercore::api::Message;
+use intercore::message::Message;
 
 pub enum TypeId {
     Byte,

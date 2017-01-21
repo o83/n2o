@@ -1,12 +1,11 @@
 use reactors::task::{self, Task, Context, Poll};
 use reactors::job::Job;
-use reactors::intercore::handle_intercore;
 use reactors::cpstask::CpsTask;
-use streams::intercore::ctx::Channel;
+use intercore::message::*;
+use intercore::bus::{Ctx, Channel};
+use intercore::server::handle_intercore;
 use queues::publisher::{Publisher, Subscriber};
 use queues::pubsub::PubSub;
-use streams::intercore::api::*;
-use streams::intercore::ctx::Ctx;
 use std::rc::Rc;
 use std::mem;
 use handle;

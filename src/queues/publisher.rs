@@ -20,7 +20,7 @@ use std::slice;
 use std::mem;
 use reactors::selector::{Select, Slot, Async, Pool, RingLock};
 use reactors::system::IO;
-use streams::intercore::api::Message;
+use intercore::message::Message;
 
 type Sequence = usize;
 

@@ -2,6 +2,7 @@
 // Pretty simple mio-based terminal by Anton
 
 use std::io::{self, Read, Write};
+use std::fmt::Arguments;
 use io::token::Token;
 use io::ready::Ready;
 use io::poll::*;
@@ -10,7 +11,6 @@ use io::stdio;
 use io::event::Evented;
 use reactors::selector::{Select, Slot, Async, Pool};
 use reactors::system::IO;
-use std::fmt::Arguments;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 

@@ -43,6 +43,7 @@ pub mod session_types;
 #[macro_use]
 pub mod reactors;
 pub mod io;
+pub mod intercore;
 pub mod commands;
 pub mod args;
 pub mod streams;

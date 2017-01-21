@@ -7,6 +7,7 @@ use kernel::commands::ast::*;
 use kernel::streams::interpreter::*;
 use std::cell::UnsafeCell;
 use kernel::handle;
+use kernel::reactors::task::Context;
 
 #[test]
 pub fn k_ariph() {
@@ -112,7 +113,7 @@ pub fn k_plus() {
     let i1: &mut Interpreter = unsafe { &mut *uc.get() };
     let i2: &mut Interpreter = unsafe { &mut *uc.get() };
     let code = i1.parse(&"2+5".to_string());
-    assert_eq!(format!("{}", i2.run(code).unwrap()), "7");
+    assert_eq!(format!("{}", i2.run(code, Context::Nil).unwrap()), "7");
 }
 
 #[test]
@@ -153,7 +154,7 @@ pub fn k_repl() {
 pub fn k_nested_dict() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"a:10;[1;2;[a+a;[4+a;3];2];5]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()),
                "[1 2 [20 [14 3] 2] 5]");
 }
 
@@ -162,14 +163,14 @@ pub fn k_nested_dict() {
 pub fn k_repl2() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"xo:{1};z:{[x]xo x};d:{[x]z x};e:{[x]d x};e[3]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "1");
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()), "1");
 }
 
 #[test]
 pub fn k_factorial() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"fac:{$[x=0;1;x*fac[x-1]]};fac 20".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()),
                "2432902008176640000");
 }
 
@@ -177,21 +178,21 @@ pub fn k_factorial() {
 pub fn k_tail_factorial() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"x:5;fac:{[a;b]$[a=1;b;fac[a-1;a*b]]};fac[x-1;x]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "120");
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()), "120");
 }
 
 #[test]
 pub fn k_cond() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"a:{[x;y]$[x y;20;10]};a[{x};10]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "20");
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()), "20");
 }
 
 #[test]
 pub fn k_cond2() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"a:{[x;y]$[x y;20;10]};a[{x};0]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "10");
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()), "10");
 
 }
 
@@ -199,7 +200,7 @@ pub fn k_cond2() {
 pub fn k_14() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"f:{a:9};a:14;k:{[x] a}; k 3".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "14");
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()), "14");
 }
 
 
@@ -207,28 +208,28 @@ pub fn k_14() {
 pub fn k_multiargs2() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"b:2;a:3;fac:{[x;y]x*y};fac[b*a;a+1]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "24");
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()), "24");
 }
 
 #[test]
 pub fn k_multiargs() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"xa:9;f:{[x;y;z]x+y*z};f[1;xa+11;3]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "61");
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()), "61");
 }
 
 #[test]
 pub fn k_repl1() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"y:3;addy:{y};f:{[g;y]g y};f[addy;1]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "3");
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()), "3");
 }
 
 #[test]
 pub fn k_tensor() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"g:1;b:1;[[g;g*b;1;0];[g*b;g;180;0];[0;0;270;0];[0;0;0;1]]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()),
                "[[1 1 1 0] [1 1 180 0] [0 0 270 0] [0 0 0 1]]");
 }
 
@@ -236,7 +237,7 @@ pub fn k_tensor() {
 pub fn k_tensor1() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"a:10;[[[a;2;3];[1;[a;4];3]];[1;2]]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()),
                "[[[10 2 3] [1 [10 4] 3]] [1 2]]");
 }
 
@@ -244,7 +245,7 @@ pub fn k_tensor1() {
 pub fn k_tensor2() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"a:10;[[[a;2;3];[[a;4];[3;0]]];[1;2]]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()),
                "[[[10 2 3] [[10 4] [3 0]]] [1 2]]");
 }
 
@@ -254,7 +255,7 @@ pub fn k_application_order() {
     let code1 = h.borrow_mut().parse(&"a:10;print:{x+1};print[a * 10]".to_string());
     let code2 = h.borrow_mut().parse(&"a:10;print:{x+1};print a * 10".to_string());
     assert_eq!(format!("{}",
-                       h.borrow_mut().run(code1).unwrap() == h.borrow_mut().run(code2).unwrap()),
+                       h.borrow_mut().run(code1, Context::Nil).unwrap() == h.borrow_mut().run(code2, Context::Nil).unwrap()),
                "true");
 }
 
@@ -262,14 +263,14 @@ pub fn k_application_order() {
 pub fn k_akkerman() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"f:{[x;y]$[0=x;1+y;$[0=y;f[x-1;1];f[x-1;f[x;y-1]]]]};f[3;4]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "125");
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()), "125");
 }
 
 #[test]
 pub fn k_tensor3() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"a:10;[[[[a;2;3];[[a;4];[3;0]]];[1;2]];1]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()),
                "[[[[10 2 3] [[10 4] [3 0]]] [1 2]] 1]");
 }
 
@@ -280,7 +281,7 @@ pub fn k_pubsub() {
     let code = h.borrow_mut()
         .parse(&"p0: pub 8; s1: sub 0; s2: sub 0; snd[p0;41]; snd[p0;42]; [rcv s1; rcv s2; rcv s1; rcv s2]"
             .to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()),
                "[41 41 42 42]");
 }
 
@@ -288,14 +289,14 @@ pub fn k_pubsub() {
 pub fn k_partial1() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"aa:{[x;y]x+y};bb:aa[;2];bb 3".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "5");
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()), "5");
 }
 
 #[test]
 pub fn k_partial2() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"aa:{[x;y;z]x+y+z};bb:aa[;;];bb[1;2;3]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()), "6");
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()), "6");
 }
 
 #[test]
@@ -303,7 +304,7 @@ pub fn k_vecop_va() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"(1;2;3)+1".to_string());
     let a: Vec<i64> = vec![2, 3, 4];
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()),
                "#i[2;3;4]");
 }
 
@@ -312,6 +313,6 @@ pub fn k_vecop_vv() {
     let h = handle::new(Interpreter::new().unwrap());
     let code = h.borrow_mut().parse(&"(1;2;3)+(1;2;3)".to_string());
     let a: Vec<i64> = vec![2, 4, 6];
-    assert_eq!(format!("{}", h.borrow_mut().run(code).unwrap()),
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil).unwrap()),
                "#i[2;4;6]");
 }

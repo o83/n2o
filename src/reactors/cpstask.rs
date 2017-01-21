@@ -3,7 +3,7 @@ use streams::interpreter::*;
 use commands::ast::AST;
 use handle::*;
 use std::rc::Rc;
-use streams::intercore::ctx::Ctx;
+use intercore::bus::Ctx;
 
 pub struct CpsTask<'a> {
     interpreter: Interpreter<'a>,

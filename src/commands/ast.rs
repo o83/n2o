@@ -11,7 +11,7 @@ use streams::interpreter::*;
 use std::cell::UnsafeCell;
 use std::isize;
 use std::intrinsics::size_of;
-use streams::intercore::api::Message;
+use intercore::message::Message;
 
 #[derive(Debug)]
 pub enum Error {

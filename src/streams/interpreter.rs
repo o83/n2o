@@ -3,11 +3,12 @@
 
 use streams::{verb, env, otree};
 use commands::ast::{self, Error, AST, Verb, Adverb, Arena, Value};
-use streams::intercore::ctx::Ctx;
-use streams::intercore::internals;
+use intercore::bus::Ctx;
+use intercore::client::{handle_context, internals};
 use handle;
 use std::rc::Rc;
 use reactors::task::Context;
+use intercore::message::Message;
 
 const PREEMPTION: u64 = 1000000;
 
@@ -23,6 +24,7 @@ pub enum Cont<'a> {
     Verb(Verb, &'a AST<'a>, u8, &'a Cont<'a>),
     Adverb(Adverb, &'a AST<'a>, &'a Cont<'a>),
     Return,
+    Intercore(&'a Cont<'a>),
     Yield(&'a Cont<'a>),
 }
 
@@ -36,11 +38,11 @@ pub enum Lazy<'a> {
 
 
 pub struct Interpreter<'a> {
-    env: env::Environment<'a>,
-    arena: Arena<'a>,
-    ctx: Rc<Ctx>,
-    registers: Lazy<'a>,
-    counter: u64,
+    pub env: env::Environment<'a>,
+    pub arena: Arena<'a>,
+    pub ctx: Rc<Ctx>,
+    pub registers: Lazy<'a>,
+    pub counter: u64,
 }
 
 impl<'a> Interpreter<'a> {
@@ -254,14 +256,7 @@ impl<'a> Interpreter<'a> {
                     Ok((c, f)) => {
                         match c {
                             &AST::NameInt(n) if n < self.arena.builtins => {
-                                let x = internals(n, args, &self.arena);
-                                match x {
-                                    Context::Node(&AST::Yield) => {
-                                        self.run_cont(f, self.arena.yield_(), self.arena.cont(Cont::Yield(cont)))
-                                    }
-                                    Context::Node(x) => self.run_cont(f, x, cont),
-                                    _ => panic!("TODO"),
-                                }
+                                handle_context(f, self, internals(n, args, &self.arena), cont)
                             }
                             _ => self.evaluate_fun(f, c, args, cont),
                         }
