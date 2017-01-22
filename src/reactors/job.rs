@@ -16,8 +16,8 @@ impl<'a> Job<'a> {
 }
 
 impl<'a> Task<'a> for Job<'a> {
-    fn init(&'a mut self, input: Option<&'a str>) {
-        self.unwrap().init(input)
+    fn init(&'a mut self, input: Option<&'a str>, task_id: usize) {
+        self.unwrap().init(input, task_id)
     }
     fn exec(&'a mut self, input: Option<&'a str>) {
         self.unwrap().exec(input)

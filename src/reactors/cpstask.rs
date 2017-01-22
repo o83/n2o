@@ -7,6 +7,7 @@ use intercore::bus::Ctx;
 
 pub struct CpsTask<'a> {
     interpreter: Interpreter<'a>,
+    task_id: usize,
     ast: Option<&'a AST<'a>>,
 }
 
@@ -14,17 +15,24 @@ impl<'a> CpsTask<'a> {
     pub fn new(ctx: Rc<Ctx>) -> Self {
         CpsTask {
             interpreter: Interpreter::new2(ctx).unwrap(),
+            task_id: 0,
             ast: None,
         }
     }
 
     #[inline]
     fn run(&'a mut self, n: &'a AST<'a>, xchg: Context<'a>) -> Poll<Context<'a>, Error> {
+//        match xchg.clone() {
+//            Context::Nil => return Poll::Yield(Context::Nil),
+//                       x => { println!("Context: {:?}", x); }
+//        }
         let r = self.interpreter.run(n, xchg);
         match r {
             Ok(r) => {
                 match *r {
-                    AST::Yield => Poll::Yield(Context::Nil),
+                    AST::Yield(ref c) => {
+                       Poll::Yield(c.clone())
+                    }
                     _ => Poll::End(Context::Node(r)),
                 }
             }
@@ -34,9 +42,12 @@ impl<'a> CpsTask<'a> {
 }
 
 impl<'a> Task<'a> for CpsTask<'a> {
-    fn init(&'a mut self, input: Option<&'a str>) {
+    fn init(&'a mut self, input: Option<&'a str>, task_id: usize) {
         let (s1, s2) = split(self);
         s1.interpreter.define_primitives();
+        s2.interpreter.task_id = task_id;
+        s2.task_id = task_id;
+        println!("TaskId: {:?}", s2.task_id);
         match input {
             Some(i) => {
                 let s = i.to_string();
@@ -60,8 +71,9 @@ impl<'a> Task<'a> for CpsTask<'a> {
     fn poll(&'a mut self, c: Context<'a>) -> Poll<Context<'a>, Error> {
         match self.ast {
             Some(a) => {
-                match c {
+                match c.clone() {
                     Context::Node(n) => self.run(n, c),
+                    Context::NodeAck(task_id, n) => { println!("CpsTasl::poll NodeAck {:?}",n); self.run(a, c) },
                     Context::Nil => self.run(a, c),
                     _ => Poll::Err(Error::WrongContext),
                 }

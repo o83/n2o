@@ -216,6 +216,14 @@ impl<T> Debug for Subscriber<T> {
     }
 }
 
+impl<T> Debug for Publisher<T> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f,
+               "Publisher {{ seq: {} }}",
+               self.next_seq_cache.get())
+    }
+}
+
 unsafe impl<T: Send> Send for Subscriber<T> {}
 unsafe impl<T: Send> Send for Publisher<T> {}
 

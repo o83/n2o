@@ -8,7 +8,7 @@ use queues::publisher::{Publisher, Subscriber};
 use queues::pubsub::PubSub;
 use std::rc::Rc;
 use std::mem;
-use handle;
+use handle::{self, from_raw, into_raw, with};
 
 const TASKS_MAX_CNT: usize = 256;
 
@@ -52,7 +52,7 @@ impl<'a> Scheduler<'a> {
         let last = self.tasks.len();
         self.tasks.push(T3(t, l));
         self.ctxs.push(Context::Nil);
-        self.tasks.last_mut().expect("Scheduler: can't retrieve a task.").0.init(input);
+        self.tasks.last_mut().expect("Scheduler: can't retrieve a task.").0.init(input, last);
         TaskId(last)
     }
 
@@ -78,7 +78,7 @@ impl<'a> Scheduler<'a> {
         }
     }
 
-    pub fn run(&mut self) -> Poll<Context<'a>, task::Error> {
+ pub fn run(&mut self) -> Poll<Context<'a>, task::Error> {
         let h = handle::into_raw(self);
         if let Some(ref bus) = handle::with(self, |h| h.bus.as_ref()) {
 
@@ -96,7 +96,11 @@ impl<'a> Scheduler<'a> {
             for (i, t) in handle::from_raw(h).tasks.iter_mut().enumerate() {
                 let c = handle::from_raw(h).ctxs.get_mut(i).expect("Scheduler: can't retrieve a ctx.");
                 match t.0.poll(Context::Nil) {
-                    Poll::Yield(..) => (),
+                    Poll::Yield(Context::Intercore(m)) => {
+                        if let Some(ref bus) = handle::with(self, |h| h.bus.as_ref()) {
+                            handle_intercore(self, Some(m), bus);
+                        }
+                    }
                     Poll::End(v) => {
                         handle::from_raw(h).terminate(t.1, i);
                         return Poll::End(v);
@@ -105,10 +109,12 @@ impl<'a> Scheduler<'a> {
                         handle::from_raw(h).terminate(t.1, i);
                         return Poll::Err(e);
                     }
+                    _ => ()
                 }
             }
         }
     }
+
 }
 
 impl<'a> PubSub<Message> for Scheduler<'a> {

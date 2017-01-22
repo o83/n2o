@@ -14,18 +14,27 @@ pub enum Error {
     WrongContext,
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum Context<'a> {
-    Cont(usize, Message),
+    Cont(usize, &'a Message),
     Node(&'a AST<'a>),
-    NodeAck(AST<'a>),
-    Intercore(Message),
+    NodeAck(usize, usize),
+    Intercore(&'a Message),
+    Init(usize),
     Nil,
 }
-
-
+/*
+pub fn to<'a>(c: Context<'a>) -> usize {
+    match c {
+        Context::Intercore(&Message::AckPub(x)) => x.to,
+        Context::Intercore(&Message::AckSub(x)) => x.to,
+        Context::Intercore(&Message::AckSpawn(x)) => x.to,
+        _ => 0
+    }
+}
+*/
 pub trait Task<'a> {
-    fn init(&'a mut self, input: Option<&'a str>);
+    fn init(&'a mut self, input: Option<&'a str>, task_id: usize);
     fn exec(&'a mut self, input: Option<&'a str>);
     fn poll(&'a mut self, c: Context<'a>) -> Poll<Context<'a>, Error>;
     fn finalize(&'a mut self);

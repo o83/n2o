@@ -7,6 +7,7 @@ use std::result::Result;
 use std::collections::HashMap;
 use commands::command;
 use streams::otree;
+use reactors::task::Context;
 use streams::interpreter::*;
 use std::cell::UnsafeCell;
 use std::isize;
@@ -206,7 +207,7 @@ pub enum AST<'a> {
     Adverb(Adverb, &'a AST<'a>, &'a AST<'a>),
     Table(&'a AST<'a>, &'a AST<'a>),
     Ioverb(String),
-    Yield,
+    Yield(Context<'a>),
     Value(Value<'a>),
     NameInt(u16),
 }
@@ -301,9 +302,9 @@ impl<'a> Arena<'a> {
         unsafe { &(*self.asts.get())[1] } // see Arena::init for details
     }
 
-    pub fn yield_(&'a self) -> &'a AST<'a> {
-        unsafe { &(*self.asts.get())[2] } // see Arena::init for details
-    }
+//   pub fn yield_(&'a self) -> &'a AST<'a> {
+//       unsafe { &(*self.asts.get())[2] } // see Arena::init for details
+//   }
 
     pub fn dump(&'a self) {
         let x = unsafe { &mut *self.asts.get() };
@@ -367,9 +368,9 @@ impl<'a> Arena<'a> {
     pub fn init(asts: UnsafeCell<Vec<AST<'a>>>) -> (u16, UnsafeCell<Vec<AST<'a>>>) {
         let a = unsafe { &mut *asts.get() };
         assert!(a.len() == 0);
-        a.push(AST::Nil);       // Nil - index 0
-        a.push(AST::Any);       // Any - index 1
-        a.push(AST::Yield);     // Yield - index 2
+        a.push(AST::Nil);       // Nil   - index 0
+        a.push(AST::Any);       // Any   - index 1
+//        a.push(AST::Yield(Context::Nil));     // Yield - index 2
         (a.len() as u16, asts)
     }
 
@@ -521,7 +522,7 @@ impl<'a> fmt::Display for AST<'a> {
             AST::Adverb(ref v, ref a, ref b) => write!(f, "{}{}{}", a, v, b),
             AST::Assign(ref a, ref b) => write!(f, "{}:{}", a, b),
             AST::Cond(ref c, ref a, ref b) => write!(f, "$[{};{};{}]", c, a, b),
-            AST::Yield => write!(f, "Yield"),
+            AST::Yield(ref c) => write!(f, "Yield {:?}", c),
             AST::NameInt(ref n) => write!(f, "^{}", n),
             AST::Value(ref v) => {
                 match v {

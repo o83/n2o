@@ -2,7 +2,7 @@
 // pub struct TaskId(usize);
 use queues::publisher::Subscriber;
 
-#[derive(Debug,Clone)]
+#[derive(PartialEq, Debug,Clone)]
 pub struct Pub {
     pub from: usize,
     pub to: usize,
@@ -11,7 +11,7 @@ pub struct Pub {
     pub cap: usize,
 }
 
-#[derive(Debug,Clone)]
+#[derive(PartialEq, Debug,Clone)]
 pub struct Sub {
     pub from: usize,
     pub to: usize,
@@ -19,23 +19,23 @@ pub struct Sub {
     pub pub_id: usize,
 }
 
-#[derive(Debug,Clone)]
+#[derive(PartialEq, Debug,Clone)]
 pub struct Spawn {
     pub from: usize,
     pub to: usize,
     pub txt: String,
 }
 
-#[derive(Debug,Clone)]
+#[derive(PartialEq, Debug,Clone)]
 pub struct AckSub {
     pub from: usize,
     pub to: usize,
     pub task_id: usize,
     pub result_id: usize,
-    pub s: Subscriber<Message>,
+//    pub s: Subscriber<Message>,
 }
 
-#[derive(Debug,Clone)]
+#[derive(PartialEq, Debug,Clone)]
 pub struct AckPub {
     pub from: usize,
     pub to: usize,
@@ -43,14 +43,14 @@ pub struct AckPub {
     pub result_id: usize,
 }
 
-#[derive(Debug,Clone)]
+#[derive(PartialEq, Debug,Clone)]
 pub struct AckSpawn {
     pub from: usize,
     pub to: usize,
     pub task_id: usize,
 }
 
-#[derive(Debug,Clone)]
+#[derive(PartialEq, Debug,Clone)]
 pub enum Message {
     Pub(Pub),
     Sub(Sub),
@@ -61,12 +61,12 @@ pub enum Message {
     AckSpawn(AckSpawn),
     Select(String,u16),
     Halt,
-    Unknown,
+    Nop,
 }
 
 impl Message {
     pub fn from_u8(b: &[u8]) -> Self {
         //
-        Message::Unknown
+        Message::Nop
     }
 }

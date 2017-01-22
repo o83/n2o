@@ -5,10 +5,10 @@ use streams::{verb, env, otree};
 use commands::ast::{self, Error, AST, Verb, Adverb, Arena, Value};
 use intercore::bus::Ctx;
 use intercore::client::{handle_context, internals};
-use handle;
 use std::rc::Rc;
 use reactors::task::Context;
 use intercore::message::Message;
+use handle::{self, into_raw, from_raw};
 
 const PREEMPTION: u64 = 1000000;
 
@@ -24,7 +24,7 @@ pub enum Cont<'a> {
     Verb(Verb, &'a AST<'a>, u8, &'a Cont<'a>),
     Adverb(Adverb, &'a AST<'a>, &'a Cont<'a>),
     Return,
-    Intercore(&'a Cont<'a>),
+    Intercore(Message, &'a Cont<'a>),
     Yield(&'a Cont<'a>),
 }
 
@@ -40,9 +40,10 @@ pub enum Lazy<'a> {
 pub struct Interpreter<'a> {
     pub env: env::Environment<'a>,
     pub arena: Arena<'a>,
-    pub ctx: Rc<Ctx>,
+    pub ctx: Message,
     pub registers: Lazy<'a>,
     pub counter: u64,
+    pub task_id: usize,
 }
 
 impl<'a> Interpreter<'a> {
@@ -52,9 +53,10 @@ impl<'a> Interpreter<'a> {
         let mut interpreter = Interpreter {
             arena: arena,
             env: env,
-            ctx: ctx,
+            ctx: Message::Nop,
             registers: Lazy::Start,
             counter: 1,
+            task_id: 0,
         };
         Ok(interpreter)
     }
@@ -65,8 +67,9 @@ impl<'a> Interpreter<'a> {
         let mut interpreter = Interpreter {
             arena: arena,
             env: env,
-            ctx: Rc::new(Ctx::new()),
+            ctx: Message::Nop,
             registers: Lazy::Start,
+            task_id: 0,
             counter: 1,
         };
         Ok(interpreter)
@@ -108,9 +111,18 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn run(&'a mut self, ast: &'a AST<'a>, xchg: Context<'a>) -> Result<&'a AST<'a>, Error> {
-        use handle::{into_raw, from_raw};
         let h = into_raw(self);
         let mut tick;
+        let mut value_from_sched = AST::Nil;
+        /*
+        match xchg.clone() {
+            Context::NodeAck(task_id, value) => {
+                println!("xchg: {:?}", xchg);
+                value_from_sched = AST::Value(Value::Number(value as i64));
+            }
+            _ => (),
+        }
+        */
         match from_raw(h).registers {
             Lazy::Start => {
                 tick = try!(from_raw(h).evaluate_expr(from_raw(h).env.last(),
@@ -127,7 +139,7 @@ impl<'a> Interpreter<'a> {
                     if counter % PREEMPTION == 0 {
                         from_raw(h).registers = tick;
                         from_raw(h).counter = counter + 1;
-                        return Ok(from_raw(h).arena.yield_());
+                        return Ok(from_raw(h).arena.ast(AST::Yield(Context::Nil)));
                     } else {
                         tick = try!({
                             from_raw(h).counter = counter + 1;
@@ -139,19 +151,19 @@ impl<'a> Interpreter<'a> {
                 Lazy::Continuation(node, ast, cont) => {
                     from_raw(h).registers = Lazy::Defer(node, ast, cont);
                     from_raw(h).counter = counter + 1;
-                    return Ok(from_raw(h).arena.yield_());
+                    return Ok(from_raw(h).arena.ast(AST::Yield(Context::Intercore(&from_raw(h).ctx))));
                 }
                 Lazy::Return(ast) => {
                     // DEBUG
                     // println!("env: {:?}", se3.env.dump());
                     // println!("arena: {:?}", se4.arena.dump());
                     // INFO
-                    println!("Instructions: {}", counter);
-                    println!("Conts: {}", from_raw(h).arena.cont_len());
-                    println!("ASTs: {}", from_raw(h).arena.ast_len());
-                    println!("ENV: ({},{})",
-                             from_raw(h).env.len().0,
-                             from_raw(h).env.len().1);
+                    // println!("Instructions: {}", counter);
+                    // println!("Conts: {}", from_raw(h).arena.cont_len());
+                    // println!("ASTs: {}", from_raw(h).arena.ast_len());
+                    // println!("ENV: ({},{})",
+                    //         from_raw(h).env.len().0,
+                    //         from_raw(h).env.len().1);
                     // NORMAL
                     from_raw(h).counter = counter + 1;
                     return Ok(ast);
@@ -174,51 +186,54 @@ impl<'a> Interpreter<'a> {
                     a: &'a AST<'a>,
                     cont: &'a Cont<'a>)
                     -> Result<Lazy<'a>, Error> {
+        let h = into_raw(self);
+
         match a {
-            &AST::Assign(name, body) => Ok(Lazy::Defer(node, body, self.arena.cont(Cont::Assign(name, cont)))),
-            &AST::Cond(val, left, right) => Ok(Lazy::Defer(node, val, self.arena.cont(Cont::Cond(left, right, cont)))),
-            &AST::List(x) => self.evaluate_expr(node, x, cont),
-            &AST::Dict(x) => self.evaluate_dict(node, self.arena.nil(), x, cont),
-            &AST::Call(c, a) => Ok(Lazy::Defer(node, a, self.arena.cont(Cont::Call(c, cont)))),
+            &AST::Assign(name, body) => Ok(Lazy::Defer(node, body, from_raw(h).arena.cont(Cont::Assign(name, cont)))),
+            &AST::Cond(val, left, right) => Ok(Lazy::Defer(node, val, from_raw(h).arena.cont(Cont::Cond(left, right, cont)))),
+            &AST::List(x) => from_raw(h).evaluate_expr(node, x, cont),
+            &AST::Dict(x) => from_raw(h).evaluate_dict(node, from_raw(h).arena.nil(), x, cont),
+            &AST::Call(c, a) => Ok(Lazy::Defer(node, a, from_raw(h).arena.cont(Cont::Call(c, cont)))),
             &AST::Verb(ref verb, left, right) => {
                 // println!("Defer Verb: {:?} {:?}", left, right);
                 match (left, right) {
                     (&AST::Value(_), _) => {
                         Ok(Lazy::Defer(node,
                                        right,
-                                       self.arena.cont(Cont::Verb(verb.clone(), left, 0, cont))))
+                                       from_raw(h).arena.cont(Cont::Verb(verb.clone(), left, 0, cont))))
                     }
                     (_, &AST::Value(_)) => {
                         Ok(Lazy::Defer(node,
                                        left,
-                                       self.arena
+                                       from_raw(h).arena
                                            .cont(Cont::Verb(verb.clone(), right, 1, cont))))
                     }
                     (x, y) => {
                         Ok(Lazy::Defer(node,
                                        x,
-                                       self.arena
+                                       from_raw(h).arena
                                            .cont(Cont::Verb(verb.clone(), y, 0, cont))))
                     }
                 }
             }
             &AST::NameInt(name) => {
-                let l = self.lookup(node, name, &self.env);
+                let l = from_raw(h).lookup(node, name, &from_raw(h).env);
                 match l {
-                    Ok((v, f)) => self.run_cont(f, v, cont),
+                    Ok((v, f)) => from_raw(h).run_cont(f, v, cont),
                     Err(x) => Err(x),
                 }
             }
-            &AST::Lambda(_, x, y) => self.run_cont(node, self.arena.ast(AST::Lambda(Some(node), x, y)), cont),
-            x => self.run_cont(node, x, cont),
+            &AST::Lambda(_, x, y) => from_raw(h).run_cont(node, from_raw(h).arena.ast(AST::Lambda(Some(node), x, y)), cont),
+            x => from_raw(h).run_cont(node, x, cont),
         }
     }
 
-    fn lookup(&'a self,
+    fn lookup(&'a mut self,
               node: &'a otree::Node<'a>,
               name: u16,
               env: &'a env::Environment<'a>)
               -> Result<(&'a AST<'a>, &'a otree::Node<'a>), Error> {
+        let h = into_raw(self);
         match env.get(name, node) {
             Some((v, f)) => Ok((v, f)),
             None => {
@@ -230,35 +245,37 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn evaluate_fun(&'a self,
+    pub fn evaluate_fun(&'a mut self,
                         node: &'a otree::Node<'a>,
                         fun: &'a AST<'a>,
                         args: &'a AST<'a>,
                         cont: &'a Cont<'a>)
                         -> Result<Lazy<'a>, Error> {
         // println!("Eval Fun: {:?}", fun);
+        let h = into_raw(self);
         match fun {
             &AST::Lambda(closure, names, body) => {
-                let mut rev = ast::rev_dict(args, &self.arena);
+                let mut rev = ast::rev_dict(args, &from_raw(h).arena);
                 // println!("Args Fun: {:?} orig: {:?}, names: {:?}", rev, args, names);
-                self.run_cont(if closure == None {
+                from_raw(h).run_cont(if closure == None {
                                   node
                               } else {
                                   closure.unwrap()
                               },
                               body,
-                              self.arena.cont(Cont::Func(names, rev, body, cont)))
+                              from_raw(h).arena.cont(Cont::Func(names, rev, body, cont)))
             }
             &AST::NameInt(s) => {
                 // println!("{:?}", s);
-                let v = self.lookup(node, s, &self.env);
+                let v = from_raw(h).lookup(node, s, &from_raw(h).env);
                 match v {
                     Ok((c, f)) => {
                         match c {
-                            &AST::NameInt(n) if n < self.arena.builtins => {
-                                handle_context(f, self, internals(n, args, &self.arena), cont)
+                            &AST::NameInt(n) if n < from_raw(h).arena.builtins => {
+                                println!("builtin");
+                                handle_context(f, from_raw(h), internals(from_raw(h),n, args, &from_raw(h).arena, from_raw(h).task_id), cont)
                             }
-                            _ => self.evaluate_fun(f, c, args, cont),
+                            _ => from_raw(h).evaluate_fun(f, c, args, cont),
                         }
                     }
                     Err(x) => Err(x),
@@ -273,109 +290,119 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn evaluate_expr(&'a self,
+    pub fn evaluate_expr(&'a mut self,
                          node: &'a otree::Node<'a>,
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
                          -> Result<Lazy<'a>, Error> {
         // println!("Eval Expr: {:?}", exprs);
+        let h = into_raw(self);
         match exprs {
             &AST::Cons(car, cdr) => {
                 Ok(Lazy::Defer(node,
                                car,
-                               self.arena
+                               from_raw(h).arena
                                    .cont(Cont::Expressions(cdr, cont))))
             }
-            &AST::Nil => self.run_cont(node, exprs, cont),
+            &AST::Nil => from_raw(h).run_cont(node, exprs, cont),
             x => Ok(Lazy::Defer(node, x, cont)),
         }
     }
 
-    pub fn evaluate_list(&'a self,
+    pub fn evaluate_list(&'a mut self,
                          node: &'a otree::Node<'a>,
                          acc: &'a AST<'a>,
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
                          -> Result<Lazy<'a>, Error> {
         // println!("Eval List: {:?}", exprs);
+        let h = into_raw(self);
         match exprs {
             &AST::Cons(car, cdr) => {
                 Ok(Lazy::Defer(node,
                                car,
-                               self.arena
+                               from_raw(h).arena
                                    .cont(Cont::List(acc, cdr, cont))))
             }
-            &AST::Nil => self.run_cont(node, acc, cont),
+            &AST::Nil => from_raw(h).run_cont(node, acc, cont),
             x => Ok(Lazy::Defer(node, x, cont)),
         }
     }
 
-    pub fn evaluate_dict(&'a self,
+    pub fn evaluate_dict(&'a mut self,
                          node: &'a otree::Node<'a>,
                          acc: &'a AST<'a>,
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
                          -> Result<Lazy<'a>, Error> {
         // println!("Eval Dict: {:?}", exprs);
+        let h = into_raw(self);
         match exprs {
             &AST::Cons(car, cdr) => {
                 Ok(Lazy::Defer(node,
                                car,
-                               self.arena
+                               from_raw(h).arena
                                    .cont(Cont::Dict(acc, cdr, cont))))
             }
-            &AST::Nil => self.run_cont(node, acc, cont),
+            &AST::Nil => from_raw(h).run_cont(node, acc, cont),
             x => Ok(Lazy::Defer(node, x, cont)),
         }
     }
 
-    pub fn emit_return(&'a self, val: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<Lazy<'a>, Error> {
+    pub fn emit_return(&'a mut self, val: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<Lazy<'a>, Error> {
         // println!("Emit: {:?}", val);
+        let h = into_raw(self);
         match val {
             &AST::Dict(x) => {
-                let mut dict = ast::rev_dict(x, &self.arena);
-                Ok(Lazy::Return(self.arena.ast(AST::Dict(dict))))
+                let mut dict = ast::rev_dict(x, &from_raw(h).arena);
+                Ok(Lazy::Return(from_raw(h).arena.ast(AST::Dict(dict))))
             }
             &AST::Cons(x, y) => {
-                Ok(Lazy::Return(self.arena
-                    .ast(AST::Dict(ast::rev_dict(self.arena.ast(AST::Cons(x, y)), &self.arena)))))
+                Ok(Lazy::Return(from_raw(h).arena
+                    .ast(AST::Dict(ast::rev_dict(from_raw(h).arena.ast(AST::Cons(x, y)), &from_raw(h).arena)))))
             }
             x => Ok(Lazy::Return(x)),
         }
     }
 
-    pub fn run_cont(&'a self,
+    pub fn run_cont(&'a mut self,
                     node: &'a otree::Node<'a>,
                     val: &'a AST<'a>,
                     con: &'a Cont<'a>)
                     -> Result<Lazy<'a>, Error> {
         // println!("run_cont: val: {:?} #### cont: {:?}\n", val, cont);
+        let h = into_raw(self);
         match con {
+            &Cont::Intercore(ref m, cc) => {
+                from_raw(h).ctx = m.clone();
+                println!("Intercore CONT: {:?}", from_raw(h).ctx);
+                Ok(Lazy::Continuation(node, val, cc))
+            }
             &Cont::Yield(cc) => Ok(Lazy::Continuation(node, val, cc)),
             &Cont::Call(callee, cont) => {
                 let c;
                 match val {
-                    &AST::Dict(v) => c = self.evaluate_fun(node, callee, v, cont),
-                    x => c = self.evaluate_fun(node, callee, x, cont),
+                    &AST::Dict(v) => c = from_raw(h).evaluate_fun(node, callee, v, cont),
+                    x => c = from_raw(h).evaluate_fun(node, callee, x, cont),
                 };
                 c
             }
             &Cont::Func(names, args, body, cont) => {
                 // println!("names={:?} args={:?}", names, args);
-                let f = self.env.new_child(node);
-                let mut partial = self.arena.nil(); // empty list of unfilled/empty arguments
+                let f = from_raw(h).env.new_child(node);
+                let mut partial = from_raw(h).arena.nil(); // empty list of unfilled/empty arguments
                 for (k, v) in names.into_iter().zip(args.into_iter()) {
                     match v {
-                        &AST::Any => partial = self.arena.ast(AST::Cons(k, partial)),
+                        &AST::Any => partial = from_raw(h).arena.ast(AST::Cons(k, partial)),
                         _ => {
-                            self.env.define(ast::extract_name(k), v);
+                            from_raw(h).env.define(ast::extract_name(k), v);
                         }
                     };
                 }
                 if partial == &AST::Nil {
-                    self.evaluate_expr(f, val, cont)
+                    from_raw(h).evaluate_expr(f, val, cont)
                 } else {
-                    Ok(Lazy::Defer(f, self.arena.ast(AST::Lambda(Some(f), partial, body)), cont))
+                    Ok(Lazy::Defer(f, from_raw(h).arena.ast(AST::Lambda(Some(f), partial, body)), cont))
                 }
             }
             &Cont::Cond(if_expr, else_expr, cont) => {
@@ -385,7 +412,7 @@ impl<'a> Interpreter<'a> {
                     x => {
                         Ok(Lazy::Defer(node,
                                        x,
-                                       self.arena.cont(Cont::Cond(if_expr, else_expr, cont))))
+                                       from_raw(h).arena.cont(Cont::Cond(if_expr, else_expr, cont))))
                     }
                 }
             }
@@ -393,8 +420,8 @@ impl<'a> Interpreter<'a> {
                 match name {
                     &AST::NameInt(s) => {
                         // println!("Assign: {:?}:{:?}", s, val);
-                        try!(self.env.define(s, val));
-                        self.evaluate_expr(node, val, cont)
+                        try!(from_raw(h).env.define(s, val));
+                        from_raw(h).evaluate_expr(node, val, cont)
                     }
                     x => {
                         Err(Error::EvalError {
@@ -409,32 +436,32 @@ impl<'a> Interpreter<'a> {
                 // println!("Cont Dict: {:?} {:?}", val, rest);
                 let new_acc;
                 match val {
-                    &AST::Cons(x, y) => new_acc = self.arena.ast(AST::Cons(self.arena.ast(AST::Dict(val)), acc)),
-                    _ => new_acc = self.arena.ast(AST::Cons(val, acc)), 
+                    &AST::Cons(x, y) => new_acc = from_raw(h).arena.ast(AST::Cons(from_raw(h).arena.ast(AST::Dict(val)), acc)),
+                    _ => new_acc = from_raw(h).arena.ast(AST::Cons(val, acc)), 
                 };
                 match rest {
                     &AST::Cons(head, tail) => {
-                        self.evaluate_dict(node,
-                                           self.arena.nil(),
+                        from_raw(h).evaluate_dict(node,
+                                           from_raw(h).arena.nil(),
                                            head,
-                                           self.arena
+                                           from_raw(h).arena
                                                .cont(Cont::Dict(new_acc, tail, cont)))
                     }
                     &AST::Value(Value::Number(s)) => {
-                        self.run_cont(node, self.arena.ast(AST::Cons(rest, new_acc)), cont)
+                        from_raw(h).run_cont(node, from_raw(h).arena.ast(AST::Cons(rest, new_acc)), cont)
                     }
-                    &AST::Nil => self.run_cont(node, new_acc, cont),
+                    &AST::Nil => from_raw(h).run_cont(node, new_acc, cont),
                     &AST::NameInt(name) => {
-                        match self.lookup(node, name, &self.env) {
-                            Ok((v, f)) => self.run_cont(f, self.arena.ast(AST::Cons(v, new_acc)), cont),
+                        match from_raw(h).lookup(node, name, &from_raw(h).env) {
+                            Ok((v, f)) => from_raw(h).run_cont(f, from_raw(h).arena.ast(AST::Cons(v, new_acc)), cont),
                             Err(x) => Err(x),
                         }
                     }
                     x => {
                         Ok(Lazy::Defer(node,
                                        x,
-                                       self.arena
-                                           .cont(Cont::Dict(new_acc, self.arena.nil(), cont))))
+                                       from_raw(h).arena
+                                           .cont(Cont::Dict(new_acc, from_raw(h).arena.nil(), cont))))
                     }
                 }
             }
@@ -445,11 +472,11 @@ impl<'a> Interpreter<'a> {
                         match swap {
                             0 => {
                                 let a = verb::eval(verb.clone(), right, val).unwrap();
-                                self.run_cont(node, self.arena.ast(a), cont)
+                                from_raw(h).run_cont(node, from_raw(h).arena.ast(a), cont)
                             }
                             _ => {
                                 let a = verb::eval(verb.clone(), val, right).unwrap();
-                                self.run_cont(node, self.arena.ast(a), cont)
+                                from_raw(h).run_cont(node, from_raw(h).arena.ast(a), cont)
                             }
                         }
                     }
@@ -457,20 +484,20 @@ impl<'a> Interpreter<'a> {
                     (x, y) => {
                         Ok(Lazy::Defer(node,
                                        x,
-                                       self.arena
+                                       from_raw(h).arena
                                            .cont(Cont::Verb(verb.clone(), y, 0, cont))))
                     }
                 }
             }
             &Cont::Expressions(rest, cont) => {
                 if rest.is_cons() || !rest.is_empty() {
-                    self.evaluate_expr(node, rest, cont)
+                    from_raw(h).evaluate_expr(node, rest, cont)
                 } else {
-                    self.run_cont(node, val, cont)
+                    from_raw(h).run_cont(node, val, cont)
                 }
             }
             x => {
-                let o = self.emit_return(val, con);
+                let o = from_raw(h).emit_return(val, con);
                 // println!("Return: {:?}", o);
                 o
             }

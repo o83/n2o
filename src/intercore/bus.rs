@@ -17,6 +17,7 @@ pub struct Ctx {
     subscribers: UnsafeCell<Vec<Subscriber<Message>>>,
 }
 
+#[derive(Debug)]
 pub struct Channel {
     pub id: usize,
     pub publisher: Publisher<Message>,

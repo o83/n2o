@@ -48,7 +48,7 @@ impl<'a> Boot<'a> {
         let x = str::from_utf8(b).unwrap();
         let (s1, s2) = handle::split(self);
         s1.scheduler.exec(t, Some(x));
-        let r = s2.scheduler.run();
+        let r = s2.scheduler.run(); // IT IS SHOULD BE IMPOSSIBLE TO RETURN FROM SCHEDULER
         // check and handle builtin
         s2.io.write_all(format!("{:?}\n", r).as_bytes());
     }
@@ -75,12 +75,6 @@ impl<'a> Boot<'a> {
         let j = Job::Cps(CpsTask::new(Rc::new(Ctx::new())));
         let task_id = handle::from_raw(h).scheduler.spawn(j, TaskTermination::Corecursive, None);
         loop {
-            // consider doing poll_bus here if someone send you a message
-            // Scaling:
-            // BUS-IO-BUS-IO-... 1:1 sequence for Boot core
-            // On pure IO cores it could be 1:10 or 1:100 in favor of IO
-            // There should be an InterCore message which regulate this proportion at any core
-            // introduce ctx::Channel instead of Publisher to Boot struct
             match handle::from_raw(h).io.poll() {
                 Async::Ready((_, p)) => handle::from_raw(h).ready(p, task_id),
                 Async::NotReady => (),

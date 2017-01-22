@@ -14,7 +14,8 @@ use std::rc::Rc;
 
 pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
                             message: Option<&'a Message>,
-                            bus: &'a Channel) {
+                            bus: &'a Channel) -> Context<'a> {
+
     match message {
 
         Some(&Message::Spawn(ref v)) if v.to == bus.id => {
@@ -27,9 +28,10 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
             Context::Nil
         }
 
-        Some(&Message::Pub(ref p)) if p.to == p.from && p.to == 0 => {
+        Some(&Message::Pub(ref p)) if p.to == p.from && p.to == bus.id => {
+            println!("Pub Request");
             sched.queues.publishers().push(Publisher::with_capacity(p.cap));
-            Context::NodeAck(AST::Value(Value::Number(sched.queues.publishers().len() as i64)))
+            Context::NodeAck(p.task_id, sched.queues.publishers().len())
         }
 
         Some(&Message::Pub(ref p)) if p.to == bus.id => {
@@ -46,7 +48,7 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
 
         Some(&Message::AckPub(ref a)) if a.to == bus.id => {
             println!("InterCore AckPub {:?} {:?}", bus.id, a);
-            Context::NodeAck(AST::Value(Value::Number(a.result_id as i64)))
+            Context::NodeAck(a.task_id, a.result_id)
         }
 
         Some(&Message::Sub(ref sb)) if sb.to == bus.id => {
@@ -61,7 +63,7 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
                         to: sb.from,
                         task_id: sb.task_id,
                         result_id: sched.queues.subscribers().len(),
-                        s: subscriber.clone(),
+//                        s: subscriber.clone(),
                     });
                     subs.push(subscriber);
                     send(bus, message);
@@ -72,7 +74,7 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
 
         Some(&Message::AckSub(ref a)) => {
             println!("InterCore AckSub {:?} {:?}", bus.id, a);
-            Context::NodeAck(AST::Value(Value::Number(a.result_id as i64)))
+            Context::NodeAck(a.task_id, a.result_id)
         }
         None => {
             Context::Nil
@@ -81,6 +83,6 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
             //println!("InterCore {:?} {:?}", bus.id, x);
             Context::Nil
         }
-    };
+    }
 }
 
