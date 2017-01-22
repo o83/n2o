@@ -14,8 +14,7 @@ use std::rc::Rc;
 
 pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
                             message: Option<&'a Message>,
-                            bus: &'a Channel,
-                            s: &'a Subscriber<Message>) {
+                            bus: &'a Channel) {
     match message {
 
         Some(&Message::Spawn(ref v)) if v.to == bus.id => {
@@ -25,7 +24,6 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
                                           TaskTermination::Recursive,
                                           Some(&v.txt))
             });
-            s.commit();
             Context::Nil
         }
 
@@ -43,13 +41,11 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
                 task_id: p.task_id,
                 result_id: sched.queues.publishers().len(),
             }));
-            s.commit();
             Context::Nil
         }
 
         Some(&Message::AckPub(ref a)) if a.to == bus.id => {
             println!("InterCore AckPub {:?} {:?}", bus.id, a);
-            s.commit();
             Context::NodeAck(AST::Value(Value::Number(a.result_id as i64)))
         }
 
@@ -71,13 +67,11 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
                     send(bus, message);
                 }
             }
-            s.commit();
             Context::Nil
         }
 
         Some(&Message::AckSub(ref a)) => {
             println!("InterCore AckSub {:?} {:?}", bus.id, a);
-            s.commit();
             Context::NodeAck(AST::Value(Value::Number(a.result_id as i64)))
         }
         None => {
@@ -85,7 +79,6 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
         }
         Some(x) => {
             //println!("InterCore {:?} {:?}", bus.id, x);
-            s.commit();
             Context::Nil
         }
     };

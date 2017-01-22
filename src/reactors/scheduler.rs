@@ -72,7 +72,8 @@ impl<'a> Scheduler<'a> {
     fn poll_bus(&'a mut self) {
         if let Some(ref bus) = handle::with(self, |h| h.bus.as_ref()) {
             for s in &bus.subscribers {
-                handle_intercore(self, s.recv(), bus, s)
+                handle_intercore(self, s.recv(), bus);
+                s.commit()
             }
         }
     }
