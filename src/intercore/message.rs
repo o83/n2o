@@ -8,6 +8,7 @@ pub struct Pub {
     pub to: usize,
     pub task_id: usize,
     pub name: String,
+    pub cap: usize,
 }
 
 #[derive(Debug,Clone)]
@@ -31,7 +32,7 @@ pub struct AckSub {
     pub to: usize,
     pub task_id: usize,
     pub result_id: usize,
-    pub subs: Subscriber<Message>,
+    pub s: Subscriber<Message>,
 }
 
 #[derive(Debug,Clone)]

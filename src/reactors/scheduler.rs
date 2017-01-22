@@ -2,7 +2,7 @@ use reactors::task::{self, Task, Context, Poll};
 use reactors::job::Job;
 use reactors::cpstask::CpsTask;
 use intercore::message::*;
-use intercore::bus::{Ctx, Channel};
+use intercore::bus::{Ctx, Channel, send};
 use intercore::server::handle_intercore;
 use queues::publisher::{Publisher, Subscriber};
 use queues::pubsub::PubSub;
@@ -28,6 +28,7 @@ pub struct Scheduler<'a> {
     pub tasks: Vec<T3<Job<'a>>>,
     pub ctxs: Vec<Context<'a>>,
     pub bus: Option<Channel>,
+    pub queues: Ctx,
     pub pb: Publisher<Message>,
 }
 
@@ -38,6 +39,7 @@ impl<'a> Scheduler<'a> {
             ctxs: Vec::with_capacity(TASKS_MAX_CNT),
             bus: None,
             pb: Publisher::with_capacity(8),
+            queues: Ctx::new(),
         }
     }
 
@@ -78,29 +80,15 @@ impl<'a> Scheduler<'a> {
     pub fn run(&mut self) -> Poll<Context<'a>, task::Error> {
         let h = handle::into_raw(self);
         if let Some(ref bus) = handle::with(self, |h| h.bus.as_ref()) {
-            if let Some(v) = bus.publisher.next() {
-                *v = Message::Pub(Pub {
-                    from: bus.id,
-                    to: bus.id + 1,
-                    task_id: 0,
-                    name: "pub0".to_string(),
-                });
 
-                // v[1] = Message::Sub(Sub {
-                //     from: bus.id,
-                //     to: bus.id + 1,
-                //     task_id: 0,
-                //     pub_id: 0,
-                // });
+            send(bus, Message::Pub(Pub {
+                from: bus.id,
+                to: bus.id % 4 + 1,
+                task_id: 0,
+                name: "pub0".to_string(),
+                cap: 8,
+            }));
 
-                // v[2] = Message::Spawn(Spawn {
-                //     from: bus.id,
-                //     to: bus.id + 1,
-                //     txt: format!("{} + {}", bus.id + 1, bus.id),
-                // });
-
-                bus.publisher.commit();
-            }
         }
         loop {
             handle::from_raw(h).poll_bus();

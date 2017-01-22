@@ -18,6 +18,7 @@ pub enum Error {
 pub enum Context<'a> {
     Cont(usize, Message),
     Node(&'a AST<'a>),
+    NodeAck(AST<'a>),
     Intercore(Message),
     Nil,
 }

@@ -3,14 +3,18 @@ use queues::publisher::Subscriber;
 use core::cell::UnsafeCell;
 use intercore::message::Message;
 
+pub fn send<'a>(bus: &'a Channel, m: Message) {
+    if let Some(v) = bus.publisher.next() { *v = m; bus.publisher.commit(); };
+}
+
 pub enum TypeId {
     Byte,
     Int,
     Float,
 }
 pub struct Ctx {
-    publishers: UnsafeCell<Vec<Publisher<u64>>>,
-    subscribers: UnsafeCell<Vec<Subscriber<u64>>>,
+    publishers: UnsafeCell<Vec<Publisher<Message>>>,
+    subscribers: UnsafeCell<Vec<Subscriber<Message>>>,
 }
 
 pub struct Channel {
@@ -27,12 +31,12 @@ impl Ctx {
         }
     }
     #[inline]
-    pub fn publishers(&self) -> &mut Vec<Publisher<u64>> {
+    pub fn publishers(&self) -> &mut Vec<Publisher<Message>> {
         unsafe { &mut *self.publishers.get() }
     }
 
     #[inline]
-    pub fn subscribers(&self) -> &mut Vec<Subscriber<u64>> {
+    pub fn subscribers(&self) -> &mut Vec<Subscriber<Message>> {
         unsafe { &mut *self.subscribers.get() }
     }
 }

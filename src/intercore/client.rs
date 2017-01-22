@@ -12,7 +12,7 @@ use queues::publisher::Publisher;
 pub fn internals<'a>(f_id: u16, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     match f_id {
         0 => Context::Intercore(Message::Print(format!("args {:?}", args))),
-        1 => Context::Intercore(Message::Pub(Pub { from: 0, to: 0, task_id: 0, name: "".to_string() })),
+        1 => Context::Intercore(Message::Pub(Pub { from: 0, to: 0, task_id: 0, name: "".to_string(), cap: 8 })),
         2 => Context::Intercore(Message::Sub(Sub { from: 0, to: 0, task_id: 0, pub_id: 0})),
         3 => snd_(args, arena), // Context::Node
         4 => rcv_(args, arena), // Context::Node + Context::Nil
@@ -31,7 +31,7 @@ pub fn handle_context<'a>(f: &'a otree::Node<'a>,
         Context::Nil => i.run_cont(f, i.arena.yield_(), i.arena.cont(Cont::Yield(cont))),
         Context::Node(&AST::Yield) => i.run_cont(f, i.arena.yield_(), i.arena.cont(Cont::Yield(cont))),
         Context::Intercore(message) => i.run_cont(f, i.arena.yield_(), i.arena.cont(Cont::Intercore(cont))),
-        Context::Node(x) => i.run_cont(f, x, cont),
+        Context::NodeAck(x) => i.run_cont(f, i.arena.ast(x), cont),
         _ => panic!("TODO"),
     }
 }
@@ -42,12 +42,12 @@ pub fn pub_<'a>(args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
         &AST::Value(Value::Number(n)) => n,
         _ => 1024,
     } as usize;
-    Context::Node(arena.ast(AST::Value(Value::Number(13))))
+    Context::NodeAck(AST::Value(Value::Number(13)))
 }
 
 pub fn sub_<'a>(args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     println!("subscribers {:?}", args);
-    Context::Node(arena.ast(AST::Value(Value::Number(14))))
+    Context::NodeAck(AST::Value(Value::Number(14)))
 }
 
 pub fn snd_<'a>(args: &AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
@@ -61,7 +61,7 @@ pub fn snd_<'a>(args: &AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
         }
         _ => panic!("oops!"),
     }
-    Context::Node(arena.nil())
+    Context::Nil
 }
 
 pub fn rcv_<'a>(args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
@@ -71,5 +71,5 @@ pub fn rcv_<'a>(args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
         &AST::Value(Value::Number(n)) => {}
         _ => panic!("oops!"),
     }
-    Context::Node(arena.ast(AST::Value(Value::Number(res as i64))))
+    Context::NodeAck(AST::Value(Value::Number(res as i64)))
 }
