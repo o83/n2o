@@ -12,10 +12,10 @@ use queues::publisher::Publisher;
 pub fn internals<'a>(f_id: u16, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     match f_id {
         0 => Context::Intercore(Message::Print(format!("args {:?}", args))),
-        1 => Context::Intercore(Message::Pub(Pub { from: 0, to: 0, task_id: 0, name: "".to_string(), cap: 8 })),
-        2 => Context::Intercore(Message::Sub(Sub { from: 0, to: 0, task_id: 0, pub_id: 0})),
-        3 => snd_(args, arena), // Context::Node
-        4 => rcv_(args, arena), // Context::Node + Context::Nil
+        1 => pub_(args, arena),
+        2 => sub_(args, arena),
+        3 => snd_(args, arena),
+        4 => rcv_(args, arena),
         5 => Context::Intercore(Message::Spawn(Spawn { from: 0, to: 0, txt: "".to_string() })),
         6 => Context::Intercore(Message::Select("".to_string(),80)),
         _ => panic!("unknown internal func"),
@@ -42,12 +42,15 @@ pub fn pub_<'a>(args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
         &AST::Value(Value::Number(n)) => n,
         _ => 1024,
     } as usize;
-    Context::NodeAck(AST::Value(Value::Number(13)))
+    Context::Intercore(Message::Pub(Pub { from: 0, to: 0, task_id: 0, name: "".to_string(), cap: cap }))
 }
 
 pub fn sub_<'a>(args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
-    println!("subscribers {:?}", args);
-    Context::NodeAck(AST::Value(Value::Number(14)))
+    let p = match args {
+        &AST::Value(Value::Number(n)) => n,
+        _ => 0,
+    } as usize;
+    Context::Intercore(Message::Sub(Sub { from: 0, to: 0, task_id: 0, pub_id: p }))
 }
 
 pub fn snd_<'a>(args: &AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {

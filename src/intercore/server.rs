@@ -29,6 +29,11 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
             Context::Nil
         }
 
+        Some(&Message::Pub(ref p)) if p.to == p.from && p.to == 0 => {
+            sched.queues.publishers().push(Publisher::with_capacity(p.cap));
+            Context::NodeAck(AST::Value(Value::Number(sched.queues.publishers().len() as i64)))
+        }
+
         Some(&Message::Pub(ref p)) if p.to == bus.id => {
             sched.queues.publishers().push(Publisher::with_capacity(p.cap));
             println!("InterCore Pub {:?} {:?}", bus.id, p);
