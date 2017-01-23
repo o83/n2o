@@ -20,6 +20,14 @@ impl<'a> CpsTask<'a> {
         }
     }
 
+    pub fn new2(ctx: Ctx) -> Self {
+        CpsTask {
+            interpreter: Interpreter::new2(Rc::new(ctx)).unwrap(),
+            task_id: 0,
+            ast: None,
+        }
+    }
+
     #[inline]
     fn run(&'a mut self, n: &'a AST<'a>, intercore: Context<'a>) -> Poll<Context<'a>, Error> {
         let r = self.interpreter.run(n, intercore);

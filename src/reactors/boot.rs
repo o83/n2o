@@ -10,7 +10,7 @@ use intercore::message::Message;
 use intercore::bus::{Channel, Ctx};
 use queues::publisher::{Publisher, Subscriber};
 use queues::pubsub::PubSub;
-use handle;
+use handle::{self, into_raw, from_raw, with};
 
 pub struct Boot<'a> {
     io: IO,
@@ -80,12 +80,12 @@ impl<'a> Boot<'a> {
     }
 
     pub fn init(&mut self) {
-        let h = handle::into_raw(self);
+        let h = into_raw(self);
         let j = Job::Cps(CpsTask::new());
-        let task_id = handle::from_raw(h).scheduler.spawn(j, TaskTermination::Corecursive, None);
+        let task_id = from_raw(h).scheduler.spawn(j, TaskTermination::Corecursive, None);
         loop {
-            match handle::from_raw(h).io.poll() {
-                Async::Ready((_, p)) => handle::from_raw(h).ready(p, task_id),
+            match from_raw(h).io.poll() {
+                Async::Ready((_, p)) => from_raw(h).ready(p, task_id),
                 Async::NotReady => (),
             }
         }

@@ -9,6 +9,7 @@ use queues::pubsub::PubSub;
 use commands::ast::{AST, Value};
 use std::rc::Rc;
 use std::mem;
+use std::{thread, time};
 use handle::{self, from_raw, into_raw, with, split};
 
 const TASKS_MAX_CNT: usize = 256;
@@ -29,7 +30,7 @@ pub struct Scheduler<'a> {
     pub tasks: Vec<T3<Job<'a>>>,
     pub ctxs: Vec<Context<'a>>,
     pub bus: Option<Channel>,
-    pub queues: Ctx,
+    pub queues: Rc<Ctx>,
     pub pb: Publisher<Message>,
 }
 
@@ -40,7 +41,7 @@ impl<'a> Scheduler<'a> {
             ctxs: Vec::with_capacity(TASKS_MAX_CNT),
             bus: None,
             pb: Publisher::with_capacity(8),
-            queues: Ctx::new(),
+            queues: Rc::new(Ctx::new()),
         }
     }
 
@@ -50,7 +51,7 @@ impl<'a> Scheduler<'a> {
             ctxs: Vec::with_capacity(TASKS_MAX_CNT),
             bus: Some(c),
             pb: Publisher::with_capacity(8),
-            queues: Ctx::new(),
+            queues: Rc::new(Ctx::new()),
         }
     }
 
@@ -113,6 +114,8 @@ impl<'a> Scheduler<'a> {
                     s.commit()
                 }
 
+                thread::sleep(time::Duration::from_millis(1000));
+
                 for (i, t) in from_raw(h).tasks.iter_mut().enumerate() {
                     let c = from_raw(h).ctxs.get_mut(i).expect("Scheduler: can't retrieve a ctx.");
                     let (a, b) = split(&mut t.0);
@@ -138,7 +141,6 @@ impl<'a> Scheduler<'a> {
                         }
                     }
                 }
-
             }
         }
 

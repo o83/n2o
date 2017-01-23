@@ -10,7 +10,7 @@ use reactors::task::Context;
 use intercore::message::Message;
 use handle::{self, into_raw, from_raw};
 
-const PREEMPTION: u64 = 1000000;
+const PREEMPTION: u64 = 20000000; // Yield each two instructions
 
 #[derive(Clone, Debug)]
 pub enum Cont<'a> {
@@ -40,6 +40,7 @@ pub enum Lazy<'a> {
 pub struct Interpreter<'a> {
     pub env: env::Environment<'a>,
     pub arena: Arena<'a>,
+    pub queues: Rc<Ctx>,
     pub ctx: Message,
     pub registers: Lazy<'a>,
     pub counter: u64,
@@ -47,12 +48,14 @@ pub struct Interpreter<'a> {
 }
 
 impl<'a> Interpreter<'a> {
+
     pub fn new2(ctx: Rc<Ctx>) -> Result<Interpreter<'a>, Error> {
         let mut env = try!(env::Environment::new_root());
         let mut arena = Arena::new();
         let mut interpreter = Interpreter {
             arena: arena,
             env: env,
+            queues: ctx,
             ctx: Message::Nop,
             registers: Lazy::Start,
             counter: 1,
@@ -67,6 +70,7 @@ impl<'a> Interpreter<'a> {
         let mut interpreter = Interpreter {
             arena: arena,
             env: env,
+            queues: Rc::new(Ctx::new()),
             ctx: Message::Nop,
             registers: Lazy::Start,
             task_id: 0,
@@ -110,7 +114,7 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn run(&'a mut self, ast: &'a AST<'a>, xchg: Context<'a>) -> Result<&'a AST<'a>, Error> {
+    pub fn run(&'a mut self, ast: &'a AST<'a>, intercore: Context<'a>) -> Result<&'a AST<'a>, Error> {
         let h = into_raw(self);
         let mut tick;
         let mut value_from_sched = from_raw(h).arena.nil();
@@ -125,10 +129,10 @@ impl<'a> Interpreter<'a> {
             _ => tick = from_raw(h).registers.clone(),
         }
 
-        match xchg.clone() {
+        match intercore.clone() {
             Context::NodeAck(task_id, value) => {
                 value_from_sched = from_raw(h).arena.ast(AST::Value(Value::Number(value as i64)));
-                println!("xchg: {:?}", value_from_sched);
+                println!("intercore: {:?}", value_from_sched);
             }
             _ => (),
         }
@@ -383,7 +387,6 @@ impl<'a> Interpreter<'a> {
         match con {
             &Cont::Intercore(ref m, cc) => {
                 from_raw(h).ctx = m.clone();
-                println!("Intercore CONT: {:?}", from_raw(h).ctx);
                 Ok(Lazy::Continuation(node, val, cc))
             }
             &Cont::Yield(cc) => Ok(Lazy::Continuation(node, val, cc)),

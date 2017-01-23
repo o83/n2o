@@ -56,16 +56,16 @@ pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>,
                             task_id: usize)
                             -> Context<'a> {
     println!("publishers {:?}", args);
-    let cap = match args {
+    let arg = match args {
         &AST::Value(Value::Number(n)) => n,
         _ => 1024,
     } as usize;
     i.ctx = Message::Pub(Pub {
-        from: task_id,
+        from: 0,
         task_id: task_id,
-        to: 0,
+        to: arg,
         name: "".to_string(),
-        cap: cap,
+        cap: 8,
     });
     Context::Intercore(&i.ctx)
 }
