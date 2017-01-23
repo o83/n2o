@@ -5,9 +5,9 @@ use intercore::message::{Message, Pub, Sub, AckPub, AckSub, Spawn, AckSpawn};
 use reactors::cpstask::CpsTask;
 use commands::ast::{AST, Value};
 use reactors::job::Job;
-use reactors::task::{Task, Context};
+use reactors::task::{Task, Context, Poll};
 use reactors::scheduler::{Scheduler, TaskTermination};
-use handle;
+use handle::{self, split, from_raw, into_raw};
 use std::rc::Rc;
 
 // The Server of InterCore protocol is handled in Scheduler context
@@ -32,12 +32,13 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>, message: Option<&'a Messa
             Context::NodeAck(p.task_id, sched.queues.publishers().len())
         }
 
-        Some(&Message::Pub(ref p)) if p.to == bus.id => {
+        Some(&Message::Pub(ref p)) //if p.to == bus.id 
+        => {
             sched.queues.publishers().push(Publisher::with_capacity(p.cap));
             println!("InterCore Pub {:?} {:?}", bus.id, p);
             send(bus,
                  Message::AckPub(AckPub {
-                     from: p.to,
+                     from: bus.id,
                      to: p.from,
                      task_id: p.task_id,
                      result_id: sched.queues.publishers().len(),
@@ -45,9 +46,15 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>, message: Option<&'a Messa
             Context::Nil
         }
 
-        Some(&Message::AckPub(ref a)) if a.to == bus.id => {
+        Some(&Message::AckPub(ref a)) => { //if a.to == bus.id => {
             println!("InterCore AckPub {:?} {:?}", bus.id, a);
-            Context::NodeAck(a.task_id, a.result_id)
+            let h = into_raw(sched);
+            let mut t = from_raw(h).tasks.get_mut(a.task_id).expect("no task");
+            match t.0.poll(Context::NodeAck(a.task_id, a.result_id)) {
+                Poll::End(v) => v,
+                Poll::Yield(x) => x,
+                _ => Context::Nil
+            }
         }
 
         Some(&Message::Sub(ref sb)) if sb.to == bus.id => {
@@ -74,10 +81,7 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>, message: Option<&'a Messa
             println!("InterCore AckSub {:?} {:?}", bus.id, a);
             Context::NodeAck(a.task_id, a.result_id)
         }
+        Some(x) => { println!("Test"); Context::Nil },
         None => Context::Nil,
-        Some(x) => {
-            // println!("InterCore {:?} {:?}", bus.id, x);
-            Context::Nil
-        }
     }
 }

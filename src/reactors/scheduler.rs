@@ -97,33 +97,34 @@ impl<'a> Scheduler<'a> {
 
         if let Some(ref bus) = with(from_raw(h), |x| x.bus.as_ref()) {
 
-            send(bus,
-                 Message::Pub(Pub {
-                     from: bus.id,
-                     to: bus.id % 4 + 1,
-                     task_id: 0,
-                     name: "pub0".to_string(),
-                     cap: 8,
-                 }));
+            // send(bus,
+            // Message::Pub(Pub {
+            // from: bus.id,
+            // to: bus.id % 4 + 1,
+            // task_id: 0,
+            // name: "pub0".to_string(),
+            // cap: 8,
+            // }));
+            //
 
-
-            loop {
+            'start: loop {
 
                 for s in &bus.subscribers {
                     handle_intercore(self, s.recv(), bus);
                     s.commit()
                 }
 
-                thread::sleep(time::Duration::from_millis(1000));
+                thread::sleep(time::Duration::from_millis(100));
 
                 for (i, t) in from_raw(h).tasks.iter_mut().enumerate() {
                     let c = from_raw(h).ctxs.get_mut(i).expect("Scheduler: can't retrieve a ctx.");
                     let (a, b) = split(&mut t.0);
                     let y = a.poll(Context::Nil);
                     match y {
-                        Poll::Yield(Context::Intercore(m)) => {
+                        Poll::Yield(Context::Intercore(ref m)) => {
+                            let ha = handle_intercore(self, Some(m), bus);
                             println!("IC: {:?}", m);
-                            return b.poll(handle_intercore(self, Some(m), bus));
+                            continue 'start;
                         }
                         Poll::End(v) => {
                             println!("End: {:?}", v);

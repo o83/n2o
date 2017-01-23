@@ -5,7 +5,8 @@ use intercore::message::Message;
 
 pub fn send<'a>(bus: &'a Channel, m: Message) {
     if let Some(v) = bus.publisher.next() {
-        println!("sent to bus {:?}", *v = m);
+        *v = m;
+        println!("sent to bus {:?}", v);
         bus.publisher.commit();
     };
 }
