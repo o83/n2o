@@ -120,16 +120,16 @@ impl<'a> Scheduler<'a> {
                     match y {
                         Poll::Yield(Context::Intercore(m)) => {
                             println!("IC: {:?}", m);
-                            b.poll(handle_intercore(self, Some(m), bus));
+                            return b.poll(handle_intercore(self, Some(m), bus));
                         }
                         Poll::End(v) => {
                             println!("End: {:?}", v);
-                            // from_raw(h).terminate(t.1, i);
+                            from_raw(h).terminate(t.1, i);
                             return Poll::End(v);
                         }
                         Poll::Err(e) => {
                             println!("Err: {:?}", e);
-                            // from_raw(h).terminate(t.1, i);
+                            from_raw(h).terminate(t.1, i);
                             return Poll::Err(e);
                         }
                         z => {

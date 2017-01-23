@@ -165,14 +165,15 @@ impl<'a> Interpreter<'a> {
                     // println!("env: {:?}", se3.env.dump());
                     // println!("arena: {:?}", se4.arena.dump());
                     // INFO
-                    // println!("Instructions: {}", counter);
-                    // println!("Conts: {}", from_raw(h).arena.cont_len());
-                    // println!("ASTs: {}", from_raw(h).arena.ast_len());
-                    // println!("ENV: ({},{})",
-                    //         from_raw(h).env.len().0,
-                    //         from_raw(h).env.len().1);
+                    println!("Instructions: {}", counter);
+                    println!("Conts: {}", from_raw(h).arena.cont_len());
+                    println!("ASTs: {}", from_raw(h).arena.ast_len());
+                    println!("ENV: ({},{})",
+                             from_raw(h).env.len().0,
+                             from_raw(h).env.len().1);
                     // NORMAL
                     from_raw(h).counter = counter + 1;
+                    from_raw(h).registers = Lazy::Start;
                     return Ok(ast);
                 }
             }

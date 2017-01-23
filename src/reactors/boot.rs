@@ -49,6 +49,7 @@ impl<'a> Boot<'a> {
         let (s1, s2) = handle::split(self);
         let (s3, s4) = handle::split(s2);
         let (s5, s6) = handle::split(s4);
+
         s1.scheduler.exec(t, Some(x));
         let i = 0;
         let chan = Channel {
