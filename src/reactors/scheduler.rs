@@ -110,7 +110,7 @@ impl<'a> Scheduler<'a> {
 
                 for s in &bus.subscribers {
                     handle_intercore(self, s.recv(), bus);
-                    // s.commit()
+                    s.commit()
                 }
 
                 for (i, t) in from_raw(h).tasks.iter_mut().enumerate() {
@@ -125,12 +125,12 @@ impl<'a> Scheduler<'a> {
                         Poll::End(v) => {
                             println!("End: {:?}", v);
                             // from_raw(h).terminate(t.1, i);
-                            res = Poll::End(v);
+                            return Poll::End(v);
                         }
                         Poll::Err(e) => {
                             println!("Err: {:?}", e);
                             // from_raw(h).terminate(t.1, i);
-                            res = Poll::Err(e);
+                            return Poll::Err(e);
                         }
                         z => {
                             println!("X: {:?}", z);
@@ -139,9 +139,9 @@ impl<'a> Scheduler<'a> {
                     }
                 }
 
-                return res; // ??
             }
         }
+
         res
     }
 }

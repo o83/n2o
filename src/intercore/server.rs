@@ -27,7 +27,7 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>, message: Option<&'a Messa
         }
 
         Some(&Message::Pub(ref p)) if p.to == p.from && p.to == bus.id => {
-            println!("Pub Request");
+            println!("Local Pub {:?} {:?}", bus.id, p);
             sched.queues.publishers().push(Publisher::with_capacity(p.cap));
             Context::NodeAck(p.task_id, sched.queues.publishers().len())
         }
