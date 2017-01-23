@@ -26,9 +26,7 @@ impl<'a> CpsTask<'a> {
         match r {
             Ok(r) => {
                 match *r {
-                    AST::Yield(ref c) => {
-                       Poll::Yield(c.clone())
-                    }
+                    AST::Yield(ref c) => Poll::Yield(c.clone()),
                     _ => Poll::End(Context::Node(r)),
                 }
             }

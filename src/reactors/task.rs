@@ -23,16 +23,7 @@ pub enum Context<'a> {
     Init(usize),
     Nil,
 }
-/*
-pub fn to<'a>(c: Context<'a>) -> usize {
-    match c {
-        Context::Intercore(&Message::AckPub(x)) => x.to,
-        Context::Intercore(&Message::AckSub(x)) => x.to,
-        Context::Intercore(&Message::AckSpawn(x)) => x.to,
-        _ => 0
-    }
-}
-*/
+
 pub trait Task<'a> {
     fn init(&'a mut self, input: Option<&'a str>, task_id: usize);
     fn exec(&'a mut self, input: Option<&'a str>);

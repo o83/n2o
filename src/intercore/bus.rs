@@ -4,7 +4,10 @@ use core::cell::UnsafeCell;
 use intercore::message::Message;
 
 pub fn send<'a>(bus: &'a Channel, m: Message) {
-    if let Some(v) = bus.publisher.next() { *v = m; bus.publisher.commit(); };
+    if let Some(v) = bus.publisher.next() {
+        *v = m;
+        bus.publisher.commit();
+    };
 }
 
 pub enum TypeId {
@@ -12,6 +15,7 @@ pub enum TypeId {
     Int,
     Float,
 }
+
 pub struct Ctx {
     publishers: UnsafeCell<Vec<Publisher<Message>>>,
     subscribers: UnsafeCell<Vec<Subscriber<Message>>>,

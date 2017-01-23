@@ -52,10 +52,10 @@ impl<'a> Boot<'a> {
         s1.scheduler.exec(t, Some(x));
         let i = 0;
         let chan = Channel {
-                id: i,
-                publisher: Publisher::with_mirror(CString::new(format!("/pub_{}", i)).unwrap(), 8),
-                subscribers: Vec::new(),
-            };
+            id: i,
+            publisher: Publisher::with_mirror(CString::new(format!("/pub_{}", i)).unwrap(), 8),
+            subscribers: Vec::new(),
+        };
         s3.scheduler.set_channel(chan);
         let r = s5.scheduler.run();
         s6.io.write_all(format!("{:?}\n", r).as_bytes());

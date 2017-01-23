@@ -10,7 +10,12 @@ use handle::{self, into_raw, from_raw};
 
 // The InterCore messages are being sent fron client in Interpreter
 
-pub fn internals<'a>(i: &'a mut Interpreter<'a>,f_id: u16,  args: &'a AST<'a>, arena: &'a Arena<'a>, task_id: usize) -> Context<'a> {
+pub fn internals<'a>(i: &'a mut Interpreter<'a>,
+                     f_id: u16,
+                     args: &'a AST<'a>,
+                     arena: &'a Arena<'a>,
+                     task_id: usize)
+                     -> Context<'a> {
     match f_id {
         0 => Context::Nil,
         1 => create_publisher(i, args, arena, task_id),
@@ -33,20 +38,23 @@ pub fn handle_context<'a>(f: &'a otree::Node<'a>,
     match x {
         Context::Nil => {
             from_raw(h).run_cont(f,
-                       from_raw(h).arena.ast(AST::Yield(Context::Nil)),
-                       from_raw(h).arena.cont(Cont::Yield(cont)))
+                                 from_raw(h).arena.ast(AST::Yield(Context::Nil)),
+                                 from_raw(h).arena.cont(Cont::Yield(cont)))
         }
         Context::Intercore(message) => {
             from_raw(h).run_cont(f,
-                       from_raw(h).arena.ast(AST::Yield(Context::Intercore(&from_raw(h).ctx))),
-                       from_raw(h).arena.cont(Cont::Intercore(message.clone(), cont)))
-        }
-        Context::NodeAck(task_id, x) => from_raw(h).run_cont(f, from_raw(h).arena.ast(AST::Value(Value::Number(x as i64))), cont),
+                                 from_raw(h).arena.ast(AST::Yield(Context::Intercore(&from_raw(h).ctx))),
+                                 from_raw(h).arena.cont(Cont::Intercore(message.clone(), cont)))
+        } 
         _ => panic!("TODO"),
     }
 }
 
-pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>, task_id: usize) -> Context<'a> {
+pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>,
+                            args: &'a AST<'a>,
+                            arena: &'a Arena<'a>,
+                            task_id: usize)
+                            -> Context<'a> {
     println!("publishers {:?}", args);
     let cap = match args {
         &AST::Value(Value::Number(n)) => n,
@@ -62,7 +70,11 @@ pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena
     Context::Intercore(&i.ctx)
 }
 
-pub fn create_subscriber<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>, task_id: usize) -> Context<'a> {
+pub fn create_subscriber<'a>(i: &'a mut Interpreter<'a>,
+                             args: &'a AST<'a>,
+                             arena: &'a Arena<'a>,
+                             task_id: usize)
+                             -> Context<'a> {
     let p = match args {
         &AST::Value(Value::Number(n)) => n,
         _ => 0,

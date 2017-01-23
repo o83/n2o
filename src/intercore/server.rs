@@ -12,9 +12,7 @@ use std::rc::Rc;
 
 // The Server of InterCore protocol is handled in Scheduler context
 
-pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
-                            message: Option<&'a Message>,
-                            bus: &'a Channel) -> Context<'a> {
+pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>, message: Option<&'a Message>, bus: &'a Channel) -> Context<'a> {
 
     match message {
 
@@ -37,12 +35,13 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
         Some(&Message::Pub(ref p)) if p.to == bus.id => {
             sched.queues.publishers().push(Publisher::with_capacity(p.cap));
             println!("InterCore Pub {:?} {:?}", bus.id, p);
-            send(bus, Message::AckPub(AckPub {
-                from: p.to,
-                to: p.from,
-                task_id: p.task_id,
-                result_id: sched.queues.publishers().len(),
-            }));
+            send(bus,
+                 Message::AckPub(AckPub {
+                     from: p.to,
+                     to: p.from,
+                     task_id: p.task_id,
+                     result_id: sched.queues.publishers().len(),
+                 }));
             Context::Nil
         }
 
@@ -62,8 +61,7 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
                         from: bus.id,
                         to: sb.from,
                         task_id: sb.task_id,
-                        result_id: sched.queues.subscribers().len(),
-//                        s: subscriber.clone(),
+                        result_id: sched.queues.subscribers().len(), //                        s: subscriber.clone(),
                     });
                     subs.push(subscriber);
                     send(bus, message);
@@ -76,13 +74,10 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
             println!("InterCore AckSub {:?} {:?}", bus.id, a);
             Context::NodeAck(a.task_id, a.result_id)
         }
-        None => {
-            Context::Nil
-        }
+        None => Context::Nil,
         Some(x) => {
-            //println!("InterCore {:?} {:?}", bus.id, x);
+            // println!("InterCore {:?} {:?}", bus.id, x);
             Context::Nil
         }
     }
 }
-

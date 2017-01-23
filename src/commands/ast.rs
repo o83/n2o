@@ -302,9 +302,9 @@ impl<'a> Arena<'a> {
         unsafe { &(*self.asts.get())[1] } // see Arena::init for details
     }
 
-//   pub fn yield_(&'a self) -> &'a AST<'a> {
-//       unsafe { &(*self.asts.get())[2] } // see Arena::init for details
-//   }
+    //   pub fn yield_(&'a self) -> &'a AST<'a> {
+    //       unsafe { &(*self.asts.get())[2] } // see Arena::init for details
+    //   }
 
     pub fn dump(&'a self) {
         let x = unsafe { &mut *self.asts.get() };
@@ -816,10 +816,10 @@ pub fn rev_dict<'a>(l: &'a AST<'a>, arena: &'a Arena<'a>) -> &'a AST<'a> {
                         res = arena.ast(AST::Cons(arena.ast(AST::Dict(rev)), res));
                         from = xs;
                     }
-                    //&AST::Nil => {
+                    // &AST::Nil => {
                     //    res = arena.nil();
                     //    from = xs;
-                    //}
+                    // }
                     y => {
                         res = arena.ast(AST::Cons(y, res));
                         from = xs;

@@ -31,8 +31,7 @@ pub struct AckSub {
     pub from: usize,
     pub to: usize,
     pub task_id: usize,
-    pub result_id: usize,
-//    pub s: Subscriber<Message>,
+    pub result_id: usize, //    pub s: Subscriber<Message>,
 }
 
 #[derive(PartialEq, Debug,Clone)]
@@ -59,7 +58,7 @@ pub enum Message {
     AckSub(AckSub),
     AckPub(AckPub),
     AckSpawn(AckSpawn),
-    Select(String,u16),
+    Select(String, u16),
     Halt,
     Nop,
 }

@@ -9,7 +9,7 @@ use queues::pubsub::PubSub;
 use commands::ast::{AST, Value};
 use std::rc::Rc;
 use std::mem;
-use handle::{self, from_raw, into_raw, with};
+use handle::{self, from_raw, into_raw, with, split};
 
 const TASKS_MAX_CNT: usize = 256;
 
@@ -80,7 +80,7 @@ impl<'a> Scheduler<'a> {
 
     #[inline]
     fn poll_bus(&'a mut self) {
-        if let Some(ref bus) = handle::with(self, |h| h.bus.as_ref()) {
+        if let Some(ref bus) = with(self, |h| h.bus.as_ref()) {
             for s in &bus.subscribers {
                 handle_intercore(self, s.recv(), bus);
                 s.commit()
@@ -89,11 +89,12 @@ impl<'a> Scheduler<'a> {
     }
 
     pub fn run(&mut self) -> Poll<Context<'a>, task::Error> {
-        let h = handle::into_raw(self);
+        let h = into_raw(self);
         let mut res: Poll<Context<'a>, task::Error> = Poll::End(Context::Nil);
 
+        // this should be totally rewritten
 
-        if let Some(ref bus) = handle::with(from_raw(h), |x| x.bus.as_ref()) {
+        if let Some(ref bus) = with(from_raw(h), |x| x.bus.as_ref()) {
 
             send(bus,
                  Message::Pub(Pub {
@@ -109,12 +110,12 @@ impl<'a> Scheduler<'a> {
 
                 for s in &bus.subscribers {
                     handle_intercore(self, s.recv(), bus);
-                    s.commit()
+                    // s.commit()
                 }
 
                 for (i, t) in from_raw(h).tasks.iter_mut().enumerate() {
                     let c = from_raw(h).ctxs.get_mut(i).expect("Scheduler: can't retrieve a ctx.");
-                    let (a,b) = handle::split(&mut t.0);
+                    let (a, b) = split(&mut t.0);
                     let y = a.poll(Context::Nil);
                     match y {
                         Poll::Yield(Context::Intercore(m)) => {
@@ -123,12 +124,12 @@ impl<'a> Scheduler<'a> {
                         }
                         Poll::End(v) => {
                             println!("End: {:?}", v);
-//                            from_raw(h).terminate(t.1, i);
+                            // from_raw(h).terminate(t.1, i);
                             res = Poll::End(v);
                         }
                         Poll::Err(e) => {
                             println!("Err: {:?}", e);
-//                            from_raw(h).terminate(t.1, i);
+                            // from_raw(h).terminate(t.1, i);
                             res = Poll::Err(e);
                         }
                         z => {
@@ -138,7 +139,7 @@ impl<'a> Scheduler<'a> {
                     }
                 }
 
-                return res;
+                return res; // ??
             }
         }
         res

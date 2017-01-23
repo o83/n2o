@@ -7,7 +7,7 @@ use std::sync::{Arc, Once, ONCE_INIT};
 use std::cell::UnsafeCell;
 use std::io::{self, BufReader, BufRead};
 use std::ffi::CString;
-use intercore::bus::{Ctx,Channel};
+use intercore::bus::{Ctx, Channel};
 use reactors::boot::Boot;
 use reactors::console::Console;
 use reactors::selector::Selector;
