@@ -21,7 +21,7 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>,
         Some(&Message::Spawn(ref v)) if v.to == bus.id => {
             println!("InterCore Spawn {:?} {:?}", bus.id, v);
             handle::with_raw(sched, |h| {
-                handle::from_raw(h).spawn(Job::Cps(CpsTask::new(Rc::new(Ctx::new()))),
+                handle::from_raw(h).spawn(Job::Cps(CpsTask::new()),
                                           TaskTermination::Recursive,
                                           Some(&v.txt))
             });

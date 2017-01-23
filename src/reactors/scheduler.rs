@@ -91,6 +91,8 @@ impl<'a> Scheduler<'a> {
     pub fn run(&mut self) -> Poll<Context<'a>, task::Error> {
         let h = handle::into_raw(self);
         let mut res: Poll<Context<'a>, task::Error> = Poll::End(Context::Nil);
+
+
         if let Some(ref bus) = handle::with(from_raw(h), |x| x.bus.as_ref()) {
 
             send(bus,
@@ -101,6 +103,7 @@ impl<'a> Scheduler<'a> {
                      name: "pub0".to_string(),
                      cap: 8,
                  }));
+
 
             loop {
 

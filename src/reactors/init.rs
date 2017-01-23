@@ -40,8 +40,6 @@ pub struct Host<'a> {
 
 impl<'a> Host<'a> {
     pub fn new() -> Self {
-        let mut ctxs = Vec::new();
-        ctxs.push(Rc::new(Ctx::new()));
         Host {
             args: args(),
             scheds: Vec::new(),

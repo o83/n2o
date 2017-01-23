@@ -12,21 +12,17 @@ pub struct CpsTask<'a> {
 }
 
 impl<'a> CpsTask<'a> {
-    pub fn new(ctx: Rc<Ctx>) -> Self {
+    pub fn new() -> Self {
         CpsTask {
-            interpreter: Interpreter::new2(ctx).unwrap(),
+            interpreter: Interpreter::new().unwrap(),
             task_id: 0,
             ast: None,
         }
     }
 
     #[inline]
-    fn run(&'a mut self, n: &'a AST<'a>, xchg: Context<'a>) -> Poll<Context<'a>, Error> {
-//        match xchg.clone() {
-//            Context::Nil => return Poll::Yield(Context::Nil),
-//                       x => { println!("Context: {:?}", x); }
-//        }
-        let r = self.interpreter.run(n, xchg);
+    fn run(&'a mut self, n: &'a AST<'a>, intercore: Context<'a>) -> Poll<Context<'a>, Error> {
+        let r = self.interpreter.run(n, intercore);
         match r {
             Ok(r) => {
                 match *r {

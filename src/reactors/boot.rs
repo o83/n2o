@@ -80,7 +80,7 @@ impl<'a> Boot<'a> {
 
     pub fn init(&mut self) {
         let h = handle::into_raw(self);
-        let j = Job::Cps(CpsTask::new(Rc::new(Ctx::new())));
+        let j = Job::Cps(CpsTask::new());
         let task_id = handle::from_raw(h).scheduler.spawn(j, TaskTermination::Corecursive, None);
         loop {
             match handle::from_raw(h).io.poll() {
