@@ -113,16 +113,9 @@ impl<'a> Interpreter<'a> {
     pub fn run(&'a mut self, ast: &'a AST<'a>, xchg: Context<'a>) -> Result<&'a AST<'a>, Error> {
         let h = into_raw(self);
         let mut tick;
-        let mut value_from_sched = AST::Nil;
-        /*
-        match xchg.clone() {
-            Context::NodeAck(task_id, value) => {
-                println!("xchg: {:?}", xchg);
-                value_from_sched = AST::Value(Value::Number(value as i64));
-            }
-            _ => (),
-        }
-        */
+        let mut value_from_sched = from_raw(h).arena.nil();
+
+
         match from_raw(h).registers {
             Lazy::Start => {
                 tick = try!(from_raw(h).evaluate_expr(from_raw(h).env.last(),
@@ -131,27 +124,41 @@ impl<'a> Interpreter<'a> {
             }
             _ => tick = from_raw(h).registers.clone(),
         }
+
+        match xchg.clone() {
+            Context::NodeAck(task_id, value) => {
+                value_from_sched = from_raw(h).arena.ast(AST::Value(Value::Number(value as i64)));
+                println!("xchg: {:?}", value_from_sched);
+            }
+            _ => (),
+        }
+
         // println!("Counter: {:?}", ast);
         loop {
             let mut counter = from_raw(h).counter;
             match tick {
-                Lazy::Defer(node, ast, cont) => {
+                Lazy::Defer(node, ast_, cont) => {
                     if counter % PREEMPTION == 0 {
                         from_raw(h).registers = tick;
                         from_raw(h).counter = counter + 1;
                         return Ok(from_raw(h).arena.ast(AST::Yield(Context::Nil)));
                     } else {
                         tick = try!({
+                            from_raw(h).ctx = Message::Nop;
+                            let a = match ast_ { &AST::Yield(..) => value_from_sched,
+                                                               x => x };
+                            println!("ast_: {:?}", a);
                             from_raw(h).counter = counter + 1;
-                            from_raw(h).handle_defer(node, ast, cont)
+                            from_raw(h).handle_defer(node, a, cont)
                         })
                     }
                 }
                 Lazy::Start => break,
                 Lazy::Continuation(node, ast, cont) => {
+                    let ast_ = from_raw(h).arena.ast(AST::Yield(Context::Intercore(&from_raw(h).ctx)));
                     from_raw(h).registers = Lazy::Defer(node, ast, cont);
                     from_raw(h).counter = counter + 1;
-                    return Ok(from_raw(h).arena.ast(AST::Yield(Context::Intercore(&from_raw(h).ctx))));
+                    return Ok(ast_);
                 }
                 Lazy::Return(ast) => {
                     // DEBUG
@@ -419,7 +426,7 @@ impl<'a> Interpreter<'a> {
             &Cont::Assign(name, cont) => {
                 match name {
                     &AST::NameInt(s) => {
-                        // println!("Assign: {:?}:{:?}", s, val);
+                        println!("Assign: {:?}:{:?}", s, val);
                         try!(from_raw(h).env.define(s, val));
                         from_raw(h).evaluate_expr(node, val, cont)
                     }

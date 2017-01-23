@@ -8,7 +8,7 @@ pub enum Job<'a> {
 }
 
 impl<'a> Job<'a> {
-    fn unwrap(&'a mut self) -> &'a mut Task<'a> {
+    pub fn unwrap(&'a mut self) -> &'a mut Task<'a> {
         match *self {
             Job::Cps(ref mut c) => c,
         }

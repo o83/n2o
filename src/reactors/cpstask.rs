@@ -1,12 +1,12 @@
 use reactors::task::{Task, Context, Poll, Error};
 use streams::interpreter::*;
-use commands::ast::AST;
+use commands::ast::{AST, Value};
 use handle::*;
 use std::rc::Rc;
 use intercore::bus::Ctx;
 
 pub struct CpsTask<'a> {
-    interpreter: Interpreter<'a>,
+    pub interpreter: Interpreter<'a>,
     task_id: usize,
     ast: Option<&'a AST<'a>>,
 }
@@ -73,7 +73,7 @@ impl<'a> Task<'a> for CpsTask<'a> {
             Some(a) => {
                 match c.clone() {
                     Context::Node(n) => self.run(n, c),
-                    Context::NodeAck(task_id, n) => { println!("CpsTasl::poll NodeAck {:?}",n); self.run(a, c) },
+                    Context::NodeAck(task_id, n) => self.run(a, c),
                     Context::Nil => self.run(a, c),
                     _ => Poll::Err(Error::WrongContext),
                 }

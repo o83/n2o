@@ -53,9 +53,9 @@ pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena
         _ => 1024,
     } as usize;
     i.ctx = Message::Pub(Pub {
-        from: 0,
-        task_id: 0,
-        to: 2,
+        from: task_id,
+        task_id: task_id,
+        to: 0,
         name: "".to_string(),
         cap: cap,
     });

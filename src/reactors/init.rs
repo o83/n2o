@@ -98,7 +98,7 @@ impl<'a> Host<'a> {
                 publisher: Publisher::with_mirror(CString::new(format!("/pub_{}", i)).unwrap(), 8),
                 subscribers: Vec::new(),
             };
-            let mut sched = Scheduler::new().set_channel(chan);
+            let mut sched = Scheduler::with_channel(chan);
             Host::connect_scheds(&mut sched);
             host().borrow_mut().scheds.push(sched);
         }

@@ -7,7 +7,7 @@ use reactors::scheduler::{Scheduler, TaskTermination, TaskId};
 use reactors::job::Job;
 use reactors::cpstask::CpsTask;
 use intercore::message::Message;
-use intercore::bus::Ctx;
+use intercore::bus::{Channel, Ctx};
 use queues::publisher::{Publisher, Subscriber};
 use queues::pubsub::PubSub;
 use handle;
@@ -47,10 +47,18 @@ impl<'a> Boot<'a> {
         }
         let x = str::from_utf8(b).unwrap();
         let (s1, s2) = handle::split(self);
+        let (s3, s4) = handle::split(s2);
+        let (s5, s6) = handle::split(s4);
         s1.scheduler.exec(t, Some(x));
-        let r = s2.scheduler.run(); // IT IS SHOULD BE IMPOSSIBLE TO RETURN FROM SCHEDULER
-        // check and handle builtin
-        s2.io.write_all(format!("{:?}\n", r).as_bytes());
+        let i = 0;
+        let chan = Channel {
+                id: i,
+                publisher: Publisher::with_mirror(CString::new(format!("/pub_{}", i)).unwrap(), 8),
+                subscribers: Vec::new(),
+            };
+        s3.scheduler.set_channel(chan);
+        let r = s5.scheduler.run();
+        s6.io.write_all(format!("{:?}\n", r).as_bytes());
     }
 
     #[inline]
