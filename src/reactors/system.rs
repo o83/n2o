@@ -5,6 +5,7 @@ use io::ready::Ready;
 use io::options::PollOpt;
 use io::event::Evented;
 use reactors::selector::{Slot, Selector, Async, Pool};
+use std::time::Duration;
 use handle;
 
 const EVENTS_CAPACITY: usize = 1024;
@@ -66,7 +67,7 @@ impl<'a> IO {
     #[inline]
     fn poll_if_need(&mut self) {
         if self.i == 0 {
-            self.poll.poll(&mut self.events, None).expect("No events in poll.");
+            self.poll.poll(&mut self.events, Some(Duration::from_millis(1))).expect("No events in poll.");
             self.i = self.events.len();
         }
     }
