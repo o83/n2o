@@ -16,6 +16,10 @@ name = "o"
 path = "src/apps/host.rs"
 
 [[bin]]
+name = "host"
+path = "src/apps/host2.rs"
+
+[[bin]]
 name = "fusion"
 path = "src/apps/fusion.rs"
 

@@ -15,15 +15,13 @@ use handle::{self, into_raw, from_raw, with};
 pub struct Boot<'a> {
     io: IO,
     scheduler: Scheduler<'a>,
-    publisher: Publisher<Message>,
 }
 
 impl<'a> Boot<'a> {
     pub fn new() -> Self {
         Boot {
             io: IO::new(),
-            scheduler: Scheduler::new(),
-            publisher: Publisher::with_mirror(CString::new(format!("/boot_{}", 0)).unwrap(), 8),
+            scheduler: Scheduler::with_channel(0),
         }
     }
 
@@ -51,13 +49,6 @@ impl<'a> Boot<'a> {
         let (s5, s6) = handle::split(s4);
 
         s1.scheduler.exec(t, Some(x));
-        let i = 0;
-        let chan = Channel {
-            id: i,
-            publisher: Publisher::with_mirror(CString::new(format!("/pub_{}", i)).unwrap(), 8),
-            subscribers: Vec::new(),
-        };
-        s3.scheduler.set_channel(chan);
         let r = s5.scheduler.run();
         s6.io.write_all(format!("{:?}\n", r).as_bytes());
     }
@@ -90,17 +81,11 @@ impl<'a> Boot<'a> {
             }
         }
     }
-
-    pub fn publish<F, R>(&mut self, mut f: F) -> R
-        where F: FnMut(&mut Publisher<Message>) -> R
-    {
-        f(&mut self.publisher)
-    }
 }
 
 impl<'a> PubSub<Message> for Boot<'a> {
     fn subscribe(&mut self) -> Subscriber<Message> {
-        self.publisher.subscribe()
+        self.scheduler.bus.publisher.subscribe()
     }
 
     fn add_subscriber(&mut self, s: Subscriber<Message>) {

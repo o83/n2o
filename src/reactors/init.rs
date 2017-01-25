@@ -91,12 +91,7 @@ impl<'a> Host<'a> {
 
     fn connect(args: &Args<'a>) {
         for i in 1..args.cores.expect("Please, specify number of cores.") {
-            let chan = Channel {
-                id: i,
-                publisher: Publisher::with_mirror(CString::new(format!("/pub_{}", i)).unwrap(), 8),
-                subscribers: Vec::new(),
-            };
-            let mut sched = Scheduler::with_channel(chan);
+            let mut sched = Scheduler::with_channel(i);
             Host::connect_scheds(&mut sched);
             host().borrow_mut().scheds.push(sched);
         }

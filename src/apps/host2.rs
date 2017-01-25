@@ -72,7 +72,7 @@ fn main() {
     io.spawn(Selector::Rx(Console::new()));
     loop {
         match io.poll() {
-            Async::Ready((_, p)) => println!("console: {:?}", p),
+            Async::Ready((_, Pool::Raw(buf))) => println!("console: {:?}", buf),
             Async::NotReady => (),
         }
     }

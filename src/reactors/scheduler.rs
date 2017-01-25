@@ -10,6 +10,7 @@ use commands::ast::{AST, Value};
 use std::rc::Rc;
 use std::mem;
 use std::{thread, time};
+use std::ffi::CString;
 use handle::{self, from_raw, into_raw, with, split};
 
 const TASKS_MAX_CNT: usize = 256;
@@ -29,34 +30,23 @@ pub struct T3<T>(pub T, pub TaskTermination);
 pub struct Scheduler<'a> {
     pub tasks: Vec<T3<Job<'a>>>,
     pub ctxs: Vec<Context<'a>>,
-    pub bus: Option<Channel>,
+    pub bus: Channel,
     pub queues: Rc<Ctx>,
-    pub pb: Publisher<Message>,
 }
 
 impl<'a> Scheduler<'a> {
-    pub fn new() -> Self {
+    pub fn with_channel(id: usize) -> Self {
+        let chan = Channel {
+            id: id,
+            publisher: Publisher::with_mirror(CString::new(format!("/pub_{}", id)).unwrap(), 8),
+            subscribers: Vec::new(),
+        };
         Scheduler {
             tasks: Vec::with_capacity(TASKS_MAX_CNT),
             ctxs: Vec::with_capacity(TASKS_MAX_CNT),
-            bus: None,
-            pb: Publisher::with_capacity(8),
+            bus: chan,
             queues: Rc::new(Ctx::new()),
         }
-    }
-
-    pub fn with_channel(c: Channel) -> Self {
-        Scheduler {
-            tasks: Vec::with_capacity(TASKS_MAX_CNT),
-            ctxs: Vec::with_capacity(TASKS_MAX_CNT),
-            bus: Some(c),
-            pb: Publisher::with_capacity(8),
-            queues: Rc::new(Ctx::new()),
-        }
-    }
-
-    pub fn set_channel(&'a mut self, c: Channel) {
-        self.bus = Some(c);
     }
 
     pub fn spawn(&'a mut self, t: Job<'a>, l: TaskTermination, input: Option<&'a str>) -> TaskId {
@@ -81,12 +71,12 @@ impl<'a> Scheduler<'a> {
 
     #[inline]
     fn poll_bus(&'a mut self) {
-        if let Some(ref bus) = with(self, |h| h.bus.as_ref()) {
-            for s in &bus.subscribers {
-                handle_intercore(self, s.recv(), bus);
-                s.commit()
-            }
+        let mut bus = with(self, |h| &h.bus);
+        for s in &bus.subscribers {
+            handle_intercore(self, s.recv(), &mut bus);
+            s.commit()
         }
+
     }
 
     pub fn run(&mut self) -> Poll<Context<'a>, task::Error> {
@@ -95,66 +85,54 @@ impl<'a> Scheduler<'a> {
 
         // this should be totally rewritten
 
-        if let Some(ref bus) = with(from_raw(h), |x| x.bus.as_ref()) {
+        let mut bus = with(from_raw(h), |x| &x.bus);
 
-            // send(bus,
-            // Message::Pub(Pub {
-            // from: bus.id,
-            // to: bus.id % 4 + 1,
-            // task_id: 0,
-            // name: "pub0".to_string(),
-            // cap: 8,
-            // }));
-            //
+        'start: loop {
 
-            'start: loop {
+            for s in &bus.subscribers {
+                handle_intercore(self, s.recv(), &mut bus);
+                s.commit()
+            }
 
-                for s in &bus.subscribers {
-                    handle_intercore(self, s.recv(), bus);
-                    s.commit()
-                }
+            thread::sleep(time::Duration::from_millis(100));
 
-                thread::sleep(time::Duration::from_millis(100));
-
-                for (i, t) in from_raw(h).tasks.iter_mut().enumerate() {
-                    let c = from_raw(h).ctxs.get_mut(i).expect("Scheduler: can't retrieve a ctx.");
-                    let (a, b) = split(&mut t.0);
-                    let y = a.poll(Context::Nil);
-                    match y {
-                        Poll::Yield(Context::Intercore(ref m)) => {
-                            let ha = handle_intercore(self, Some(m), bus);
-                            println!("IC: {:?}", m);
-                            continue 'start;
-                        }
-                        Poll::End(v) => {
-                            println!("End: {:?}", v);
-                            from_raw(h).terminate(t.1, i);
-                            return Poll::End(v);
-                        }
-                        Poll::Err(e) => {
-                            println!("Err: {:?}", e);
-                            from_raw(h).terminate(t.1, i);
-                            return Poll::Err(e);
-                        }
-                        z => {
-                            println!("X: {:?}", z);
-                            res = z;
-                        }
+            for (i, t) in from_raw(h).tasks.iter_mut().enumerate() {
+                let c = from_raw(h).ctxs.get_mut(i).expect("Scheduler: can't retrieve a ctx.");
+                let (a, b) = split(&mut t.0);
+                let y = a.poll(Context::Nil);
+                match y {
+                    Poll::Yield(Context::Intercore(ref m)) => {
+                        let ha = handle_intercore(self, Some(m), &mut bus);
+                        println!("IC: {:?}", m);
+                        continue 'start;
+                    }
+                    Poll::End(v) => {
+                        println!("End: {:?}", v);
+                        from_raw(h).terminate(t.1, i);
+                        return Poll::End(v);
+                    }
+                    Poll::Err(e) => {
+                        println!("Err: {:?}", e);
+                        from_raw(h).terminate(t.1, i);
+                        return Poll::Err(e);
+                    }
+                    z => {
+                        println!("X: {:?}", z);
+                        res = z;
                     }
                 }
             }
         }
-
         res
     }
 }
 
 impl<'a> PubSub<Message> for Scheduler<'a> {
     fn subscribe(&mut self) -> Subscriber<Message> {
-        self.bus.as_mut().expect("This scheduler without bus!").publisher.subscribe()
+        self.bus.publisher.subscribe()
     }
 
     fn add_subscriber(&mut self, s: Subscriber<Message>) {
-        self.bus.as_mut().expect("This scheduler without bus!").subscribers.push(s);
+        self.bus.subscribers.push(s);
     }
 }
