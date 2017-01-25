@@ -90,7 +90,7 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>, message: Option<&'a Messa
             Context::NodeAck(a.task_id, a.result_id)
         }
         Some(x) => {
-            println!("Test {:?}", x);
+//            println!("Test {:?}", x);
             Context::Nil
         }
         None => Context::Nil,

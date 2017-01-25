@@ -42,7 +42,7 @@ impl<'a> Scheduler<'a> {
     pub fn with_channel(id: usize) -> Self {
         let chan = Channel {
             id: id,
-            publisher: Publisher::with_mirror(CString::new(format!("/pub_{}", id)).unwrap(), 8),
+            publisher: Publisher::with_mirror(CString::new(format!("/pub_{}", id)).unwrap(), 88),
             subscribers: Vec::new(),
         };
         Scheduler {
@@ -85,7 +85,7 @@ impl<'a> Scheduler<'a> {
 
     pub fn handle_message(&mut self, buf: &'a [u8]) {
         let bus = self.bus.id;
-        println!("Bus ({:?}): {:?}", bus, buf);
+        println!("Message on REPL bus ({:?}): {:?}", bus, buf);
         send(&self.bus,
              Message::Pub(Pub {
                  from: bus,
@@ -97,7 +97,7 @@ impl<'a> Scheduler<'a> {
     }
 
     pub fn run0(&mut self) {
-        println!("bsp_run...");
+        println!("BSP run on core {:?}", self.bus.id);
         let x = into_raw(self);
         from_raw(x).io.spawn(Selector::Rx(Console::new()));
         loop {
@@ -110,6 +110,7 @@ impl<'a> Scheduler<'a> {
     }
 
     pub fn run(&mut self) {
+        println!("TSP run on core {:?}", self.bus.id);
         loop {
             self.poll_bus();
         }

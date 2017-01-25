@@ -27,10 +27,9 @@ pub fn star<'a>(sched_num: usize) -> Vec<Scheduler<'a>> {
 pub fn park<'a>(mut scheds: Vec<Scheduler<'a>>) -> Scheduler<'a> {
     let sz = scheds.len();
     for id in 1..sz {
-        if let Some(mut s) = scheds.pop() {
+        if let Some(mut core) = scheds.pop() {
             unsafe {
-                println!("spawn on core_id {:?}", s.bus.id);
-                spawn_on(id, || { s.run(); });
+                spawn_on(id, move || { core.run(); });
             }
         }
     }
