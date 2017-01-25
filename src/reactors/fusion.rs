@@ -1,6 +1,50 @@
 // Iterate over several streams
 
 use core::ops::Index;
+use std::vec::IntoIter;
+use std::iter::Cycle;
+use core::iter::Filter;
+use core::iter::FusedIterator;
+use core::iter::Iterator;
+use core::iter::Enumerate;
+use core::iter::FlatMap;
+use std::slice::Iter;
+use std::iter::{self, Take, Repeat};
+
+pub struct Quantifier<F>(FlatMap<Cycle<Enumerate<IntoIter<usize>>>, Take<Repeat<usize>>, F>)
+    where F: FnMut((usize, usize)) -> Take<Repeat<usize>>;
+
+impl<F> Quantifier<F>
+    where F: FnMut((usize, usize)) -> Take<Repeat<usize>>
+{
+    pub fn new(v: Vec<usize>, f: F) -> Self {
+        Quantifier(v.into_iter().enumerate().cycle().flat_map(f))
+    }
+}
+
+impl<F> Iterator for Quantifier<F>
+    where F: FnMut((usize, usize)) -> Take<Repeat<usize>>
+{
+    type Item = usize;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+pub struct Functor;
+
+impl FnOnce<((usize, usize),)> for Functor {
+    type Output = Take<Repeat<usize>>;
+    extern "rust-call" fn call_once(self, args: ((usize, usize),)) -> Take<Repeat<usize>> {
+        panic!("call_once()");
+    }
+}
+
+impl FnMut<((usize, usize),)> for Functor {
+    extern "rust-call" fn call_mut(&mut self, args: ((usize, usize),)) -> Take<Repeat<usize>> {
+        iter::repeat((args.0).0).take((args.0).1)
+    }
+}
 
 #[derive(Debug,Clone)]
 pub enum Return {
@@ -40,18 +84,14 @@ impl IntoIterator for Fusion {
     fn into_iter(self) -> Self::IntoIter {
         FusionIntoIterator {
             inner: self,
-            pos: 0,
-            next: 0,
+            q: Quantifier::new(vec![1, 2, 3], Functor {}),
         }
     }
 }
 
 pub struct FusionIntoIterator {
     inner: Fusion,
-    // position markers just for example,
-    // in real life here will be the matrix.
-    pos: usize,
-    next: usize,
+    q: Quantifier<Functor>,
 }
 
 impl Id {
@@ -87,18 +127,11 @@ impl Index<usize> for FusionIntoIterator {
 
 impl Iterator for FusionIntoIterator {
     type Item = *const Return;
+
     fn next(&mut self) -> Option<Self::Item> {
-        // just for showcase
-        let (n, p) = (self.next, self.pos);
-        self.next += 1;
-        self.pos += 1;
-        if self.next == 3 {
-            self.next = 0;
-        };
-        if self.pos == self.inner.0.len() {
-            return None;
-        }
-        let v: *const Return = unsafe { self[n].unpack().get(self.pos).unwrap() as *const Return };
+        let id = self.q.next().unwrap();
+        let v: *const Return = unsafe { self[id].unpack().get(0).unwrap() as *const Return };
         Some(v)
+
     }
 }

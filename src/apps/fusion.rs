@@ -2,6 +2,7 @@
 extern crate kernel;
 
 use kernel::reactors::fusion::*;
+use std::iter;
 
 fn main() {
     let f = Fusion::new();

@@ -32,6 +32,8 @@
 #![feature(core_intrinsics)]
 #![feature(thread_id)]
 #![feature(custom_attribute)]
+#![feature(fused)]
+#![feature(fn_traits)]
 
 extern crate net2;
 extern crate nix;
