@@ -152,7 +152,7 @@ impl<'a> Interpreter<'a> {
                                 &AST::Yield(..) => value_from_sched,
                                 x => x,
                             };
-                            println!("ast_: {:?}", a);
+                            // println!("ast_: {:?}", a);
                             from_raw(h).counter = counter + 1;
                             from_raw(h).handle_defer(node, a, cont)
                         })
@@ -170,6 +170,7 @@ impl<'a> Interpreter<'a> {
                     // println!("env: {:?}", se3.env.dump());
                     // println!("arena: {:?}", se4.arena.dump());
                     // INFO
+                    /*
                     println!("Instructions: {}", counter);
                     println!("Conts: {}", from_raw(h).arena.cont_len());
                     println!("ASTs: {}", from_raw(h).arena.ast_len());
@@ -177,6 +178,7 @@ impl<'a> Interpreter<'a> {
                              from_raw(h).env.len().0,
                              from_raw(h).env.len().1);
                     // NORMAL
+                    */
                     from_raw(h).counter = counter + 1;
                     from_raw(h).ctx = Message::Nop;
                     from_raw(h).registers = Lazy::Start;
@@ -455,7 +457,7 @@ impl<'a> Interpreter<'a> {
             &Cont::Assign(name, cont) => {
                 match name {
                     &AST::NameInt(s) => {
-                        println!("Assign: {:?}:{:?}", s, val);
+                        // println!("Assign: {:?}:{:?}", s, val);
                         try!(from_raw(h).env.define(s, val));
                         from_raw(h).evaluate_expr(node, val, cont)
                     }
