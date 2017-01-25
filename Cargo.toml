@@ -12,11 +12,7 @@ Abstract Reactive Streams
 build = "build.rs"
 
 [[bin]]
-name = "legacy"
-path = "src/apps/legacy.rs"
-
-[[bin]]
-name = "impresa"
+name = "o"
 path = "src/apps/impresa.rs"
 
 [[bin]]
