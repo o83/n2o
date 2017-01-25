@@ -29,7 +29,7 @@ pub fn park<'a>(mut scheds: Vec<Scheduler<'a>>) -> Scheduler<'a> {
     for id in 1..sz {
         if let Some(mut s) = scheds.pop() {
             unsafe {
-                println!("spawn on core_id {:?}", id);
+                println!("spawn on core_id {:?}", s.bus.id);
                 spawn_on(id, || { s.run(); });
             }
         }
@@ -64,5 +64,5 @@ pub unsafe fn spawn_on<'a, F>(id: usize, f: F) -> thread::JoinHandle<()>
 }
 
 fn main() {
-    park(star(3)).run0();
+    park(star(4)).run0();
 }

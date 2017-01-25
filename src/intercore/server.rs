@@ -12,7 +12,9 @@ use std::rc::Rc;
 
 // The Server of InterCore protocol is handled in Scheduler context
 
-pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>, message: Option<&'a Message>, bus: &'a Channel) -> Context<'a> {
+pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>, message: Option<&'a Message>, bus: &'a Channel, s: &'a Subscriber<Message>) -> Context<'a> {
+
+    //println!("{:?}", s);
 
     match message {
 
@@ -39,7 +41,7 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>, message: Option<&'a Messa
 
         Some(&Message::Pub(ref p)) if p.to == bus.id => {
             sched.queues.publishers().push(Publisher::with_capacity(p.cap));
-            println!("InterCore Pub {:?} {:?}", bus.id, p);
+            println!("InterCore Pub {:?} {:?} {:?}", s.token, bus.id, p);
             send(bus,
                  Message::AckPub(AckPub {
                      from: bus.id,
@@ -88,7 +90,7 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>, message: Option<&'a Messa
             Context::NodeAck(a.task_id, a.result_id)
         }
         Some(x) => {
-            println!("Test");
+            println!("Test {:?}", x);
             Context::Nil
         }
         None => Context::Nil,

@@ -76,45 +76,43 @@ impl<'a> Scheduler<'a> {
 
     #[inline]
     fn poll_bus(&mut self) {
-        let mut bus = with(self, |h| &h.bus);
-        for s in &bus.subscribers {
-            handle_intercore(self, s.recv(), &mut bus);
-            s.commit()
-        }
-
-    }
-
-    pub fn run(&mut self) -> Poll<Context<'a>, task::Error> {
-        let res: Poll<Context<'a>, task::Error> = Poll::End(Context::Nil);
-        loop {
-            self.poll_bus();
-        }
-        res
-    }
-
-    pub fn run0(&mut self) -> Poll<Context<'a>, task::Error> {
-        println!("bsp_run...");
-        let res: Poll<Context<'a>, task::Error> = Poll::End(Context::Nil);
         let x = into_raw(self);
-        from_raw(x).io = IO::new();
+        for s in &from_raw(x).bus.subscribers {
+            handle_intercore(from_raw(x), s.recv(), &mut from_raw(x).bus, s);
+            s.commit();
+        }
+    }
+
+    pub fn handle_message(&mut self, buf: &'a [u8]) {
+        let bus = self.bus.id;
+        println!("Bus ({:?}): {:?}", bus, buf);
+        send(&self.bus,
+             Message::Pub(Pub {
+                 from: bus,
+                 task_id: 0,
+                 to: 1,
+                 name: "".to_string(),
+                 cap: 8,
+             }));
+    }
+
+    pub fn run0(&mut self) {
+        println!("bsp_run...");
+        let x = into_raw(self);
         from_raw(x).io.spawn(Selector::Rx(Console::new()));
         loop {
             from_raw(x).poll_bus();
             match from_raw(x).io.poll() {
-                Async::Ready((_, Pool::Raw(buf))) => {
-                   println!("Raw: {:?}", buf);
-                   send(&from_raw(x).bus, Message::Pub(Pub {
-                         from: 0,
-                         task_id: 0,
-                         to: 1,
-                         name: "".to_string(),
-                         cap: 8, }));
-                }
-                Async::Ready((_, _)) => (),
-                Async::NotReady => (),
+                Async::Ready((_, Pool::Raw(buf))) => from_raw(x).handle_message(buf),
+                _ => (),
             }
         }
-        res
+    }
+
+    pub fn run(&mut self) {
+        loop {
+            self.poll_bus();
+        }
     }
 }
 

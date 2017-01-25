@@ -6,7 +6,6 @@ use intercore::message::Message;
 pub fn send<'a>(bus: &'a Channel, m: Message) {
     if let Some(v) = bus.publisher.next() {
         *v = m;
-        println!("sent to bus {:?}", v);
         bus.publisher.commit();
     };
 }
@@ -22,7 +21,6 @@ pub struct Ctx {
     subscribers: UnsafeCell<Vec<Subscriber<Message>>>,
 }
 
-#[derive(Debug)]
 pub struct Channel {
     pub id: usize,
     pub publisher: Publisher<Message>,

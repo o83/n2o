@@ -199,7 +199,7 @@ impl<T> Publisher<T> {
 
 pub struct Subscriber<T> {
     ring: Arc<RingBuffer<T>>,
-    token: usize,
+    pub token: usize,
     next_seq_cache: Cell<Sequence>,
     cursors: UncheckedUnsafeArc<Vec<Cursor>>,
 }

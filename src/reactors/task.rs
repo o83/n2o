@@ -6,6 +6,7 @@ pub enum Poll<T, E> {
     Yield(T),
     End(T),
     Err(E),
+    Infinite,
 }
 
 #[derive(Debug)]
