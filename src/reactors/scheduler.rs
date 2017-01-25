@@ -87,9 +87,7 @@ impl<'a> Scheduler<'a> {
     pub fn run(&mut self) -> Poll<Context<'a>, task::Error> {
         let res: Poll<Context<'a>, task::Error> = Poll::End(Context::Nil);
         loop {
-            println!("tsp_run...");
-            thread::sleep(time::Duration::from_millis(1000));
-            // self.poll_bus();
+            self.poll_bus();
         }
         res
     }
@@ -101,9 +99,17 @@ impl<'a> Scheduler<'a> {
         from_raw(x).io = IO::new();
         from_raw(x).io.spawn(Selector::Rx(Console::new()));
         loop {
-            // self.poll_bus();
+            from_raw(x).poll_bus();
             match from_raw(x).io.poll() {
-                Async::Ready((_, Pool::Raw(buf))) => println!("Raw: {:?}", buf),
+                Async::Ready((_, Pool::Raw(buf))) => {
+                   println!("Raw: {:?}", buf);
+                   send(&from_raw(x).bus, Message::Pub(Pub {
+                         from: 0,
+                         task_id: 0,
+                         to: 1,
+                         name: "".to_string(),
+                         cap: 8, }));
+                }
                 Async::Ready((_, _)) => (),
                 Async::NotReady => (),
             }

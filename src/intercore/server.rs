@@ -50,16 +50,17 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>, message: Option<&'a Messa
             Context::Nil
         }
 
-        Some(&Message::AckPub(ref a)) => {
-            // if a.to == bus.id => {
+        Some(&Message::AckPub(ref a)) if a.to == bus.id => {
             println!("InterCore AckPub {:?} {:?}", bus.id, a);
-            let h = into_raw(sched);
-            let mut t = from_raw(h).tasks.get_mut(a.task_id).expect("no task");
-            match t.0.poll(Context::NodeAck(a.task_id, a.result_id)) {
-                Poll::End(v) => v,
-                Poll::Yield(x) => x,
-                _ => Context::Nil,
-            }
+            // let h = into_raw(sched);
+            // let mut t = from_raw(h).tasks.get_mut(a.task_id).expect("no task");
+            // match t.0.poll(Context::NodeAck(a.task_id, a.result_id)) {
+            // Poll::End(v) => v,
+            // Poll::Yield(x) => x,
+            // _ => Context::Nil,
+            // }
+            //
+            Context::Nil
         }
 
         Some(&Message::Sub(ref sb)) if sb.to == bus.id => {
