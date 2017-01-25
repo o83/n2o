@@ -87,18 +87,19 @@ impl<'a> Scheduler<'a> {
     pub fn run(&mut self) -> Poll<Context<'a>, task::Error> {
         let res: Poll<Context<'a>, task::Error> = Poll::End(Context::Nil);
         loop {
-            thread::sleep(time::Duration::from_millis(500));
-            // println!("sched_run...");
+            println!("tsp_run...");
+            thread::sleep(time::Duration::from_millis(1000));
             // self.poll_bus();
         }
         res
     }
 
     pub fn run0(&mut self) -> Poll<Context<'a>, task::Error> {
+        println!("bsp_run...");
         let res: Poll<Context<'a>, task::Error> = Poll::End(Context::Nil);
-        let mut o = Selector::Rx(Console::new());
         let x = into_raw(self);
-        from_raw(x).io.spawn(o);
+        from_raw(x).io = IO::new();
+        from_raw(x).io.spawn(Selector::Rx(Console::new()));
         loop {
             // self.poll_bus();
             match from_raw(x).io.poll() {
