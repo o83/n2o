@@ -12,12 +12,12 @@ Abstract Reactive Streams
 build = "build.rs"
 
 [[bin]]
-name = "o"
-path = "src/apps/host.rs"
+name = "legacy"
+path = "src/apps/legacy.rs"
 
 [[bin]]
-name = "host"
-path = "src/apps/host2.rs"
+name = "impresa"
+path = "src/apps/impresa.rs"
 
 [[bin]]
 name = "fusion"

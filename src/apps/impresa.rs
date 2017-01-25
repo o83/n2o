@@ -76,24 +76,11 @@ fn main() {
     io.spawn(o);
     println!("selector added");
     loop {
-        println!("loop");
         match io.poll() {
-
             Async::Ready((_, Pool::Raw(buf))) => println!("Raw: {:?}", buf),
             Async::Ready((_, _)) => (),
             Async::NotReady => (),
         }
     }
     print!("done!");
-    // let mut io = IO::new();
-    // let mut o = Selector::Rx(Console::new());
-    // io.spawn(o);
-    // loop {
-    //     thread::sleep(time::Duration::from_millis(100));
-    //     match io.poll() {
-    //         Async::Ready((_, Pool::Raw(buf))) => println!("Raw: {:?}", buf),
-    //         Async::Ready((_, _)) => (),
-    //         Async::NotReady => (),
-    //     }
-    // }
 }

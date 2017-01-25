@@ -70,7 +70,7 @@ impl<'a> Scheduler<'a> {
     }
 
     #[inline]
-    fn poll_bus(&'a mut self) {
+    fn poll_bus(&mut self) {
         let mut bus = with(self, |h| &h.bus);
         for s in &bus.subscribers {
             handle_intercore(self, s.recv(), &mut bus);
@@ -83,7 +83,8 @@ impl<'a> Scheduler<'a> {
         let res: Poll<Context<'a>, task::Error> = Poll::End(Context::Nil);
         loop {
             thread::sleep(time::Duration::from_millis(500));
-            println!("sched_run...");
+            //println!("sched_run...");
+            self.poll_bus();
         }
         res
     }
