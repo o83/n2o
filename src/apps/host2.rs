@@ -67,9 +67,22 @@ pub unsafe fn spawn_on<'a, F>(id: usize, f: F) -> thread::JoinHandle<()>
 fn io_loop(io: IO) {}
 
 fn main() {
-    park_scheds(construct_scheds(5));
+    park_scheds(construct_scheds(8));
+    println!("start created");
+    let mut io = IO::new();
+    println!("io created");
+    let mut o = Selector::Rx(Console::new());
+    println!("selector created");
+    io.spawn(o);
+    println!("selector added");
     loop {
-        thread::sleep(time::Duration::from_millis(10000));
+        println!("loop");
+        match io.poll() {
+
+            Async::Ready((_, Pool::Raw(buf))) => println!("Raw: {:?}", buf),
+            Async::Ready((_, _)) => (),
+            Async::NotReady => (),
+        }
     }
     print!("done!");
     // let mut io = IO::new();
