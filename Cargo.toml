@@ -15,6 +15,10 @@ build = "build.rs"
 name = "o"
 path = "src/apps/host.rs"
 
+[[bin]]
+name = "fusion"
+path = "src/apps/fusion.rs"
+
 [dependencies]
 net2            = "0.2.19"
 log             = "0.3"
