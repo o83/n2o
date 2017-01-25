@@ -68,15 +68,19 @@ fn io_loop(io: IO) {}
 
 fn main() {
     park_scheds(construct_scheds(5));
-    let mut io = IO::new();
-    let mut o = Selector::Rx(Console::new());
-    io.spawn(o);
-    println!("selector added");
     loop {
-        match io.poll() {
-            Async::Ready((_, Pool::Raw(buf))) => println!("Raw: {:?}", buf),
-            Async::Ready((_, _)) => (),
-            Async::NotReady => (),
-        }
+        thread::sleep(time::Duration::from_millis(10000));
     }
+    print!("done!");
+    // let mut io = IO::new();
+    // let mut o = Selector::Rx(Console::new());
+    // io.spawn(o);
+    // loop {
+    //     thread::sleep(time::Duration::from_millis(100));
+    //     match io.poll() {
+    //         Async::Ready((_, Pool::Raw(buf))) => println!("Raw: {:?}", buf),
+    //         Async::Ready((_, _)) => (),
+    //         Async::NotReady => (),
+    //     }
+    // }
 }

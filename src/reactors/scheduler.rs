@@ -80,48 +80,10 @@ impl<'a> Scheduler<'a> {
     }
 
     pub fn run(&mut self) -> Poll<Context<'a>, task::Error> {
-        let h = into_raw(self);
-        let mut res: Poll<Context<'a>, task::Error> = Poll::End(Context::Nil);
-
-        // this should be totally rewritten
-
-        let mut bus = with(from_raw(h), |x| &x.bus);
-
-        'start: loop {
-
-            for s in &bus.subscribers {
-                handle_intercore(self, s.recv(), &mut bus);
-                s.commit()
-            }
-
-            thread::sleep(time::Duration::from_millis(100));
-
-            for (i, t) in from_raw(h).tasks.iter_mut().enumerate() {
-                let c = from_raw(h).ctxs.get_mut(i).expect("Scheduler: can't retrieve a ctx.");
-                let (a, b) = split(&mut t.0);
-                let y = a.poll(Context::Nil);
-                match y {
-                    Poll::Yield(Context::Intercore(ref m)) => {
-                        let ha = handle_intercore(self, Some(m), &mut bus);
-                        println!("IC: {:?}", m);
-                        continue 'start;
-                    }
-                    Poll::End(v) => {
-                        println!("End: {:?}", v);
-                        from_raw(h).terminate(t.1, i);
-                        return Poll::End(v);
-                    }
-                    Poll::Err(e) => {
-                        println!("Err: {:?}", e);
-                        from_raw(h).terminate(t.1, i);
-                        return Poll::Err(e);
-                    }
-                    z => {
-                        println!("X: {:?}", z);
-                        res = z;
-                    }
-                }
-            }
+        let res: Poll<Context<'a>, task::Error> = Poll::End(Context::Nil);
+        loop {
+            thread::sleep(time::Duration::from_millis(500));
+            println!("sched_run...");
         }
         res
     }
