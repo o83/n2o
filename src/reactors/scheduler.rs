@@ -31,7 +31,7 @@ pub struct Scheduler<'a> {
     pub tasks: Vec<T3<Job<'a>>>,
     pub ctxs: Vec<Context<'a>>,
     pub bus: Channel,
-    pub queues: Rc<Ctx>,
+    pub queues: Ctx,
 }
 
 impl<'a> Scheduler<'a> {
@@ -45,7 +45,7 @@ impl<'a> Scheduler<'a> {
             tasks: Vec::with_capacity(TASKS_MAX_CNT),
             ctxs: Vec::with_capacity(TASKS_MAX_CNT),
             bus: chan,
-            queues: Rc::new(Ctx::new()),
+            queues: Ctx::new(),
         }
     }
 

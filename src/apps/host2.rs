@@ -69,10 +69,13 @@ fn io_loop(io: IO) {}
 fn main() {
     park_scheds(construct_scheds(5));
     let mut io = IO::new();
-    io.spawn(Selector::Rx(Console::new()));
+    let mut o = Selector::Rx(Console::new());
+    io.spawn(o);
+    println!("selector added");
     loop {
         match io.poll() {
-            Async::Ready((_, Pool::Raw(buf))) => println!("console: {:?}", buf),
+            Async::Ready((_, Pool::Raw(buf))) => println!("Raw: {:?}", buf),
+            Async::Ready((_, _)) => (),
             Async::NotReady => (),
         }
     }

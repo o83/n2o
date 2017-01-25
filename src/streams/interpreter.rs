@@ -40,7 +40,7 @@ pub enum Lazy<'a> {
 pub struct Interpreter<'a> {
     pub env: env::Environment<'a>,
     pub arena: Arena<'a>,
-    pub queues: Rc<Ctx>,
+    pub queues: Option<Ctx>,
     pub ctx: Message,
     pub registers: Lazy<'a>,
     pub counter: u64,
@@ -48,13 +48,13 @@ pub struct Interpreter<'a> {
 }
 
 impl<'a> Interpreter<'a> {
-    pub fn new2(ctx: Rc<Ctx>) -> Result<Interpreter<'a>, Error> {
+    pub fn new2() -> Result<Interpreter<'a>, Error> {
         let mut env = try!(env::Environment::new_root());
         let mut arena = Arena::new();
         let mut interpreter = Interpreter {
             arena: arena,
             env: env,
-            queues: ctx,
+            queues: None,
             ctx: Message::Nop,
             registers: Lazy::Start,
             counter: 1,
@@ -69,7 +69,7 @@ impl<'a> Interpreter<'a> {
         let mut interpreter = Interpreter {
             arena: arena,
             env: env,
-            queues: Rc::new(Ctx::new()),
+            queues: None,
             ctx: Message::Nop,
             registers: Lazy::Start,
             task_id: 0,

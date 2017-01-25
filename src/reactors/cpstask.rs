@@ -22,7 +22,7 @@ impl<'a> CpsTask<'a> {
 
     pub fn new2(ctx: Ctx) -> Self {
         CpsTask {
-            interpreter: Interpreter::new2(Rc::new(ctx)).unwrap(),
+            interpreter: Interpreter::new2().unwrap(),
             task_id: 0,
             ast: None,
         }
