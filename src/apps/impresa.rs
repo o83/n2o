@@ -24,19 +24,17 @@ pub fn star<'a>(sched_num: usize) -> Vec<Scheduler<'a>> {
 }
 
 
-pub fn park<'a>(mut scheds: Vec<Scheduler<'a>>) -> Option<thread::JoinHandle<()>> {
+pub fn park<'a>(mut scheds: Vec<Scheduler<'a>>) -> Scheduler<'a> {
     let sz = scheds.len();
-    let mut x: Option<thread::JoinHandle<()>> = None;
-    for id in 0..sz {
+    for id in 1..sz {
         if let Some(mut s) = scheds.pop() {
             unsafe {
                 println!("spawn on core_id {:?}", id);
-                if id == 0 { x = Some(spawn_on(id, || { s.run0(); })); }
-                      else { spawn_on(id, || { s.run();  }); };
+                spawn_on(id, || { s.run(); });
             }
         }
     }
-    x
+    scheds.pop().expect("No BSP")
 }
 
 trait FnBox {
@@ -66,5 +64,5 @@ pub unsafe fn spawn_on<'a, F>(id: usize, f: F) -> thread::JoinHandle<()>
 }
 
 fn main() {
-    park(star(3)).unwrap().join();
+    park(star(3)).run0();
 }
