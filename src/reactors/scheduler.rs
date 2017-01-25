@@ -1,5 +1,6 @@
 use reactors::task::{self, Task, Context, Poll};
 use reactors::job::Job;
+use reactors::system::IO;
 use reactors::cpstask::CpsTask;
 use intercore::message::*;
 use intercore::bus::{Ctx, Channel, send};
@@ -12,6 +13,8 @@ use std::mem;
 use std::{thread, time};
 use std::ffi::CString;
 use handle::{self, from_raw, into_raw, with, split};
+use reactors::console::Console;
+use reactors::selector::{Selector, Async, Pool};
 
 const TASKS_MAX_CNT: usize = 256;
 
@@ -31,6 +34,7 @@ pub struct Scheduler<'a> {
     pub tasks: Vec<T3<Job<'a>>>,
     pub ctxs: Vec<Context<'a>>,
     pub bus: Channel,
+    pub io: IO,
     pub queues: Ctx,
 }
 
@@ -45,6 +49,7 @@ impl<'a> Scheduler<'a> {
             tasks: Vec::with_capacity(TASKS_MAX_CNT),
             ctxs: Vec::with_capacity(TASKS_MAX_CNT),
             bus: chan,
+            io: IO::new(),
             queues: Ctx::new(),
         }
     }
@@ -83,8 +88,24 @@ impl<'a> Scheduler<'a> {
         let res: Poll<Context<'a>, task::Error> = Poll::End(Context::Nil);
         loop {
             thread::sleep(time::Duration::from_millis(500));
-            //println!("sched_run...");
-            self.poll_bus();
+            // println!("sched_run...");
+            // self.poll_bus();
+        }
+        res
+    }
+
+    pub fn run0(&mut self) -> Poll<Context<'a>, task::Error> {
+        let res: Poll<Context<'a>, task::Error> = Poll::End(Context::Nil);
+        let mut o = Selector::Rx(Console::new());
+        let x = into_raw(self);
+        from_raw(x).io.spawn(o);
+        loop {
+            // self.poll_bus();
+            match from_raw(x).io.poll() {
+                Async::Ready((_, Pool::Raw(buf))) => println!("Raw: {:?}", buf),
+                Async::Ready((_, _)) => (),
+                Async::NotReady => (),
+            }
         }
         res
     }

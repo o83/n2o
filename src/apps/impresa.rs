@@ -30,7 +30,11 @@ fn park_scheds<'a>(mut scheds: Vec<Scheduler<'a>>) {
         if let Some(mut s) = scheds.pop() {
             unsafe {
                 spawn_on(id, || {
-                    s.run();
+                    if id == 0 {
+                        s.run0();
+                    } else {
+                        s.run();
+                    }
                 });
             }
         }
@@ -64,23 +68,7 @@ pub unsafe fn spawn_on<'a, F>(id: usize, f: F) -> thread::JoinHandle<()>
         .expect("Can't spawn new thread!")
 }
 
-fn io_loop(io: IO) {}
-
 fn main() {
     park_scheds(construct_scheds(8));
-    println!("start created");
-    let mut io = IO::new();
-    println!("io created");
-    let mut o = Selector::Rx(Console::new());
-    println!("selector created");
-    io.spawn(o);
-    println!("selector added");
-    loop {
-        match io.poll() {
-            Async::Ready((_, Pool::Raw(buf))) => println!("Raw: {:?}", buf),
-            Async::Ready((_, _)) => (),
-            Async::NotReady => (),
-        }
-    }
     print!("done!");
 }
