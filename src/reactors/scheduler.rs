@@ -78,7 +78,7 @@ impl<'a> Scheduler<'a> {
     fn poll_bus(&mut self) {
         let x = into_raw(self);
         for s in &from_raw(x).bus.subscribers {
-            handle_intercore(from_raw(x), s.recv(), &mut from_raw(x).bus, s);
+            handle_intercore(self, s.recv(), &mut from_raw(x).bus, s);
             s.commit();
         }
     }
@@ -96,23 +96,29 @@ impl<'a> Scheduler<'a> {
              }));
     }
 
+    pub fn hibernate() {
+        thread::sleep(time::Duration::from_millis(10)); // Grean Peace
+    }
+
     pub fn run0(&mut self) {
         println!("BSP run on core {:?}", self.bus.id);
+        self.io.spawn(Selector::Rx(Console::new()));
         let x = into_raw(self);
-        from_raw(x).io.spawn(Selector::Rx(Console::new()));
         loop {
-            from_raw(x).poll_bus();
+            self.poll_bus();
             match from_raw(x).io.poll() {
-                Async::Ready((_, Pool::Raw(buf))) => from_raw(x).handle_message(buf),
+                Async::Ready((_, Pool::Raw(buf))) => self.handle_message(buf),
                 _ => (),
             }
+            self.hibernate();
         }
     }
 
     pub fn run(&mut self) {
-        println!("TSP run on core {:?}", self.bus.id);
+        println!("AP run on core {:?}", self.bus.id);
         loop {
             self.poll_bus();
+            self.hibernate();
         }
     }
 }
