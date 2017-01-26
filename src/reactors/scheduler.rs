@@ -97,6 +97,7 @@ impl<'a> Scheduler<'a> {
             .spawn(Job::Cps(CpsTask::new(unsafe { UnsafeShared::new(&mut self.queues as *mut Memory) })),
                    Termination::Corecursive,
                    None);
+        let mut tasks = self.tasks.iter_mut();
         loop {
             self.poll_bus();
             match from_raw(x).io.poll() {
