@@ -3,29 +3,33 @@ use streams::interpreter::*;
 use commands::ast::{AST, Value};
 use handle::*;
 use std::sync::Arc;
-use intercore::bus::Memory;
+use intercore::bus::{send, Memory};
+use intercore::message::Message;
+use core::ops::Deref;
+use reactors::scheduler::Scheduler;
 
 pub struct CpsTask<'a> {
     pub interpreter: Interpreter<'a>,
+    pub ast: Option<&'a AST<'a>>,
     task_id: usize,
-    ast: Option<&'a AST<'a>>,
 }
 
 impl<'a> CpsTask<'a> {
     pub fn new(mem_ptr: UnsafeShared<Memory>) -> Self {
         CpsTask {
             interpreter: Interpreter::new(mem_ptr).unwrap(),
-            task_id: 0,
             ast: None,
+            task_id: 0,
         }
     }
 
     #[inline]
-    fn run(&'a mut self, n: &'a AST<'a>, intercore: Context<'a>) -> Poll<Context<'a>, Error> {
+    fn run(&'a mut self, n: &'a AST<'a>, intercore: Context<'a>, sched: &'a Scheduler<'a>) -> Poll<Context<'a>, Error> {
         let r = self.interpreter.run(n, intercore);
         match r {
             Ok(r) => {
                 match *r {
+                    AST::Yield(Context::Intercore(msg)) => { send(&sched.bus, Message::Nop); Poll::Yield(Context::Nil) },
                     AST::Yield(ref c) => Poll::Yield(c.clone()),
                     _ => Poll::End(Context::Node(r)),
                 }
@@ -62,13 +66,13 @@ impl<'a> Task<'a> for CpsTask<'a> {
         }
     }
 
-    fn poll(&'a mut self, c: Context<'a>) -> Poll<Context<'a>, Error> {
+    fn poll(&'a mut self, c: Context<'a>, sched: &'a Scheduler<'a>) -> Poll<Context<'a>, Error> {
         match self.ast {
             Some(a) => {
                 match c.clone() {
-                    Context::Node(n) => self.run(n, c),
-                    Context::NodeAck(task_id, n) => self.run(a, c),
-                    Context::Nil => self.run(a, c),
+                    Context::Node(n) => self.run(n, c, sched),
+                    Context::NodeAck(task_id, n) => self.run(a, c, sched),
+                    Context::Nil => self.run(a, c, sched),
                     _ => Poll::Err(Error::WrongContext),
                 }
             }

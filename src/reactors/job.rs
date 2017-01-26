@@ -2,6 +2,7 @@
 
 use reactors::task::{self, Poll, Context, Task};
 use reactors::cpstask::CpsTask;
+use reactors::scheduler::Scheduler;
 
 pub enum Job<'a> {
     Cps(CpsTask<'a>),
@@ -22,8 +23,8 @@ impl<'a> Task<'a> for Job<'a> {
     fn exec(&'a mut self, input: Option<&'a str>) {
         self.unwrap().exec(input)
     }
-    fn poll(&'a mut self, c: Context<'a>) -> Poll<Context<'a>, task::Error> {
-        self.unwrap().poll(c)
+    fn poll(&'a mut self, c: Context<'a>, sched: &'a Scheduler<'a>) -> Poll<Context<'a>, task::Error> {
+        self.unwrap().poll(c, sched)
     }
     fn finalize(&'a mut self) {
         self.unwrap().finalize()

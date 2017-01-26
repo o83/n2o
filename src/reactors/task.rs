@@ -1,5 +1,6 @@
 use commands::ast::AST;
 use intercore::message::Message;
+use reactors::scheduler::Scheduler;
 
 #[derive(Debug,Clone,Copy)]
 pub struct TaskId(pub usize, pub usize);
@@ -40,6 +41,6 @@ pub enum Context<'a> {
 pub trait Task<'a> {
     fn init(&'a mut self, input: Option<&'a str>, task_id: usize);
     fn exec(&'a mut self, input: Option<&'a str>);
-    fn poll(&'a mut self, c: Context<'a>) -> Poll<Context<'a>, Error>;
+    fn poll(&'a mut self, c: Context<'a>, sched: &'a Scheduler<'a>) -> Poll<Context<'a>, Error>;
     fn finalize(&'a mut self);
 }

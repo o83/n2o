@@ -63,7 +63,7 @@ pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>,
     i.edge = Message::Pub(Pub {
         from: 0,
         task_id: 0,
-        to: 0,
+        to: arg,
         name: "".to_string(),
         cap: 8,
     });

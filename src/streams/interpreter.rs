@@ -117,6 +117,7 @@ impl<'a> Interpreter<'a> {
                 value_from_sched = from_raw(h).arena.ast(AST::Value(Value::Number(value as i64)));
                 println!("intercore: {:?}", value_from_sched);
             }
+//            Context::Nil => return Ok(self.arena.nil()),
             _ => (),
         }
 
@@ -154,7 +155,7 @@ impl<'a> Interpreter<'a> {
                     // println!("env: {:?}", se3.env.dump());
                     // println!("arena: {:?}", se4.arena.dump());
                     // INFO
-                    /*
+/*
                     println!("Instructions: {}", counter);
                     println!("Conts: {}", from_raw(h).arena.cont_len());
                     println!("ASTs: {}", from_raw(h).arena.ast_len());
@@ -163,7 +164,7 @@ impl<'a> Interpreter<'a> {
                              from_raw(h).env.len().1);
                     // NORMAL
                     println!("Result: {}", ast);
-                    */
+*/
                     from_raw(h).counter = counter + 1;
                     from_raw(h).edge = Message::Nop;
                     from_raw(h).registers = Lazy::Start;

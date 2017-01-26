@@ -7,7 +7,7 @@ use commands::ast::{AST, Value};
 use reactors::job::Job;
 use reactors::task::{Task, Context, Poll, Termination};
 use reactors::scheduler::Scheduler;
-use handle::{self, split, from_raw, into_raw, UnsafeShared};
+use handle::{self, split, from_raw, into_raw, UnsafeShared, use_};
 
 // The Server of InterCore protocol is handled in Scheduler context
 
@@ -36,17 +36,17 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
         }
 
         Some(&Message::Exec(ref task, ref cmd)) if 0 == bus.id => {
-            println!("InterCore Exec {:?} {:?}", task, cmd);
             let mut t = into_raw(sched.tasks.get_mut(task.clone()).expect("no shell"));
             from_raw(t).0.exec(Some(cmd));
-            from_raw(t).0.poll(Context::Nil);
+            let x = from_raw(t).0.poll(Context::Nil, use_(sched));
+            println!("InterCore Exec {:?} {:?} {:?}", task, cmd, x);
             Context::Nil
         }
 
         Some(&Message::Pub(ref p)) if p.to == p.from && p.to == bus.id => {
             println!("Local Pub {:?} {:?}", bus.id, p);
             sched.queues.publishers().push(Publisher::with_capacity(p.cap));
-            Context::NodeAck(p.task_id, sched.queues.publishers().len())
+            Context::NodeAck(p.task_id, use_(sched).queues.publishers().len())
         }
 
         Some(&Message::Pub(ref p)) if p.to == bus.id => {
@@ -64,14 +64,9 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
 
         Some(&Message::AckPub(ref a)) if a.to == bus.id => {
             println!("InterCore AckPub {:?} {:?}", bus.id, a);
-            // let h = into_raw(sched);
-            // let mut t = from_raw(h).tasks.get_mut(a.task_id).expect("no task");
-            // match t.0.poll(Context::NodeAck(a.task_id, a.result_id)) {
-            // Poll::End(v) => v,
-            // Poll::Yield(x) => x,
-            // _ => Context::Nil,
-            // }
-            //
+            let h = into_raw(sched);
+            let mut t = from_raw(h).tasks.get_mut(a.task_id).expect("no task");
+            t.0.poll(Context::NodeAck(a.task_id, a.result_id), from_raw(h));
             Context::Nil
         }
 

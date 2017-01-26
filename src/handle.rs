@@ -4,7 +4,6 @@ use std::fmt;
 use core::marker::PhantomData;
 use std::mem;
 
-
 pub struct Handle<T>(UnsafeCell<T>);
 
 impl<T> Handle<T> {
@@ -101,3 +100,6 @@ pub fn with_raw<T, F, R>(t: &mut T, mut f: F) -> R
 {
     f(t as *mut T)
 }
+
+pub fn use_<'a, T: 'a>(t: &mut T) -> &'a mut T { from_raw(into_raw(t)) }
+

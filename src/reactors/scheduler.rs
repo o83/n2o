@@ -11,7 +11,7 @@ use std::sync::Arc;
 use std::mem;
 use std::{thread, time};
 use std::ffi::CString;
-use handle::{self, from_raw, into_raw, with, split, UnsafeShared};
+use handle::{self, from_raw, into_raw, with, split, UnsafeShared, use_};
 use reactors::console::Console;
 use reactors::selector::{Selector, Async, Pool};
 use std::str;
@@ -23,7 +23,6 @@ pub struct Scheduler<'a> {
     pub bus: Channel,
     pub queues: Memory,
     pub io: IO,
-    i: usize,
 }
 
 impl<'a> Scheduler<'a> {
@@ -38,7 +37,6 @@ impl<'a> Scheduler<'a> {
             bus: chan,
             io: IO::new(),
             queues: Memory::new(),
-            i: 0,
         }
     }
 
@@ -69,10 +67,10 @@ impl<'a> Scheduler<'a> {
         }
     }
 
-    pub fn handle_message(&'a mut self, buf: &'a [u8], shell: TaskId) {
+    pub fn handle_message(&mut self, buf: &'a [u8], shell: TaskId) {
         let bus = self.bus.id;
         println!("Message on REPL bus ({:?}): {:?}", bus, buf);
-
+/*
         send(&self.bus,
              Message::Pub(Pub {
                  from: bus,
@@ -81,7 +79,7 @@ impl<'a> Scheduler<'a> {
                  name: "".to_string(),
                  cap: 8,
              }));
-
+*/
         if let Ok(x) = self.io.cmd(buf) {
             send(&self.bus, Message::Exec(shell.0, x.to_string()));
         }
@@ -92,37 +90,14 @@ impl<'a> Scheduler<'a> {
     }
 
     #[inline]
-    fn poll_tasks(&'a mut self, t: TaskId) {
-        if self.i == t.0 {
-            return;
-        }
-        if self.i == self.tasks.len() {
-            self.i = 0;
-        }
-        let r = self.tasks[self.i].0.poll(Context::Nil);
-        println!("Task poll: {:?}", r);
+    fn poll_tasks(&'a mut self) {
+        let a = into_raw(self);
+        let l = from_raw(a).tasks.len();
+        for i in 1..l { from_raw(a).tasks[i].0.poll(Context::Nil, from_raw(a)); };
     }
 
-    #[inline]
-    pub fn handle_raw(&'a mut self, buf: &'a [u8], t: TaskId) {
-        if buf.len() == 0 {
-            return;
-        }
-        if buf.len() == 1 && buf[0] == 0x0A {
-            self.io.write_all(&[0u8; 0]);
-            return;
-        }
-        let ptr = handle::into_raw(self);
-        let input = str::from_utf8(buf).expect("Malformed input.");
-        let tasks = handle::from_raw(ptr).tasks.get_mut(t.0);
-        tasks.expect("Scheduler: can't retrieve a task.").0.exec(Some(input));
-        handle::from_raw(ptr).poll_shell(t);
-    }
-
-    #[inline]
-    fn poll_shell(&'a mut self, t: TaskId) {
-        let r = self.tasks.get_mut(t.0).expect("Scheduler: can't retrieve a task.").0.poll(Context::Nil);
-        self.io.write_all(format!("{:?}\n", r).as_bytes());
+    pub fn mem(&mut self) -> UnsafeShared<Memory> {
+        unsafe { UnsafeShared::new(&mut self.queues as *mut Memory) }
     }
 
     pub fn run0(&mut self, input: Option<&'a str>) {
@@ -130,28 +105,27 @@ impl<'a> Scheduler<'a> {
         self.io.spawn(Selector::Rx(Console::new()));
         let x = into_raw(self);
         let shell = from_raw(x)
-            .spawn(Job::Cps(CpsTask::new(unsafe { UnsafeShared::new(&mut self.queues as *mut Memory) })),
+            .spawn(Job::Cps(CpsTask::new(self.mem())),
                    Termination::Corecursive,
                    input);
-        let ptr = handle::into_raw(self);
-        handle::from_raw(ptr).poll_shell(shell);
         loop {
-            handle::from_raw(ptr).poll_bus();
+            from_raw(x).poll_bus();
             match from_raw(x).io.poll() {
-                Async::Ready((_, Pool::Raw(buf))) => handle::from_raw(ptr).handle_raw(buf, shell),
+                Async::Ready((_, Pool::Raw(buf))) => from_raw(x).handle_message(buf, shell),
                 _ => (),
             }
-            handle::from_raw(ptr).poll_tasks(shell);
-            handle::from_raw(ptr).hibernate();
+            from_raw(x).poll_tasks();
+            from_raw(x).hibernate();
         }
     }
 
     pub fn run(&mut self) {
         println!("AP run on core {:?}", self.bus.id);
+        let x = into_raw(self);
         loop {
-            self.poll_bus();
-            //
-            self.hibernate();
+            from_raw(x).poll_bus();
+            from_raw(x).poll_tasks();
+            from_raw(x).hibernate();
         }
     }
 }
