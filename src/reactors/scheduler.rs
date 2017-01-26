@@ -68,7 +68,7 @@ impl<'a> Scheduler<'a> {
         }
     }
 
-    pub fn handle_message(&mut self, buf: &'a [u8], shell: TaskId) {
+    pub fn handle_message(&'a mut self, buf: &'a [u8], shell: TaskId) {
         let bus = self.bus.id;
         println!("Message on REPL bus ({:?}): {:?}", bus, buf);
 
@@ -84,6 +84,8 @@ impl<'a> Scheduler<'a> {
         if let Ok(x) = self.io.cmd(buf) {
             send(&self.bus, Message::Exec(shell.0, x.to_string()));
         }
+
+        self.poll_shell(shell);
     }
 
     pub fn hibernate(&mut self) {
@@ -91,12 +93,10 @@ impl<'a> Scheduler<'a> {
     }
 
     #[inline]
-    fn handle_task_poll(&mut self, p: Poll<Context<'a>, task::Error>) {
-        println!("Task poll: {:?}", p);
-    }
-
-    #[inline]
-    fn poll_tasks(&'a mut self) {
+    fn poll_tasks(&'a mut self, t: TaskId) {
+        if self.i == t.0 {
+            return;
+        }
         if self.i == self.tasks.len() {
             self.i = 0;
         }
@@ -105,7 +105,7 @@ impl<'a> Scheduler<'a> {
     }
 
     #[inline]
-    fn poll_shell(&mut self, t: TaskId) {
+    fn poll_shell(&'a mut self, t: TaskId) {
         let r = self.tasks.get_mut(t.0).expect("Scheduler: can't retrieve a task.").0.poll(Context::Nil);
         println!("Shell poll: {:?}", r);
     }
@@ -125,7 +125,7 @@ impl<'a> Scheduler<'a> {
                 Async::Ready((_, Pool::Raw(buf))) => handle::from_raw(ptr).handle_message(buf, shell),
                 _ => (),
             }
-            handle::from_raw(ptr).poll_shell(shell);
+            handle::from_raw(ptr).poll_tasks(shell);
             handle::from_raw(ptr).hibernate();
         }
     }
