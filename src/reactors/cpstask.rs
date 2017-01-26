@@ -12,9 +12,9 @@ pub struct CpsTask<'a> {
 }
 
 impl<'a> CpsTask<'a> {
-    pub fn new() -> Self {
+    pub fn new(mem_ptr: UnsafeShared<Memory>) -> Self {
         CpsTask {
-            interpreter: Interpreter::new().unwrap(),
+            interpreter: Interpreter::new(mem_ptr).unwrap(),
             task_id: 0,
             ast: None,
         }

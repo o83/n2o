@@ -8,7 +8,7 @@ use intercore::client::{handle_context, internals};
 use std::sync::Arc;
 use reactors::task::Context;
 use intercore::message::Message;
-use handle::{self, into_raw, from_raw};
+use handle::{self, into_raw, from_raw, UnsafeShared};
 
 const PREEMPTION: u64 = 20000000; // Yield each two instructions
 
@@ -39,7 +39,7 @@ pub enum Lazy<'a> {
 pub struct Interpreter<'a> {
     pub env: env::Environment<'a>,
     pub arena: Arena<'a>,
-    pub queues: Memory,
+    pub queues: UnsafeShared<Memory>,
     pub edge: Message,
     pub registers: Lazy<'a>,
     pub counter: u64,
@@ -47,13 +47,13 @@ pub struct Interpreter<'a> {
 }
 
 impl<'a> Interpreter<'a> {
-    pub fn new() -> Result<Interpreter<'a>, Error> {
+    pub fn new(mem_ptr: UnsafeShared<Memory>) -> Result<Interpreter<'a>, Error> {
         let mut env = try!(env::Environment::new_root());
         let mut arena = Arena::new();
         let mut interpreter = Interpreter {
             arena: arena,
             env: env,
-            queues: Memory::new(),
+            queues: mem_ptr,
             edge: Message::Nop,
             registers: Lazy::Start,
             task_id: 0,
