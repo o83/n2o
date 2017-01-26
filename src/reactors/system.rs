@@ -83,7 +83,7 @@ impl<'a> IO {
         }
         match from_utf8(buf) {
             Ok(x) => Ok(x),
-            Err(x) => Err(())
+            Err(x) => Err(()),
         }
     }
 

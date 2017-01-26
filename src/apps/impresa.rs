@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate kernel;
 
 use std::thread;
@@ -69,7 +68,7 @@ fn main() {
     let mut inp = String::new();
     let input = match f {
         Ok(i) => {
-            let mut file = File::open(i.expect("A real filename expected."));
+            let file = File::open(i.expect("A real filename expected."));
             file.expect(&format!("Can't open file {:?}.", i))
                 .read_to_string(&mut inp)
                 .expect(&format!("Can't load src: {:?}", f));

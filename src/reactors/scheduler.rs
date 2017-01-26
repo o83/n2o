@@ -14,6 +14,7 @@ use std::ffi::CString;
 use handle::{self, from_raw, into_raw, with, split, UnsafeShared};
 use reactors::console::Console;
 use reactors::selector::{Selector, Async, Pool};
+use std::str;
 
 const TASKS_MAX_CNT: usize = 256;
 
@@ -84,8 +85,6 @@ impl<'a> Scheduler<'a> {
         if let Ok(x) = self.io.cmd(buf) {
             send(&self.bus, Message::Exec(shell.0, x.to_string()));
         }
-
-        self.poll_shell(shell);
     }
 
     pub fn hibernate(&mut self) {
@@ -105,9 +104,25 @@ impl<'a> Scheduler<'a> {
     }
 
     #[inline]
+    pub fn handle_raw(&'a mut self, buf: &'a [u8], t: TaskId) {
+        if buf.len() == 0 {
+            return;
+        }
+        if buf.len() == 1 && buf[0] == 0x0A {
+            self.io.write_all(&[0u8; 0]);
+            return;
+        }
+        let ptr = handle::into_raw(self);
+        let input = str::from_utf8(buf).expect("Malformed input.");
+        let tasks = handle::from_raw(ptr).tasks.get_mut(t.0);
+        tasks.expect("Scheduler: can't retrieve a task.").0.exec(Some(input));
+        handle::from_raw(ptr).poll_shell(t);
+    }
+
+    #[inline]
     fn poll_shell(&'a mut self, t: TaskId) {
         let r = self.tasks.get_mut(t.0).expect("Scheduler: can't retrieve a task.").0.poll(Context::Nil);
-        println!("Shell poll: {:?}", r);
+        self.io.write_all(format!("{:?}\n", r).as_bytes());
     }
 
     pub fn run0(&mut self, input: Option<&'a str>) {
@@ -119,10 +134,11 @@ impl<'a> Scheduler<'a> {
                    Termination::Corecursive,
                    input);
         let ptr = handle::into_raw(self);
+        handle::from_raw(ptr).poll_shell(shell);
         loop {
             handle::from_raw(ptr).poll_bus();
             match from_raw(x).io.poll() {
-                Async::Ready((_, Pool::Raw(buf))) => handle::from_raw(ptr).handle_message(buf, shell),
+                Async::Ready((_, Pool::Raw(buf))) => handle::from_raw(ptr).handle_raw(buf, shell),
                 _ => (),
             }
             handle::from_raw(ptr).poll_tasks(shell);
