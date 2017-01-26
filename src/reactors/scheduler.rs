@@ -68,18 +68,6 @@ impl<'a> Scheduler<'a> {
     }
 
     pub fn handle_message(&mut self, buf: &'a [u8], shell: TaskId) {
-        let bus = self.bus.id;
-        println!("Message on REPL bus ({:?}): {:?}", bus, buf);
-/*
-        send(&self.bus,
-             Message::Pub(Pub {
-                 from: bus,
-                 task_id: 0,
-                 to: 1,
-                 name: "".to_string(),
-                 cap: 8,
-             }));
-*/
         if let Ok(x) = self.io.cmd(buf) {
             send(&self.bus, Message::Exec(shell.0, x.to_string()));
         }

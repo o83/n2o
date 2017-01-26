@@ -55,7 +55,6 @@ pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>,
                             arena: &'a Arena<'a>,
                             task_id: usize)
                             -> Context<'a> {
-    println!("publishers {:?}", args);
     let arg = match args {
         &AST::Value(Value::Number(n)) => n,
         _ => 1024,
