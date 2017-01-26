@@ -146,23 +146,3 @@ fn stack_batch(b: &mut Bencher) {
         stack.insert_many(&items);
     });
 }
-
-#[bench]
-fn stack_iter(b: &mut Bencher) {
-    let capacity = (!0 as u16) as usize;
-    let mut stack: Stack<Entry> = Stack::with_capacity(capacity);
-    let items = [Entry(9, 9), Entry(6, 6), Entry(7, 7)];
-    b.iter(|| {
-        stack.insert_many_v2(&items);
-    });
-}
-
-#[bench]
-fn stack_iter_cloned(b: &mut Bencher) {
-    let capacity = (!0 as u16) as usize;
-    let mut stack: Stack<Entry> = Stack::with_capacity(capacity);
-    let items = [Entry(9, 9), Entry(6, 6), Entry(7, 7)];
-    b.iter(|| {
-        stack.insert_many_v3(&items);
-    });
-}
