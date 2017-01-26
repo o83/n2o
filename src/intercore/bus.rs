@@ -16,7 +16,7 @@ pub enum TypeId {
     Float,
 }
 
-pub struct Ctx {
+pub struct Memory {
     publishers: UnsafeCell<Vec<Publisher<Message>>>,
     subscribers: UnsafeCell<Vec<Subscriber<Message>>>,
 }
@@ -27,9 +27,9 @@ pub struct Channel {
     pub subscribers: Vec<Subscriber<Message>>,
 }
 
-impl Ctx {
+impl Memory {
     pub fn new() -> Self {
-        Ctx {
+        Memory {
             publishers: UnsafeCell::new(vec![]),
             subscribers: UnsafeCell::new(vec![]),
         }

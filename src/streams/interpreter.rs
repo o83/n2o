@@ -3,9 +3,9 @@
 
 use streams::{verb, env, otree};
 use commands::ast::{self, Error, AST, Verb, Adverb, Arena, Value};
-use intercore::bus::Ctx;
+use intercore::bus::Memory;
 use intercore::client::{handle_context, internals};
-use std::rc::Rc;
+use std::sync::Arc;
 use reactors::task::Context;
 use intercore::message::Message;
 use handle::{self, into_raw, from_raw};
@@ -36,41 +36,25 @@ pub enum Lazy<'a> {
     Start,
 }
 
-
 pub struct Interpreter<'a> {
     pub env: env::Environment<'a>,
     pub arena: Arena<'a>,
-    pub queues: Option<Ctx>,
-    pub ctx: Message,
+    pub queues: Memory,
+    pub edge: Message,
     pub registers: Lazy<'a>,
     pub counter: u64,
     pub task_id: usize,
 }
 
 impl<'a> Interpreter<'a> {
-    pub fn new2() -> Result<Interpreter<'a>, Error> {
-        let mut env = try!(env::Environment::new_root());
-        let mut arena = Arena::new();
-        let mut interpreter = Interpreter {
-            arena: arena,
-            env: env,
-            queues: None,
-            ctx: Message::Nop,
-            registers: Lazy::Start,
-            counter: 1,
-            task_id: 0,
-        };
-        Ok(interpreter)
-    }
-
     pub fn new() -> Result<Interpreter<'a>, Error> {
         let mut env = try!(env::Environment::new_root());
         let mut arena = Arena::new();
         let mut interpreter = Interpreter {
             arena: arena,
             env: env,
-            queues: None,
-            ctx: Message::Nop,
+            queues: Memory::new(),
+            edge: Message::Nop,
             registers: Lazy::Start,
             task_id: 0,
             counter: 1,
@@ -147,7 +131,7 @@ impl<'a> Interpreter<'a> {
                         return Ok(from_raw(h).arena.ast(AST::Yield(Context::Nil)));
                     } else {
                         tick = try!({
-                            from_raw(h).ctx = Message::Nop;
+                            from_raw(h).edge = Message::Nop;
                             let a = match ast_ {
                                 &AST::Yield(..) => value_from_sched,
                                 x => x,
@@ -160,7 +144,7 @@ impl<'a> Interpreter<'a> {
                 }
                 Lazy::Start => break,
                 Lazy::Continuation(node, ast, cont) => {
-                    let ast_ = from_raw(h).arena.ast(AST::Yield(Context::Intercore(&from_raw(h).ctx)));
+                    let ast_ = from_raw(h).arena.ast(AST::Yield(Context::Intercore(&from_raw(h).edge)));
                     from_raw(h).registers = Lazy::Defer(node, ast, cont);
                     from_raw(h).counter = counter + 1;
                     return Ok(ast_);
@@ -179,7 +163,7 @@ impl<'a> Interpreter<'a> {
                     // NORMAL
                     println!("Result: {}", ast);
                     from_raw(h).counter = counter + 1;
-                    from_raw(h).ctx = Message::Nop;
+                    from_raw(h).edge = Message::Nop;
                     from_raw(h).registers = Lazy::Start;
                     return Ok(ast);
                 }
@@ -410,7 +394,7 @@ impl<'a> Interpreter<'a> {
         let h = into_raw(self);
         match con {
             &Cont::Intercore(ref m, cc) => {
-                from_raw(h).ctx = m.clone();
+                from_raw(h).edge = m.clone();
                 Ok(Lazy::Continuation(node, val, cc))
             }
             &Cont::Yield(cc) => Ok(Lazy::Continuation(node, val, cc)),
@@ -476,7 +460,7 @@ impl<'a> Interpreter<'a> {
                     &AST::Cons(x, y) => {
                         new_acc = from_raw(h).arena.ast(AST::Cons(from_raw(h).arena.ast(AST::Dict(val)), acc))
                     }
-                    _ => new_acc = from_raw(h).arena.ast(AST::Cons(val, acc)), 
+                    _ => new_acc = from_raw(h).arena.ast(AST::Cons(val, acc)),
                 };
                 match rest {
                     &AST::Cons(head, tail) => {

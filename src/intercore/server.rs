@@ -1,6 +1,6 @@
 
 use queues::publisher::{Publisher, Subscriber};
-use intercore::bus::{Ctx, Channel, send};
+use intercore::bus::{Memory, Channel, send};
 use intercore::message::{Message, Pub, Sub, AckPub, AckSub, Spawn, AckSpawn};
 use reactors::cpstask::CpsTask;
 use commands::ast::{AST, Value};
@@ -8,7 +8,6 @@ use reactors::job::Job;
 use reactors::task::{Task, Context, Poll, Termination};
 use reactors::scheduler::Scheduler;
 use handle::{self, split, from_raw, into_raw};
-use std::rc::Rc;
 
 // The Server of InterCore protocol is handled in Scheduler context
 
@@ -20,11 +19,10 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>, message: Option<&'a Me
 
         Some(&Message::Spawn(ref v)) if v.to == bus.id => {
             println!("InterCore Spawn {:?} {:?}", bus.id, v);
-            handle::with_raw(sched, |h| {
-                handle::from_raw(h).spawn(Job::Cps(CpsTask::new()),
-                                          Termination::Recursive,
-                                          Some(&v.txt))
-            });
+            let x = into_raw(sched);
+            from_raw(x).spawn(Job::Cps(CpsTask::new()),
+                                         Termination::Recursive,
+                                         Some(&v.txt));
             Context::Nil
         }
 

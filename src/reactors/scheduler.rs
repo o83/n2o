@@ -3,11 +3,11 @@ use reactors::job::Job;
 use reactors::system::IO;
 use reactors::cpstask::CpsTask;
 use intercore::message::*;
-use intercore::bus::{Ctx, Channel, send};
+use intercore::bus::{Memory, Channel, send};
 use intercore::server::handle_intercore;
 use queues::publisher::{Publisher, Subscriber};
 use commands::ast::{AST, Value};
-use std::rc::Rc;
+use std::sync::Arc;
 use std::mem;
 use std::{thread, time};
 use std::ffi::CString;
@@ -19,10 +19,9 @@ const TASKS_MAX_CNT: usize = 256;
 
 pub struct Scheduler<'a> {
     pub tasks: Vec<T3<Job<'a>>>,
-    pub ctxs: Vec<Context<'a>>,
     pub bus: Channel,
+    pub queues: Memory,
     pub io: IO,
-    pub queues: Ctx,
 }
 
 impl<'a> Scheduler<'a> {
@@ -34,17 +33,15 @@ impl<'a> Scheduler<'a> {
         };
         Scheduler {
             tasks: Vec::with_capacity(TASKS_MAX_CNT),
-            ctxs: Vec::with_capacity(TASKS_MAX_CNT),
             bus: chan,
             io: IO::new(),
-            queues: Ctx::new(),
+            queues: Memory::new(),
         }
     }
 
     pub fn spawn(&'a mut self, t: Job<'a>, l: Termination, input: Option<&'a str>) -> TaskId {
         let last = self.tasks.len();
         self.tasks.push(T3(t, l));
-        self.ctxs.push(Context::Nil);
         self.tasks.last_mut().expect("Scheduler: can't retrieve a task.").0.init(input, last);
         TaskId(last)
     }
@@ -57,7 +54,6 @@ impl<'a> Scheduler<'a> {
     fn terminate(&'a mut self, t: Termination, i: usize) {
         if t == Termination::Recursive {
             self.tasks.remove(i);
-            self.ctxs.remove(i);
         }
     }
 

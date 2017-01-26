@@ -3,7 +3,7 @@ use commands::ast::{self, Error, AST, Arena, Value};
 use streams::otree;
 use streams::interpreter::{Interpreter, Lazy, Cont};
 use intercore::message::{Pub, Sub, Spawn, Message};
-use intercore::bus::Ctx;
+use intercore::bus::Memory;
 use reactors::task::Context;
 use queues::publisher::Publisher;
 use handle::{self, into_raw, from_raw};
@@ -43,7 +43,7 @@ pub fn handle_context<'a>(f: &'a otree::Node<'a>,
         }
         Context::Intercore(message) => {
             from_raw(h).run_cont(f,
-                                 from_raw(h).arena.ast(AST::Yield(Context::Intercore(&from_raw(h).ctx))),
+                                 from_raw(h).arena.ast(AST::Yield(Context::Intercore(&from_raw(h).edge))),
                                  from_raw(h).arena.cont(Cont::Intercore(message.clone(), cont)))
         } 
         _ => panic!("TODO"),
@@ -60,14 +60,14 @@ pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>,
         &AST::Value(Value::Number(n)) => n,
         _ => 1024,
     } as usize;
-    i.ctx = Message::Pub(Pub {
+    i.edge = Message::Pub(Pub {
         from: 0,
         task_id: 0,
         to: 0,
         name: "".to_string(),
         cap: 8,
     });
-    Context::Intercore(&i.ctx)
+    Context::Intercore(&i.edge)
 }
 
 pub fn create_subscriber<'a>(i: &'a mut Interpreter<'a>,
@@ -79,13 +79,13 @@ pub fn create_subscriber<'a>(i: &'a mut Interpreter<'a>,
         &AST::Value(Value::Number(n)) => n,
         _ => 0,
     } as usize;
-    i.ctx = Message::Sub(Sub {
+    i.edge = Message::Sub(Sub {
         from: task_id,
         task_id: task_id,
         to: p,
         pub_id: p,
     });
-    Context::Intercore(&i.ctx)
+    Context::Intercore(&i.edge)
 }
 
 pub fn snd<'a>(args: &AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {

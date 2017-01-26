@@ -2,8 +2,8 @@ use reactors::task::{Task, Context, Poll, Error};
 use streams::interpreter::*;
 use commands::ast::{AST, Value};
 use handle::*;
-use std::rc::Rc;
-use intercore::bus::Ctx;
+use std::sync::Arc;
+use intercore::bus::Memory;
 
 pub struct CpsTask<'a> {
     pub interpreter: Interpreter<'a>,
@@ -15,14 +15,6 @@ impl<'a> CpsTask<'a> {
     pub fn new() -> Self {
         CpsTask {
             interpreter: Interpreter::new().unwrap(),
-            task_id: 0,
-            ast: None,
-        }
-    }
-
-    pub fn new2(ctx: Ctx) -> Self {
-        CpsTask {
-            interpreter: Interpreter::new2().unwrap(),
             task_id: 0,
             ast: None,
         }
