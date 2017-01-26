@@ -83,8 +83,9 @@ impl<'a> Scheduler<'a> {
                  cap: 8,
              }));
 
-        send(&self.bus,
-             Message::Exec(shell.0, self.io.cmd(buf).unwrap().to_string()));
+        if let Ok(x) = self.io.cmd(buf) {
+            send(&self.bus, Message::Exec(shell.0, x.to_string()));
+        }
 
     }
 

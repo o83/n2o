@@ -73,15 +73,18 @@ impl<'a> IO {
         }
     }
 
-    pub fn cmd(&mut self, buf: &'a [u8]) -> Result<&'a str, Utf8Error> {
+    pub fn cmd(&mut self, buf: &'a [u8]) -> Result<&'a str, ()> {
         if buf.len() == 0 {
-            ()
+            return Err(());
         }
         if buf.len() == 1 && buf[0] == 0x0A {
             self.write_all(&[0u8; 0]);
-            ()
+            return Err(());
         }
-        from_utf8(buf)
+        match from_utf8(buf) {
+            Ok(x) => Ok(x),
+            Err(x) => Err(())
+        }
     }
 
     pub fn poll(&'a mut self) -> Async<(Slot, Pool<'a>)> {

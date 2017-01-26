@@ -62,8 +62,8 @@ pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>,
     } as usize;
     i.ctx = Message::Pub(Pub {
         from: 0,
-        task_id: task_id,
-        to: arg,
+        task_id: 0,
+        to: 0,
         name: "".to_string(),
         cap: 8,
     });
@@ -82,7 +82,7 @@ pub fn create_subscriber<'a>(i: &'a mut Interpreter<'a>,
     i.ctx = Message::Sub(Sub {
         from: task_id,
         task_id: task_id,
-        to: 0,
+        to: p,
         pub_id: p,
     });
     Context::Intercore(&i.ctx)

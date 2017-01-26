@@ -35,8 +35,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>, message: Option<&'a Me
 
         Some(&Message::Exec(ref task, ref cmd)) if 0 == bus.id => {
             println!("InterCore Exec {:?} {:?}", task, cmd);
-            let mut i: usize = task.clone();
-            let mut t = into_raw(sched.tasks.get_mut(i).expect("no task"));
+            let mut t = into_raw(sched.tasks.get_mut(task.clone()).expect("no shell"));
             from_raw(t).0.exec(Some(cmd));
             from_raw(t).0.poll(Context::Nil);
             Context::Nil
