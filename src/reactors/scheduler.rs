@@ -97,7 +97,7 @@ impl<'a> Scheduler<'a> {
     }
 
     pub fn hibernate(&mut self) {
-        thread::sleep(time::Duration::from_millis(10)); // Grean Peace
+        thread::sleep(time::Duration::from_millis(10)); // Green Peace
     }
 
     pub fn run0(&mut self) {
