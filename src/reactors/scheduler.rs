@@ -43,7 +43,7 @@ impl<'a> Scheduler<'a> {
         let last = self.tasks.len();
         self.tasks.push(T3(t, l));
         self.tasks.last_mut().expect("Scheduler: can't retrieve a task.").0.init(input, last);
-        TaskId(last)
+        TaskId(last, self.bus.id)
     }
 
     pub fn exec(&'a mut self, t: TaskId, input: Option<&'a str>) {

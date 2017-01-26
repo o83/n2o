@@ -2,7 +2,7 @@ use commands::ast::AST;
 use intercore::message::Message;
 
 #[derive(Debug,Clone,Copy)]
-pub struct TaskId(pub usize);
+pub struct TaskId(pub usize, pub usize);
 
 #[derive(Debug,PartialEq,Clone,Copy)]
 pub enum Termination {
