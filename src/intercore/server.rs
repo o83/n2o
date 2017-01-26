@@ -7,22 +7,26 @@ use commands::ast::{AST, Value};
 use reactors::job::Job;
 use reactors::task::{Task, Context, Poll, Termination};
 use reactors::scheduler::Scheduler;
-use handle::{self, split, from_raw, into_raw};
+use handle::{self, split, from_raw, into_raw, UnsafeShared};
 
 // The Server of InterCore protocol is handled in Scheduler context
 
-pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>, message: Option<&'a Message>, bus: &'a Channel, s: &'a Subscriber<Message>) -> Context<'a> {
+pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
+                            message: Option<&'a Message>,
+                            bus: &'a Channel,
+                            s: &'a Subscriber<Message>)
+                            -> Context<'a> {
 
-    //println!("{:?}", s);
+    // println!("{:?}", s);
 
     match message {
 
         Some(&Message::Spawn(ref v)) if v.to == bus.id => {
             println!("InterCore Spawn {:?} {:?}", bus.id, v);
             let x = into_raw(sched);
-            from_raw(x).spawn(Job::Cps(CpsTask::new()),
-                                         Termination::Recursive,
-                                         Some(&v.txt));
+            from_raw(x).spawn(Job::Cps(CpsTask::new(unsafe { UnsafeShared::new(&mut sched.queues as *mut Memory) })),
+                              Termination::Recursive,
+                              Some(&v.txt));
             Context::Nil
         }
 
@@ -96,7 +100,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>, message: Option<&'a Me
             Context::NodeAck(a.task_id, a.result_id)
         }
         Some(x) => {
-//            println!("Test {:?}", x);
+            //            println!("Test {:?}", x);
             Context::Nil
         }
         None => Context::Nil,
