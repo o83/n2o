@@ -17,20 +17,8 @@ pub enum Async<T> {
     NotReady,
 }
 
-pub struct RingLock<'a> {
-    pub buf: &'a [Message],
-    pub sub: &'a Subscriber<Message>,
-}
-
-impl<'a> Drop for RingLock<'a> {
-    fn drop(&mut self) {
-        self.sub.commit();
-    }
-}
-
 pub enum Pool<'a> {
     Raw(&'a [u8]),
-    Msg(RingLock<'a>),
 }
 
 pub trait Select<'a>: Write {
@@ -42,7 +30,6 @@ pub trait Select<'a>: Write {
 pub enum Selector {
     Ws(WsServer),
     Rx(Console),
-    Sb(Subscriber<Message>),
 }
 
 impl Selector {
@@ -50,7 +37,6 @@ impl Selector {
         match *self {
             Selector::Ws(ref mut w) => w,
             Selector::Rx(ref mut c) => c,
-            Selector::Sb(ref mut s) => s,
         }
     }
 

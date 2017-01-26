@@ -1,4 +1,3 @@
-
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::cell::Cell;
@@ -10,17 +9,8 @@ use std::ffi::CString;
 use std::fmt::Formatter;
 use std::fmt::Debug;
 use std::fmt;
-use io::event::Evented;
-use io::poll::Poll;
-use io::options::PollOpt;
-use io::ready::Ready;
-use io::token::Token;
-use std::io::{self, Read, Write};
 use std::slice;
 use std::mem;
-use reactors::selector::{Select, Slot, Async, Pool, RingLock};
-use reactors::system::IO;
-use intercore::message::Message;
 
 type Sequence = usize;
 
@@ -175,7 +165,6 @@ impl<T> Publisher<T> {
 
     pub fn commit(&self) {
         self.head().store(self.next_seq_cache.get());
-        self.signal();
     }
 
     #[inline]
@@ -186,14 +175,6 @@ impl<T> Publisher<T> {
     #[inline]
     fn cursors(&self) -> &[Cursor] {
         unsafe { self.cursors.get_immut() }
-    }
-
-    #[inline]
-    fn signal(&self) {
-        match self.ring.notify {
-            Some(ref n) => n.send(),
-            _ => {}
-        }
     }
 }
 
@@ -218,9 +199,7 @@ impl<T> Debug for Subscriber<T> {
 
 impl<T> Debug for Publisher<T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f,
-               "Publisher {{ seq: {} }}",
-               self.next_seq_cache.get())
+        write!(f, "Publisher {{ seq: {} }}", self.next_seq_cache.get())
     }
 }
 
@@ -310,92 +289,6 @@ impl<T> Subscriber<T> {
     #[inline]
     fn cursors(&self) -> &[Cursor] {
         unsafe { self.cursors.get_immut() }
-    }
-
-    #[inline]
-    pub fn wait(&self) {
-        match self.ring.notify {
-            Some(ref n) => n.wait(),
-            _ => {}
-        }
-    }
-}
-
-impl<T> Evented for Subscriber<T> {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.ring.notify().map(|n| n.register(poll, token, interest, opts));
-        Ok(())
-    }
-
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.ring.notify().map(|n| n.reregister(poll, token, interest, opts));
-        Ok(())
-    }
-
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        self.ring.notify().map(|n| n.deregister(poll));
-        Ok(())
-    }
-}
-
-impl<'a> Select<'a> for Subscriber<Message> {
-    fn init(&mut self, io: &mut IO, s: Slot) {
-        io.register(self, s);
-    }
-    fn select(&'a mut self, io: &'a mut IO, t: Token) -> Async<Pool<'a>> {
-        // self.read(buf).unwrap()
-        self.wait();
-        match self.recv_all() {
-            Some(v) => {
-                // let sz = copy_block_memory::<T>(v as *const T, buf);
-                // self.commit();
-                Async::Ready(Pool::Msg(RingLock {
-                    buf: v,
-                    sub: self,
-                }))
-            }
-            _ => Async::NotReady,
-        }
-    }
-    fn finalize(&mut self) {
-        // self.unwrap().finalize();
-    }
-}
-
-fn copy_block_memory<T>(src: *const T, dst: &mut [u8]) -> usize {
-    let src = src as *const u8;
-    let size = mem::size_of::<T>();
-    unsafe {
-        let bytes = slice::from_raw_parts(src, size);
-        dst[..size].clone_from_slice(bytes);
-    }
-    println!("{:?}", size);
-    size
-}
-
-impl<T> Read for Subscriber<T> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.wait();
-        match self.recv() {
-            Some(v) => {
-                let sz = copy_block_memory::<T>(v as *const T, buf);
-                self.commit();
-                Ok(sz)
-            }
-            _ => Ok(0),
-        }
-    }
-}
-
-impl<T> Write for Subscriber<T> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        //(&self.inner).write(buf)
-        Ok(1)
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        self.commit();
-        Ok(())
     }
 }
 

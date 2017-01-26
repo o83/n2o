@@ -8,13 +8,11 @@ use std::io;
 use std::io::Result;
 use libc;
 use std::mem;
-use io::notify::Notify;
 
 #[repr(C)]
 pub struct RingBuffer<T> {
     buffer: RawVec<T>,
     mask: usize,
-    pub notify: Option<Notify>,
 }
 
 impl<T> RingBuffer<T> {
@@ -23,7 +21,6 @@ impl<T> RingBuffer<T> {
         RingBuffer {
             buffer: RawVec::with_capacity(adjusted),
             mask: adjusted - 1,
-            notify: None,
         }
     }
 
@@ -92,7 +89,6 @@ impl<T> RingBuffer<T> {
         Ok(RingBuffer {
             buffer: unsafe { RawVec::from_raw_parts(ptr as *mut T, adjusted) },
             mask: adjusted - 1,
-            notify: Some(Notify::new()),
         })
     }
 
@@ -100,7 +96,6 @@ impl<T> RingBuffer<T> {
         RingBuffer {
             buffer: unsafe { RawVec::from_raw_parts(ptr, cap) },
             mask: cap - 1,
-            notify: None,
         }
     }
 
@@ -133,14 +128,7 @@ impl<T> RingBuffer<T> {
     pub unsafe fn store(&mut self, pos: usize, value: T) {
         ptr::write(self.buffer.ptr().offset((pos & self.mask) as isize), value);
     }
-
-    pub fn notify(&self) -> Option<&Notify> {
-        self.notify.as_ref()
-    }
 }
-
-// unsafe impl<T: Sync> Sync for RingBuffer<T> {}
-
 
 #[cfg(test)]
 mod tests {
