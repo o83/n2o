@@ -8,6 +8,7 @@ use intercore::client::{handle_context, internals};
 use std::sync::Arc;
 use reactors::task::Context;
 use intercore::message::Message;
+use reactors::scheduler::Scheduler;
 use handle::{self, into_raw, from_raw, UnsafeShared};
 
 const PREEMPTION: u64 = 20000000; // Yield each two instructions
@@ -97,7 +98,7 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn run(&'a mut self, ast: &'a AST<'a>, intercore: Context<'a>) -> Result<&'a AST<'a>, Error> {
+    pub fn run(&'a mut self, ast: &'a AST<'a>, intercore: Context<'a>, sched: &'a Scheduler<'a>) -> Result<&'a AST<'a>, Error> {
         let h = into_raw(self);
         let mut tick;
         let mut value_from_sched = from_raw(h).arena.nil();

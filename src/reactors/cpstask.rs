@@ -25,7 +25,7 @@ impl<'a> CpsTask<'a> {
 
     #[inline]
     fn run(&'a mut self, n: &'a AST<'a>, intercore: Context<'a>, sched: &'a Scheduler<'a>) -> Poll<Context<'a>, Error> {
-        let r = self.interpreter.run(n, intercore);
+        let r = self.interpreter.run(n, intercore, sched);
         match r {
             Ok(r) => {
                 match *r {
