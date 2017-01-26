@@ -89,7 +89,7 @@ impl<'a> Scheduler<'a> {
         thread::sleep(time::Duration::from_millis(10)); // Green Peace
     }
 
-    pub fn run0(&mut self) {
+    pub fn run0(&mut self, input: Option<&'a str>) {
         println!("BSP run on core {:?}", self.bus.id);
         self.io.spawn(Selector::Rx(Console::new()));
         let x = into_raw(self);
