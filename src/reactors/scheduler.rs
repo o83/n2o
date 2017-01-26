@@ -96,7 +96,7 @@ impl<'a> Scheduler<'a> {
              }));
     }
 
-    pub fn hibernate() {
+    pub fn hibernate(&mut self) {
         thread::sleep(time::Duration::from_millis(10)); // Grean Peace
     }
 

@@ -1,14 +1,9 @@
 #[macro_use]
 extern crate kernel;
 
-use std::{thread, time};
+use std::thread;
 use kernel::reactors::scheduler::Scheduler;
 use kernel::sys;
-use std::sync::Arc;
-use std::io::{self, BufReader, BufRead};
-use kernel::reactors::console::Console;
-use kernel::reactors::selector::{Selector, Async, Pool};
-use kernel::reactors::system::IO;
 
 pub fn star<'a>(sched_num: usize) -> Vec<Scheduler<'a>> {
     let mut scheds: Vec<Scheduler<'a>> = Vec::new();
@@ -29,7 +24,9 @@ pub fn park<'a>(mut scheds: Vec<Scheduler<'a>>) -> Scheduler<'a> {
     for id in 1..sz {
         if let Some(mut core) = scheds.pop() {
             unsafe {
-                spawn_on(id, move || { core.run(); });
+                spawn_on(id, move || {
+                    core.run();
+                });
             }
         }
     }
