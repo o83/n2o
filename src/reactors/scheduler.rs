@@ -84,7 +84,6 @@ impl<'a> Scheduler<'a> {
         if let Ok(x) = self.io.cmd(buf) {
             send(&self.bus, Message::Exec(shell.0, x.to_string()));
         }
-
     }
 
     pub fn hibernate(&mut self) {
@@ -105,6 +104,12 @@ impl<'a> Scheduler<'a> {
         println!("Task poll: {:?}", r);
     }
 
+    #[inline]
+    fn poll_shell(&mut self, t: TaskId) {
+        let r = self.tasks.get_mut(t.0).expect("Scheduler: can't retrieve a task.").0.poll(Context::Nil);
+        println!("Shell poll: {:?}", r);
+    }
+
     pub fn run0(&mut self, input: Option<&'a str>) {
         println!("BSP run on core {:?}", self.bus.id);
         self.io.spawn(Selector::Rx(Console::new()));
@@ -120,7 +125,7 @@ impl<'a> Scheduler<'a> {
                 Async::Ready((_, Pool::Raw(buf))) => handle::from_raw(ptr).handle_message(buf, shell),
                 _ => (),
             }
-            handle::from_raw(ptr).poll_tasks();
+            handle::from_raw(ptr).poll_shell(shell);
             handle::from_raw(ptr).hibernate();
         }
     }
