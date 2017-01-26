@@ -22,6 +22,7 @@ pub struct Scheduler<'a> {
     pub bus: Channel,
     pub queues: Memory,
     pub io: IO,
+    i: usize,
 }
 
 impl<'a> Scheduler<'a> {
@@ -36,6 +37,7 @@ impl<'a> Scheduler<'a> {
             bus: chan,
             io: IO::new(),
             queues: Memory::new(),
+            i: 0,
         }
     }
 
@@ -89,6 +91,20 @@ impl<'a> Scheduler<'a> {
         thread::sleep(time::Duration::from_millis(10)); // Green Peace
     }
 
+    #[inline]
+    fn handle_task_poll(&mut self, p: Poll<Context<'a>, task::Error>) {
+        println!("Task poll: {:?}", p);
+    }
+
+    #[inline]
+    fn poll_tasks(&'a mut self) {
+        if self.i == self.tasks.len() {
+            self.i = 0;
+        }
+        let r = self.tasks[self.i].0.poll(Context::Nil);
+        println!("Task poll: {:?}", r);
+    }
+
     pub fn run0(&mut self, input: Option<&'a str>) {
         println!("BSP run on core {:?}", self.bus.id);
         self.io.spawn(Selector::Rx(Console::new()));
@@ -96,15 +112,16 @@ impl<'a> Scheduler<'a> {
         let shell = from_raw(x)
             .spawn(Job::Cps(CpsTask::new(unsafe { UnsafeShared::new(&mut self.queues as *mut Memory) })),
                    Termination::Corecursive,
-                   None);
-        let mut tasks = self.tasks.iter_mut();
+                   input);
+        let ptr = handle::into_raw(self);
         loop {
-            self.poll_bus();
+            handle::from_raw(ptr).poll_bus();
             match from_raw(x).io.poll() {
-                Async::Ready((_, Pool::Raw(buf))) => self.handle_message(buf, shell),
+                Async::Ready((_, Pool::Raw(buf))) => handle::from_raw(ptr).handle_message(buf, shell),
                 _ => (),
             }
-            self.hibernate();
+            handle::from_raw(ptr).poll_tasks();
+            handle::from_raw(ptr).hibernate();
         }
     }
 
@@ -112,6 +129,7 @@ impl<'a> Scheduler<'a> {
         println!("AP run on core {:?}", self.bus.id);
         loop {
             self.poll_bus();
+            //
             self.hibernate();
         }
     }
