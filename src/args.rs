@@ -4,6 +4,7 @@
 use std::env;
 use core::result::Result;
 
+#[derive(Debug)]
 pub enum Error {
     ArgumentNotFound,
 }
