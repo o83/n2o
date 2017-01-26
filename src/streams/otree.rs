@@ -1,5 +1,6 @@
 use std::fmt;
 use std::fmt::Debug;
+use handle;
 
 #[derive(PartialEq, Debug)]
 pub struct Node<'a> {
@@ -37,8 +38,8 @@ impl<'a, T: Debug> Tree<'a, T> {
         }
     }
 
-    pub fn len(&'a self) -> (usize,usize) {
-        (self.nodes.len(),self.items.len())
+    pub fn len(&'a self) -> (usize, usize) {
+        (self.nodes.len(), self.items.len())
     }
 
     pub fn dump(&'a self) {
@@ -61,16 +62,8 @@ impl<'a, T: Debug> Tree<'a, T> {
         self.nodes.first().unwrap()
     }
 
-    #[inline]
-    pub fn split(&'a mut self) -> (&'a mut Self, &'a mut Self) {
-        let f: *mut Tree<'a, T> = self;
-        let uf: &mut Tree<'a, T> = unsafe { &mut *f };
-        let us: &mut Tree<'a, T> = unsafe { &mut *f };
-        (uf, us)
-    }
-
     pub fn append_node(&'a mut self, n: &'a Node<'a>) -> &'a Node<'a> {
-        let (s1, s2) = self.split();
+        let (s1, s2) = handle::split(self);
         let nl = s1.last_node();
         s2.nodes.push(Node {
             bounds: (nl.bounds.1, nl.bounds.1),
@@ -80,7 +73,7 @@ impl<'a, T: Debug> Tree<'a, T> {
     }
 
     pub fn alloc_node(&'a mut self) -> &'a Node<'a> {
-        let (s1, s2) = self.split();
+        let (s1, s2) = handle::split(self);
         let n = s1.last_node();
         s2.nodes.push(Node {
             bounds: (n.bounds.1, n.bounds.1),

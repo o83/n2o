@@ -65,7 +65,7 @@ pub unsafe fn spawn_on<'a, F>(id: usize, f: F) -> thread::JoinHandle<()>
 
 fn main() {
     let mut p = args::Parser::new();
-    let f = p.get("--init", true);
+    let f = p.get("-init", true);
     let mut inp = String::new();
     let input = match f {
         Ok(i) => {
