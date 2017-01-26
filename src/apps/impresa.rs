@@ -4,6 +4,9 @@ extern crate kernel;
 use std::thread;
 use kernel::reactors::scheduler::Scheduler;
 use kernel::sys;
+use kernel::args;
+use std::fs::File;
+use std::io::Read;
 
 pub fn star<'a>(sched_num: usize) -> Vec<Scheduler<'a>> {
     let mut scheds: Vec<Scheduler<'a>> = Vec::new();
@@ -61,5 +64,21 @@ pub unsafe fn spawn_on<'a, F>(id: usize, f: F) -> thread::JoinHandle<()>
 }
 
 fn main() {
-    park(star(4)).run0();
+    let mut p = args::Parser::new();
+    let f = p.get("--init", true);
+    let mut inp = String::new();
+    let input = match f {
+        Ok(i) => {
+            let mut file = File::open(i.expect("A real filename expected."));
+            file.expect(&format!("Can't open file {:?}.", i))
+                .read_to_string(&mut inp)
+                .expect(&format!("Can't load src: {:?}", f));
+            Some(&inp[..])
+        }
+        Err(e) => {
+            println!("{:?}", e);
+            None
+        }
+    };
+    park(star(4)).run0(input);
 }

@@ -11,7 +11,7 @@ use std::sync::Arc;
 use std::mem;
 use std::{thread, time};
 use std::ffi::CString;
-use handle::{self, from_raw, into_raw, with, split};
+use handle::{self, from_raw, into_raw, with, split, UnsafeShared};
 use reactors::console::Console;
 use reactors::selector::{Selector, Async, Pool};
 
@@ -89,11 +89,14 @@ impl<'a> Scheduler<'a> {
         thread::sleep(time::Duration::from_millis(10)); // Green Peace
     }
 
-    pub fn run0(&mut self) {
+    pub fn run0(&mut self, input: Option<&'a str>) {
         println!("BSP run on core {:?}", self.bus.id);
         self.io.spawn(Selector::Rx(Console::new()));
         let x = into_raw(self);
-        let shell = from_raw(x).spawn(Job::Cps(CpsTask::new()), Termination::Corecursive, None);
+        let shell = from_raw(x)
+            .spawn(Job::Cps(CpsTask::new(unsafe { UnsafeShared::new(&mut self.queues as *mut Memory) })),
+                   Termination::Corecursive,
+                   None);
         loop {
             self.poll_bus();
             match from_raw(x).io.poll() {
