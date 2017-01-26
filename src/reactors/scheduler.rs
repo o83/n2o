@@ -6,7 +6,6 @@ use intercore::message::*;
 use intercore::bus::{Ctx, Channel, send};
 use intercore::server::handle_intercore;
 use queues::publisher::{Publisher, Subscriber};
-use queues::pubsub::PubSub;
 use commands::ast::{AST, Value};
 use std::rc::Rc;
 use std::mem;
@@ -120,15 +119,5 @@ impl<'a> Scheduler<'a> {
             self.poll_bus();
             self.hibernate();
         }
-    }
-}
-
-impl<'a> PubSub<Message> for Scheduler<'a> {
-    fn subscribe(&mut self) -> Subscriber<Message> {
-        self.bus.publisher.subscribe()
-    }
-
-    fn add_subscriber(&mut self, s: Subscriber<Message>) {
-        self.bus.subscribers.push(s);
     }
 }
