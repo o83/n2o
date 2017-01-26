@@ -6,6 +6,7 @@ use io::options::PollOpt;
 use io::event::Evented;
 use reactors::selector::{Slot, Selector, Async, Pool};
 use std::time::Duration;
+use std::str::{from_utf8, Utf8Error};
 use handle;
 
 const EVENTS_CAPACITY: usize = 1024;
@@ -70,6 +71,17 @@ impl<'a> IO {
             self.poll.poll(&mut self.events, Some(Duration::from_millis(100))).expect("No events in poll.");
             self.i = self.events.len();
         }
+    }
+
+    pub fn cmd(&mut self, buf: &'a [u8]) -> Result<&'a str, Utf8Error> {
+        if buf.len() == 0 {
+            ()
+        }
+        if buf.len() == 1 && buf[0] == 0x0A {
+            self.write_all(&[0u8; 0]);
+            ()
+        }
+        from_utf8(buf)
     }
 
     pub fn poll(&'a mut self) -> Async<(Slot, Pool<'a>)> {

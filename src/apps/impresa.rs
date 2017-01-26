@@ -13,6 +13,7 @@ pub fn star<'a>(sched_num: usize) -> Vec<Scheduler<'a>> {
             s.bus.subscribers.push(sched.bus.publisher.subscribe());
             sched.bus.subscribers.push(s.bus.publisher.subscribe());
         }
+        sched.bus.subscribers.push(sched.bus.publisher.subscribe());
         scheds.push(sched);
     }
     scheds

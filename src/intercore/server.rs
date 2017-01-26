@@ -5,14 +5,14 @@ use intercore::message::{Message, Pub, Sub, AckPub, AckSub, Spawn, AckSpawn};
 use reactors::cpstask::CpsTask;
 use commands::ast::{AST, Value};
 use reactors::job::Job;
-use reactors::task::{Task, Context, Poll};
-use reactors::scheduler::{Scheduler, TaskTermination};
+use reactors::task::{Task, Context, Poll, Termination};
+use reactors::scheduler::Scheduler;
 use handle::{self, split, from_raw, into_raw};
 use std::rc::Rc;
 
 // The Server of InterCore protocol is handled in Scheduler context
 
-pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>, message: Option<&'a Message>, bus: &'a Channel, s: &'a Subscriber<Message>) -> Context<'a> {
+pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>, message: Option<&'a Message>, bus: &'a Channel, s: &'a Subscriber<Message>) -> Context<'a> {
 
     //println!("{:?}", s);
 
@@ -22,7 +22,7 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>, message: Option<&'a Messa
             println!("InterCore Spawn {:?} {:?}", bus.id, v);
             handle::with_raw(sched, |h| {
                 handle::from_raw(h).spawn(Job::Cps(CpsTask::new()),
-                                          TaskTermination::Recursive,
+                                          Termination::Recursive,
                                           Some(&v.txt))
             });
             Context::Nil
@@ -30,6 +30,15 @@ pub fn handle_intercore<'a>(sched: &mut Scheduler<'a>, message: Option<&'a Messa
 
         Some(&Message::QoS(task, bus, io)) => {
             println!("InterCore QoS {:?} {:?} {:?}", task, bus, io);
+            Context::Nil
+        }
+
+        Some(&Message::Exec(ref task, ref cmd)) if 0 == bus.id => {
+            println!("InterCore Exec {:?} {:?}", task, cmd);
+            let mut i: usize = task.clone();
+            let mut t = into_raw(sched.tasks.get_mut(i).expect("no task"));
+            from_raw(t).0.exec(Some(cmd));
+            from_raw(t).0.poll(Context::Nil);
             Context::Nil
         }
 

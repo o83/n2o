@@ -58,6 +58,7 @@ pub enum Message {
     AckSub(AckSub),
     AckPub(AckPub),
     AckSpawn(AckSpawn),
+    Exec(usize, String),
     Select(String, u16),
     QoS(u8, u8, u8),
     Halt,

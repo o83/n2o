@@ -1,6 +1,18 @@
 use commands::ast::AST;
 use intercore::message::Message;
 
+#[derive(Debug,Clone,Copy)]
+pub struct TaskId(pub usize);
+
+#[derive(Debug,PartialEq,Clone,Copy)]
+pub enum Termination {
+    Recursive,
+    Corecursive,
+}
+
+#[derive(Debug)]
+pub struct T3<T>(pub T, pub Termination);
+
 #[derive(Debug)]
 pub enum Poll<T, E> {
     Yield(T),
