@@ -6,4 +6,3 @@ pub mod scheduler;
 pub mod task;
 pub mod ws;
 pub mod job;
-pub mod fusion;
