@@ -88,12 +88,15 @@ impl<'a> Scheduler<'a> {
     }
 
     pub fn run0(&mut self, input: Option<&'a str>) {
-        println!("BSP run on core {:?}", self.bus.id);
+        println!("BSP core {:?}", self.bus.id);
         self.io.spawn(Selector::Rx(Console::new()));
         let x = into_raw(self);
         let shell = from_raw(x).spawn(Job::Cps(CpsTask::new(self.mem())),
                                       Termination::Corecursive,
                                       input);
+        send(&self.bus,
+             Message::Exec(shell.0, input.unwrap().to_string()));
+
         loop {
             self.poll_bus();
             match from_raw(x).io.poll() {
@@ -106,7 +109,7 @@ impl<'a> Scheduler<'a> {
     }
 
     pub fn run(&mut self) {
-        println!("AP run on core {:?}", self.bus.id);
+        println!("AP core {:?}", self.bus.id);
         loop {
             self.poll_bus();
             self.hibernate();

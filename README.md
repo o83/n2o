@@ -25,12 +25,17 @@ Test The O Language
 -------------------
 
 ```
-$ cargo build ; rlwrap ./target/debug/o
-    Finished debug [unoptimized + debuginfo] target(s) in 0.0 secs
-Welcome to O-CPS Interpreter v0.11.0!
-> fac:{$[x=1;1;x*fac[x-1]]};fac[20]
+$ cargo build ; rlwrap ./target/debug/o -init etc/init.q
+   Compiling kernel v1.1.0 (file:///Users/maxim/depot/voxoz/kernel)
+    Finished dev [unoptimized + debuginfo] target(s) in 8.1 secs
+AP core 3
+AP core 2
+AP core 1
+BSP core 0
+Welcome to O language interpreter 1.1.0
+o) fac:{$[x=1;1;x*fac[x-1]]};fac[20]
 2432902008176640000
->
+o)
 ```
 
 Enable AVX Vectorization
