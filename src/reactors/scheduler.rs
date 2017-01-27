@@ -8,7 +8,7 @@ use intercore::server::handle_intercore;
 use queues::publisher::Publisher;
 use std::{thread, time};
 use std::ffi::CString;
-use handle::{from_raw, into_raw, UnsafeShared};
+use handle::{from_raw, into_raw, UnsafeShared, use_};
 use reactors::console::Console;
 use reactors::selector::{Selector, Async, Pool};
 use std::str;
@@ -95,23 +95,22 @@ impl<'a> Scheduler<'a> {
                                       Termination::Corecursive,
                                       input);
         loop {
-            from_raw(x).poll_bus();
+            self.poll_bus();
             match from_raw(x).io.poll() {
-                Async::Ready((_, Pool::Raw(buf))) => from_raw(x).handle_shell(buf, shell),
+                Async::Ready((_, Pool::Raw(buf))) => self.handle_shell(buf, shell),
                 _ => (),
             }
-            from_raw(x).poll_tasks();
-            from_raw(x).hibernate();
+            self.hibernate();
+            use_(self).poll_tasks();
         }
     }
 
     pub fn run(&mut self) {
         println!("AP run on core {:?}", self.bus.id);
-        let x = into_raw(self);
         loop {
-            from_raw(x).poll_bus();
-            from_raw(x).poll_tasks();
-            from_raw(x).hibernate();
+            self.poll_bus();
+            self.hibernate();
+            use_(self).poll_tasks();
         }
     }
 }
