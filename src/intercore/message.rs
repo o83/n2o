@@ -34,15 +34,6 @@ pub struct AckSub {
     pub s: Subscriber<i64>,
 }
 
-// impl PartialEq for AckSub {
-//     fn eq(&self, other: &AckSub) -> bool {
-//         self.from == other.from &&
-//         self.to == other.to &&
-//         self.task_id == other.task_id &&
-//         self.result_id == other.result_id
-//     }
-// }
-
 #[derive(PartialEq, Debug,Clone)]
 pub struct AckPub {
     pub from: usize,

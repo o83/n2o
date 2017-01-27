@@ -8,7 +8,7 @@ use intercore::server::handle_intercore;
 use queues::publisher::Publisher;
 use std::{thread, time};
 use std::ffi::CString;
-use handle::{from_raw, into_raw, UnsafeShared, use_};
+use handle::{from_raw, into_raw, UnsafeShared};
 use reactors::console::Console;
 use reactors::selector::Selector;
 use std::str;
@@ -75,7 +75,7 @@ impl<'a> Scheduler<'a> {
     }
 
     #[inline]
-    fn poll_tasks(&'a mut self) {
+    fn poll_tasks(&mut self) {
         let a = into_raw(self);
         let l = from_raw(a).tasks.len();
         for i in 1..l {
@@ -104,7 +104,7 @@ impl<'a> Scheduler<'a> {
                 _ => (),
             }
             self.hibernate();
-            use_(self).poll_tasks();
+            self.poll_tasks();
         }
     }
 
@@ -113,7 +113,7 @@ impl<'a> Scheduler<'a> {
         loop {
             self.poll_bus();
             self.hibernate();
-            use_(self).poll_tasks();
+            self.poll_tasks();
         }
     }
 }
