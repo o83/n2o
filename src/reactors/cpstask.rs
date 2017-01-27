@@ -21,14 +21,23 @@ impl<'a> CpsTask<'a> {
     }
 
     #[inline]
-    fn run(&'a mut self, n: &'a AST<'a>, intercore: Context<'a>, sched: &'a Scheduler<'a>) -> Poll<Context<'a>, Error> {
+    fn run(&'a mut self,
+           n: &'a AST<'a>,
+           intercore: Context<'a>,
+           sched: Option<&'a Scheduler<'a>>)
+           -> Poll<Context<'a>, Error> {
         let r = self.interpreter.run(n, intercore, sched);
         match r {
             Ok(r) => {
                 match *r {
                     AST::Yield(Context::Intercore(msg)) => {
-                        send(&sched.bus, msg.clone());
-                        Poll::Yield(Context::Nil)
+                        match sched {
+                            Some(ref s) => {
+                                send(&s.bus, msg.clone());
+                                return Poll::Yield(Context::Nil);
+                            }
+                            None => Poll::Yield(Context::Nil),
+                        }
                     }
                     AST::Yield(ref c) => Poll::Yield(c.clone()),
                     _ => Poll::End(Context::Node(r)),
@@ -70,9 +79,9 @@ impl<'a> Task<'a> for CpsTask<'a> {
         match self.ast {
             Some(a) => {
                 match c.clone() {
-                    Context::Node(n) => self.run(n, c, sched),
-                    Context::NodeAck(task_id, n) => self.run(a, c, sched),
-                    Context::Nil => self.run(a, c, sched),
+                    Context::Node(n) => self.run(n, c, Some(sched)),
+                    Context::NodeAck(task_id, n) => self.run(a, c, Some(sched)),
+                    Context::Nil => self.run(a, c, Some(sched)),
                     _ => Poll::Err(Error::WrongContext),
                 }
             }

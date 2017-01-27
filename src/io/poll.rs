@@ -153,7 +153,6 @@ mod test {
 
     use io::poll::*;
     use io::registration::*;
-    use io::readiness::*;
     use io::options::PollOpt;
     use io::token::Token;
     use io::ready::Ready;

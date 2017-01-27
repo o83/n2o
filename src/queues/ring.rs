@@ -203,7 +203,6 @@ mod tests {
 
     #[test]
     fn test_ring_buffer_from_raw_parts() {
-        use std::ptr;
         use std::mem;
         let mut arr = vec![0u64, 1, 2, 3];
         let mut ring: RingBuffer<u64> = RingBuffer::from_raw_parts(arr.as_mut_ptr(), arr.len());

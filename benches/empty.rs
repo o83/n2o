@@ -3,13 +3,10 @@ extern crate test;
 extern crate kernel;
 
 use test::Bencher;
-use kernel::commands::*;
-use kernel::commands::ast::*;
 use kernel::streams::interpreter::*;
 use kernel::streams::stack::Stack;
 use kernel::handle;
 use kernel::reactors::task::Context;
-use std::cell::UnsafeCell;
 use kernel::handle::UnsafeShared;
 use kernel::intercore::bus::Memory;
 
@@ -60,7 +57,7 @@ fn parse4(b: &mut Bencher) {
 #[bench]
 fn fac_rust(b: &mut Bencher) {
     let mut x: i64 = 0;
-    let mut a: i64 = 5;
+    let a: i64 = 5;
     b.iter(|| {
         x = factorial(a);
     });
@@ -80,11 +77,11 @@ fn fac_rec<'a>(b: &'a mut Bencher) {
     let mut mem = Memory::new();
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
     let eval = &"fac:{$[x=1;1;x*fac[x-1]]}".to_string();
-    let mut code = h.borrow_mut().parse(eval);
-    h.borrow_mut().run(code, Context::Nil).unwrap();
+    let code = h.borrow_mut().parse(eval);
+    h.borrow_mut().run(code, Context::Nil, None).unwrap();
     let f = h.borrow_mut().parse(&"fac[5]".to_string());
     b.iter(|| {
-        h.borrow_mut().run(f, Context::Nil);
+        let _ = h.borrow_mut().run(f, Context::Nil, None);
         h.borrow_mut().gc();
     })
 }
@@ -95,10 +92,10 @@ fn fac_tail<'a>(b: &'a mut Bencher) {
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
     let eval = &"fac:{[a;b]$[a=1;b;fac[a-1;a*b]]}".to_string();
     let code = h.borrow_mut().parse(eval);
-    h.borrow_mut().run(code, Context::Nil).unwrap();
+    h.borrow_mut().run(code, Context::Nil, None).unwrap();
     let f = h.borrow_mut().parse(&"fac[4;5]".to_string());
     b.iter(|| {
-        h.borrow_mut().run(f, Context::Nil);
+        let _ = h.borrow_mut().run(f, Context::Nil, None);
         h.borrow_mut().gc();
     })
 }
@@ -109,7 +106,7 @@ fn fac_mul<'a>(b: &'a mut Bencher) {
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
     let f = h.borrow_mut().parse(&"2*3*4*5".to_string());
     b.iter(|| {
-        h.borrow_mut().run(f, Context::Nil);
+        let _ = h.borrow_mut().run(f, Context::Nil, None);
         h.borrow_mut().gc();
     })
 }
@@ -120,10 +117,10 @@ fn akkerman_k<'a>(b: &'a mut Bencher) {
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
     h.borrow_mut().define_primitives();
     let akk = h.borrow_mut().parse(&"f:{[x;y]$[0=x;1+y;$[0=y;f[x-1;1];f[x-1;f[x;y-1]]]]}".to_string());
-    h.borrow_mut().run(akk, Context::Nil).unwrap();
+    h.borrow_mut().run(akk, Context::Nil, None).unwrap();
     let call = h.borrow_mut().parse(&"f[3;4]".to_string());
     b.iter(|| {
-        h.borrow_mut().run(call, Context::Nil);
+        let _ = h.borrow_mut().run(call, Context::Nil, None);
         h.borrow_mut().gc();
     })
 }
@@ -152,6 +149,6 @@ fn stack_batch(b: &mut Bencher) {
     let mut stack: Stack<Entry> = Stack::with_capacity(capacity);
     let items = [Entry(9, 9), Entry(6, 6), Entry(7, 7)];
     b.iter(|| {
-        stack.insert_many(&items);
+        let _ = stack.insert_many(&items);
     });
 }

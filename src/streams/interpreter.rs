@@ -100,7 +100,7 @@ impl<'a> Interpreter<'a> {
     pub fn run(&'a mut self,
                ast: &'a AST<'a>,
                intercore: Context<'a>,
-               sched: &'a Scheduler<'a>)
+               sched: Option<&'a Scheduler<'a>>)
                -> Result<&'a AST<'a>, Error> {
         let h = into_raw(self);
         let mut tick;
