@@ -56,7 +56,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
                      from: bus.id,
                      to: p.from,
                      task_id: p.task_id,
-                     result_id: sched.queues.publishers().len(),
+                     result_id: sched.queues.publishers().len() - 1,
                  }));
             Context::Nil
         }
@@ -71,7 +71,6 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
 
         Some(&Message::Sub(ref sb)) if sb.to == bus.id => {
             println!("InterCore Sub {:?} {:?}", bus.id, sb);
-            let subs = sched.queues.subscribers();
             let pubs = sched.queues.publishers();
             if sb.pub_id < pubs.len() {
                 if let Some(p) = pubs.get_mut(sb.pub_id as usize) {
@@ -80,17 +79,16 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
                         from: bus.id,
                         to: sb.from,
                         task_id: sb.task_id,
-                        result_id: sched.queues.subscribers().len(),
-                        s: subscriber.clone(),
+                        result_id: subscriber.token,
+                        s: subscriber,
                     });
-                    subs.push(subscriber);
                     send(bus, message);
                 }
             }
             Context::Nil
         }
 
-        Some(&Message::AckSub(ref a)) => {
+        Some(&Message::AckSub(ref a)) if a.to == bus.id => {
             println!("InterCore AckSub {:?} {:?}", bus.id, a);
             Context::NodeAck(a.task_id, a.result_id)
         }

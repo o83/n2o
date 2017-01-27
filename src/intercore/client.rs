@@ -2,7 +2,7 @@
 use commands::ast::{Error, AST, Arena, Value};
 use streams::otree;
 use streams::interpreter::{Interpreter, Lazy, Cont};
-use intercore::message::{Pub, Sub, Message};
+use intercore::message::{Pub, Sub, Message, Spawn};
 use reactors::task::Context;
 use handle::{into_raw, from_raw};
 
@@ -20,7 +20,7 @@ pub fn internals<'a>(i: &'a mut Interpreter<'a>,
         2 => create_subscriber(i, args, arena, task_id),
         3 => snd(args, arena),
         4 => rcv(args, arena),
-        5 => Context::Nil,
+        5 => spawn(i, args, arena, task_id),
         6 => Context::Nil,
         _ => panic!("unknown internal func"),
     }
@@ -48,21 +48,41 @@ pub fn handle_context<'a>(f: &'a otree::Node<'a>,
     }
 }
 
+pub fn spawn<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>, task_id: usize) -> Context<'a> {
+    let (core, txt) = match args {
+        &AST::Cons(&AST::Value(Value::Number(c)), &AST::Cons(&AST::Value(Value::SequenceInt(n)), t)) => {
+            (c, "test".to_string())
+        }
+        _ => (0, "".to_string()),
+    };
+    i.edge = Message::Spawn(Spawn {
+        from: 0,
+        to: core as usize,
+        txt: txt,
+    });
+    Context::Intercore(&i.edge)
+}
+
 pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>,
                             args: &'a AST<'a>,
                             arena: &'a Arena<'a>,
                             task_id: usize)
                             -> Context<'a> {
-    let arg = match args {
-        &AST::Value(Value::Number(n)) => n,
-        _ => 1024,
-    } as usize;
+    let (core, cap) = match args {
+        &AST::Cons(&AST::Value(Value::Number(cap)), tail) => {
+            match tail {
+                &AST::Cons(&AST::Value(Value::Number(core)), tail) => (core as usize, cap as usize),
+                _ => panic!("oops!"),
+            }
+        }
+        _ => panic!("oops!"),
+    };
     i.edge = Message::Pub(Pub {
         from: 0,
         task_id: 0,
-        to: arg,
+        to: core,
         name: "".to_string(),
-        cap: 8,
+        cap: cap,
     });
     Context::Intercore(&i.edge)
 }
@@ -72,15 +92,20 @@ pub fn create_subscriber<'a>(i: &'a mut Interpreter<'a>,
                              arena: &'a Arena<'a>,
                              task_id: usize)
                              -> Context<'a> {
-    let p = match args {
-        &AST::Value(Value::Number(n)) => n,
-        _ => 0,
-    } as usize;
+    let (core, pub_id) = match args {
+        &AST::Cons(&AST::Value(Value::Number(pub_id)), tail) => {
+            match tail {
+                &AST::Cons(&AST::Value(Value::Number(core)), tail) => (core as usize, pub_id as usize),
+                _ => panic!("oops!"),
+            }
+        }
+        _ => panic!("oops!"),
+    };
     i.edge = Message::Sub(Sub {
         from: task_id,
         task_id: task_id,
-        to: p,
-        pub_id: p,
+        to: core,
+        pub_id: pub_id,
     });
     Context::Intercore(&i.edge)
 }

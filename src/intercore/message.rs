@@ -31,7 +31,7 @@ pub struct AckSub {
     pub to: usize,
     pub task_id: usize,
     pub result_id: usize,
-    pub s: Subscriber<Message>,
+    pub s: Subscriber<i64>,
 }
 
 // impl PartialEq for AckSub {

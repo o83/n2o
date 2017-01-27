@@ -17,8 +17,8 @@ pub enum TypeId {
 }
 
 pub struct Memory {
-    publishers: UnsafeCell<Vec<Publisher<Message>>>,
-    subscribers: UnsafeCell<Vec<Subscriber<Message>>>,
+    publishers: UnsafeCell<Vec<Publisher<i64>>>,
+    subscribers: UnsafeCell<Vec<Subscriber<i64>>>,
 }
 
 pub struct Channel {
@@ -35,12 +35,12 @@ impl Memory {
         }
     }
     #[inline]
-    pub fn publishers(&self) -> &mut Vec<Publisher<Message>> {
+    pub fn publishers(&self) -> &mut Vec<Publisher<i64>> {
         unsafe { &mut *self.publishers.get() }
     }
 
     #[inline]
-    pub fn subscribers(&self) -> &mut Vec<Subscriber<Message>> {
+    pub fn subscribers(&self) -> &mut Vec<Subscriber<i64>> {
         unsafe { &mut *self.subscribers.get() }
     }
 }
