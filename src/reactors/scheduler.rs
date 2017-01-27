@@ -1,7 +1,7 @@
 use reactors::task::{Task, Context, TaskId, T3, Termination};
 use reactors::job::Job;
 use reactors::system::IO;
-use reactors::cpstask::CpsTask;
+use reactors::cps::CpsTask;
 use intercore::message::*;
 use intercore::bus::{Memory, Channel, send};
 use intercore::server::handle_intercore;

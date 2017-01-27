@@ -2,7 +2,7 @@
 use queues::publisher::{Publisher, Subscriber};
 use intercore::bus::{Channel, send};
 use intercore::message::{Message, AckPub, AckSub};
-use reactors::cpstask::CpsTask;
+use reactors::cps::CpsTask;
 use reactors::job::Job;
 use reactors::task::{Task, Context, Termination};
 use reactors::scheduler::Scheduler;

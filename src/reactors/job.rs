@@ -1,7 +1,7 @@
 // Generic type holds all implemetors of Task trait.
 
 use reactors::task::{self, Poll, Context, Task};
-use reactors::cpstask::CpsTask;
+use reactors::cps::CpsTask;
 use reactors::scheduler::Scheduler;
 
 pub enum Job<'a> {
