@@ -9,7 +9,7 @@ use io::poll::*;
 use io::options::*;
 use io::stdio;
 use io::event::Evented;
-use reactors::selector::{Select, Slot, Async, Pool};
+use reactors::selector::{Select, Slot};
 use reactors::system::IO;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -49,16 +49,13 @@ impl Evented for Console {
 
 impl<'a> Select<'a> for Console {
     fn init(&mut self, io: &mut IO, s: Slot) {
-        write!(self.stdout,
-               "Welcome to The O Language {}\no)",
-               VERSION);
+        write!(self.stdout, "Welcome to The O Language {}\no)", VERSION);
         self.stdout.flush();
         io.register(self, s);
     }
 
-    fn select(&'a mut self, _: &'a mut IO, t: Token) -> Async<Pool<'a>> {
-        let r = self.stdin.read(&mut self.buffer).unwrap();
-        Async::Ready(Pool::Raw(&self.buffer[..r]))
+    fn select(&'a mut self, _: &'a mut IO, t: Token, buf: &mut [u8]) -> usize {
+        self.stdin.read(buf).expect("Console internal error.")
     }
 
     fn finalize(&mut self) {
