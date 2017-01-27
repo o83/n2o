@@ -94,8 +94,9 @@ impl<'a> Scheduler<'a> {
         let shell = from_raw(x).spawn(Job::Cps(CpsTask::new(self.mem())),
                                       Termination::Corecursive,
                                       input);
-        send(&self.bus,
-             Message::Exec(shell.0, input.unwrap().to_string()));
+        if let Some(i) = input {
+            send(&self.bus, Message::Exec(shell.0, i.to_string()));
+        };
 
         loop {
             self.poll_bus();
