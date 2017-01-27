@@ -183,6 +183,12 @@ pub struct Subscriber<T> {
     cursors: UncheckedUnsafeArc<Vec<Cursor>>,
 }
 
+impl<T> PartialEq for Subscriber<T> {
+    fn eq(&self, other: &Subscriber<T>) -> bool {
+        self.token == other.token
+    }
+}
+
 impl<T> Debug for Subscriber<T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let tail = self.tail(self.token);
