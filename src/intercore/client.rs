@@ -18,8 +18,8 @@ pub fn internals<'a>(i: &'a mut Interpreter<'a>,
         0 => Context::Nil,
         1 => create_publisher(i, args, arena, task_id),
         2 => create_subscriber(i, args, arena, task_id),
-        3 => snd(args, arena),
-        4 => rcv(args, arena),
+        3 => snd(i, args, arena, task_id),
+        4 => rcv(i, args, arena, task_id),
         5 => spawn(i, args, arena, task_id),
         6 => Context::Nil,
         _ => panic!("unknown internal func"),
@@ -44,6 +44,9 @@ pub fn handle_context<'a>(f: &'a otree::Node<'a>,
                                  from_raw(h).arena.ast(AST::Yield(Context::Intercore(&from_raw(h).edge))),
                                  from_raw(h).arena.cont(Cont::Intercore(message.clone(), cont)))
         } 
+
+        Context::Node(ref ast) => from_raw(h).run_cont(f, ast, cont),
+
         _ => panic!("TODO"),
     }
 }
@@ -110,26 +113,39 @@ pub fn create_subscriber<'a>(i: &'a mut Interpreter<'a>,
     Context::Intercore(&i.edge)
 }
 
-pub fn snd<'a>(args: &AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
-    // println!("SND {:?}", args);
-    match args {
+pub fn snd<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>, task_id: usize) -> Context<'a> {
+    println!("SND {:?}", args);
+    let (val, pub_id) = match args {
         &AST::Cons(&AST::Value(Value::Number(val)), tail) => {
             match tail {
-                &AST::Cons(&AST::Value(Value::Number(cursor_id)), tail) => {}
+                &AST::Cons(&AST::Value(Value::Number(pub_id)), tail) => (val, pub_id),
                 _ => panic!("oops!"),
+            }
+        }
+        _ => panic!("oops!"),
+    };
+    let mut p = i.queues.publishers().get(pub_id as usize).expect(&format!("Wrong publisher id: {}", pub_id));
+    if let Some(slot) = p.next() {
+        *slot = val;
+        p.commit();
+    }
+    // else how can i signal NotReady?
+    Context::Nil
+}
+
+pub fn rcv<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>, task_id: usize) -> Context<'a> {
+    println!("RECV {:?}", args);
+    match args {
+        &AST::Value(Value::Number(sub_id)) => {
+            let mut s = i.queues.subscribers().get(sub_id as usize).expect(&format!("Wrong subscriber id: {}", sub_id));
+            if let Some(slot) = s.recv() {
+                let res = *slot;
+                s.commit();
+                println!("subs recv {:?}", res);
+                return Context::Node(arena.ast(AST::Value(Value::Number(res as i64))));
             }
         }
         _ => panic!("oops!"),
     }
     Context::Nil
-}
-
-pub fn rcv<'a>(args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
-    let mut res: usize = 0;
-    println!("RECV {:?}", args);
-    match args {
-        &AST::Value(Value::Number(n)) => {}
-        _ => panic!("oops!"),
-    }
-    Context::NodeAck(0, res)
 }

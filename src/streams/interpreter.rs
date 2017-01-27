@@ -292,7 +292,7 @@ impl<'a> Interpreter<'a> {
                     Ok((c, f)) => {
                         match c {
                             &AST::NameInt(n) if n < from_raw(h).arena.builtins => {
-                                // println!("builtin");
+                                println!("builtin");
                                 handle_context(f,
                                                from_raw(h),
                                                internals(from_raw(h),
@@ -433,9 +433,11 @@ impl<'a> Interpreter<'a> {
 
                 match partial {
                     &AST::Nil => from_raw(h).evaluate_expr(f, val, cont),
-                    _ => Ok(Lazy::Defer(f,
-                                   from_raw(h).arena.ast(AST::Lambda(Some(f), partial, body)),
-                                   cont))
+                    _ => {
+                        Ok(Lazy::Defer(f,
+                                       from_raw(h).arena.ast(AST::Lambda(Some(f), partial, body)),
+                                       cont))
+                    }
                 }
             }
             &Cont::Cond(if_expr, else_expr, cont) => {

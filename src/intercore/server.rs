@@ -45,11 +45,36 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
         Some(&Message::Pub(ref p)) if p.to == p.from && p.to == bus.id => {
             println!("Local Pub {:?} {:?}", bus.id, p);
             sched.queues.publishers().push(Publisher::with_capacity(p.cap));
-            Context::NodeAck(p.task_id, use_(sched).queues.publishers().len())
+            Context::NodeAck(p.task_id, use_(sched).queues.publishers().len() - 1)
+        }
+
+        Some(&Message::Sub(ref sb)) if sb.to == sb.from && sb.to == bus.id => {
+            println!("Local Sub {:?} {:?}", bus.id, sb);
+            let mut sub_index = None;
+            if let Some(p) = sched.queues.publishers().get_mut(sb.pub_id as usize) {
+                let subscriber = p.subscribe();
+                // send bit just for test
+                if let Some(slot) = p.next() {
+                    *slot = 42;
+                    p.commit();
+                }
+                {
+                    let subs = sched.queues.subscribers();
+                    subs.push(subscriber);
+                    sub_index = Some(subs.len() - 1);
+                }
+            }
+            if let Some(idx) = sub_index {
+                let h = into_raw(sched);
+                let mut t = from_raw(h).tasks.get_mut(sb.task_id).expect("no task");
+                t.0.poll(Context::NodeAck(sb.task_id, idx), from_raw(h));
+            }
+            Context::Nil
         }
 
         Some(&Message::Pub(ref p)) if p.to == bus.id => {
-            sched.queues.publishers().push(Publisher::with_capacity(p.cap));
+            let mut pb = Publisher::with_capacity(p.cap);
+            sched.queues.publishers().push(pb);
             println!("InterCore Pub {:?} {:?} {:?}", s.token, bus.id, p);
             send(bus,
                  Message::AckPub(AckPub {
@@ -75,6 +100,12 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
             if sb.pub_id < pubs.len() {
                 if let Some(p) = pubs.get_mut(sb.pub_id as usize) {
                     let subscriber = p.subscribe();
+                    // send bit just for test
+                    if let Some(slot) = p.next() {
+                        *slot = 42;
+                        p.commit();
+                    }
+
                     let message = Message::AckSub(AckSub {
                         from: bus.id,
                         to: sb.from,
@@ -90,10 +121,19 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
 
         Some(&Message::AckSub(ref a)) if a.to == bus.id => {
             println!("InterCore AckSub {:?} {:?}", bus.id, a);
-            Context::NodeAck(a.task_id, a.result_id)
+            let sub_index;
+            {
+                let subs = sched.queues.subscribers();
+                subs.push(a.s.clone());
+                sub_index = subs.len() - 1;
+            }
+            let h = into_raw(sched);
+            let mut t = from_raw(h).tasks.get_mut(a.task_id).expect("no task");
+            t.0.poll(Context::NodeAck(a.task_id, sub_index), from_raw(h));
+            Context::Nil
         }
         Some(x) => {
-            //            println!("Test {:?}", x);
+            println!("Test {:?}", x);
             Context::Nil
         }
         None => Context::Nil,

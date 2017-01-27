@@ -216,12 +216,12 @@ impl<T> !Sync for Publisher<T> {}
 impl<T> Clone for Subscriber<T> {
     #[inline]
     fn clone(&self) -> Subscriber<T> {
-        let tail_seq = self.tail(self.token).load();
-        unsafe {
-            self.cursors.get().push(Cursor::new(tail_seq));
-        }
-        let token = self.cursors().len() - 1;
-        Subscriber::<T>::new(self.ring.clone(), self.cursors.clone(), token)
+        // let tail_seq = self.tail(self.token).load();
+        // unsafe {
+        //     self.cursors.get().push(Cursor::new(tail_seq));
+        // }
+        // let token = self.cursors().len() - 1;
+        Subscriber::<T>::new(self.ring.clone(), self.cursors.clone(), self.token)//its a little bit strange/ we can have different subs with the same token
     }
 }
 
