@@ -343,20 +343,6 @@ pub fn k_tensor3() {
 }
 
 #[test]
-pub fn k_pubsub() {
-    let mut mem = Memory::new();
-    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
-
-    h.borrow_mut().define_primitives();
-    let code = h.borrow_mut()
-        .parse(&"p0: pub 8; s1: sub 0; s2: sub 0; snd[p0;41]; snd[p0;42]; [rcv s1; rcv s2; rcv s1; rcv s2]"
-            .to_string());
-    let _ = h.borrow_mut().run(code, Context::Nil, None);
-    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
-               "[41 41 42 42]");
-}
-
-#[test]
 pub fn k_partial1() {
     let mut mem = Memory::new();
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
