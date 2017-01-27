@@ -64,8 +64,8 @@ impl<'a> Scheduler<'a> {
         }
     }
 
-    pub fn handle_shell(&mut self, buf: &'a [u8], shell: TaskId) {
-        if let Ok(x) = self.io.cmd(buf) {
+    pub fn handle_shell(&mut self, buf: Option<&'a str>, shell: TaskId) {
+        if let Some(x) = buf {
             send(&self.bus, Message::Exec(shell.0, x.to_string()));
         }
     }
@@ -94,14 +94,13 @@ impl<'a> Scheduler<'a> {
         let shell = from_raw(x).spawn(Job::Cps(CpsTask::new(self.mem())),
                                       Termination::Corecursive,
                                       input);
-        if let Some(i) = input {
-            send(&self.bus, Message::Exec(shell.0, i.to_string()));
-        };
+
+        self.handle_shell(input, shell);
 
         loop {
             self.poll_bus();
             match from_raw(x).io.poll() {
-                Async::Ready((_, Pool::Raw(buf))) => self.handle_shell(buf, shell),
+                Async::Ready((_, Pool::Raw(buf))) => self.handle_shell(from_raw(x).io.cmd(buf), shell),
                 _ => (),
             }
             self.hibernate();

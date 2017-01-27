@@ -73,17 +73,17 @@ impl<'a> IO {
         }
     }
 
-    pub fn cmd(&mut self, buf: &'a [u8]) -> Result<&'a str, ()> {
+    pub fn cmd(&mut self, buf: &'a [u8]) -> Option<&'a str> {
         if buf.len() == 0 {
-            return Err(());
+            return None;
         }
         if buf.len() == 1 && buf[0] == 0x0A {
             self.write_all(&[0u8; 0]);
-            return Err(());
+            return None;
         }
         match from_utf8(buf) {
-            Ok(x) => Ok(x),
-            Err(x) => Err(()),
+            Ok(x) => Some(x),
+            Err(x) => None,
         }
     }
 
