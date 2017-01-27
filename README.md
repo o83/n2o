@@ -21,7 +21,7 @@ Features
 * AVX Vectorization
 * Dedicated InterCore Bus Protocol (Star Topology)
 
-Test The O Language
+The O Language
 -------------------
 
 ```
@@ -31,7 +31,7 @@ AP core 3
 AP core 2
 AP core 1
 BSP core 0
-Welcome to O language interpreter 1.1.0
+Welcome to The O Language 1.1.0
 o)InterCore Exec 0 "a:pub 1;b:pub 2;c:pub 2;d:[a;b;c]\n\n" Yield(Nil)
 InterCore Pub 2 1 Pub { from: 0, to: 1, task_id: 0, name: "", cap: 8 }
 InterCore AckPub 0 AckPub { from: 1, to: 0, task_id: 0, result_id: 1 }

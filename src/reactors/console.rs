@@ -50,7 +50,7 @@ impl Evented for Console {
 impl<'a> Select<'a> for Console {
     fn init(&mut self, io: &mut IO, s: Slot) {
         write!(self.stdout,
-               "Welcome to O language interpreter {}\no)",
+               "Welcome to The O Language {}\no)",
                VERSION);
         self.stdout.flush();
         io.register(self, s);
