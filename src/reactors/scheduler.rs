@@ -64,7 +64,7 @@ impl<'a> Scheduler<'a> {
         }
     }
 
-    pub fn handle_message(&mut self, buf: &'a [u8], shell: TaskId) {
+    pub fn handle_shell(&mut self, buf: &'a [u8], shell: TaskId) {
         if let Ok(x) = self.io.cmd(buf) {
             send(&self.bus, Message::Exec(shell.0, x.to_string()));
         }
@@ -97,7 +97,7 @@ impl<'a> Scheduler<'a> {
         loop {
             from_raw(x).poll_bus();
             match from_raw(x).io.poll() {
-                Async::Ready((_, Pool::Raw(buf))) => from_raw(x).handle_message(buf, shell),
+                Async::Ready((_, Pool::Raw(buf))) => from_raw(x).handle_shell(buf, shell),
                 _ => (),
             }
             from_raw(x).poll_tasks();
