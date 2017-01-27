@@ -80,7 +80,7 @@ impl<'a> Task<'a> for CpsTask<'a> {
             Some(a) => {
                 match c.clone() {
                     Context::Node(n) => self.run(n, c, Some(sched)),
-                    Context::NodeAck(task_id, n) => self.run(a, c, Some(sched)),
+                    Context::NodeAck(n) => self.run(a, c, Some(sched)),
                     Context::Nil => self.run(a, c, Some(sched)),
                     _ => Poll::Err(Error::WrongContext),
                 }

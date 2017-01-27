@@ -32,7 +32,7 @@ pub enum Error {
 pub enum Context<'a> {
     Cont(usize, &'a Message),
     Node(&'a AST<'a>),
-    NodeAck(usize, usize),
+    NodeAck(usize),
     Intercore(&'a Message),
     Init(usize),
     Nil,

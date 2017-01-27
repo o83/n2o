@@ -11,16 +11,15 @@ use handle::{into_raw, from_raw};
 pub fn internals<'a>(i: &'a mut Interpreter<'a>,
                      f_id: u16,
                      args: &'a AST<'a>,
-                     arena: &'a Arena<'a>,
-                     task_id: usize)
+                     arena: &'a Arena<'a>)
                      -> Context<'a> {
     match f_id {
-        0 => Context::Nil,
-        1 => create_publisher(i, args, arena, task_id),
-        2 => create_subscriber(i, args, arena, task_id),
-        3 => snd(i, args, arena, task_id),
-        4 => rcv(i, args, arena, task_id),
-        5 => spawn(i, args, arena, task_id),
+        0 => { println!("print: {:?}", args); Context::Node(i.arena.ast(AST::Value(Value::Nil))) },
+        1 => create_publisher(i, args, arena),
+        2 => create_subscriber(i, args, arena),
+        3 => snd(i, args, arena),
+        4 => rcv(i, args, arena),
+        5 => spawn(i, args, arena),
         6 => Context::Nil,
         _ => panic!("unknown internal func"),
     }
@@ -43,15 +42,14 @@ pub fn handle_context<'a>(f: &'a otree::Node<'a>,
             from_raw(h).run_cont(f,
                                  from_raw(h).arena.ast(AST::Yield(Context::Intercore(&from_raw(h).edge))),
                                  from_raw(h).arena.cont(Cont::Intercore(message.clone(), cont)))
-        } 
-
+        }
         Context::Node(ref ast) => from_raw(h).run_cont(f, ast, cont),
 
         _ => panic!("TODO"),
     }
 }
 
-pub fn spawn<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>, task_id: usize) -> Context<'a> {
+pub fn spawn<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     let (core, txt) = match args {
         &AST::Cons(&AST::Value(Value::Number(c)), &AST::Cons(&AST::Value(Value::SequenceInt(n)), t)) => {
             (c, "test".to_string())
@@ -68,8 +66,7 @@ pub fn spawn<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena
 
 pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>,
                             args: &'a AST<'a>,
-                            arena: &'a Arena<'a>,
-                            task_id: usize)
+                            arena: &'a Arena<'a>)
                             -> Context<'a> {
     let (core, cap) = match args {
         &AST::Cons(&AST::Value(Value::Number(cap)), tail) => {
@@ -92,9 +89,9 @@ pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>,
 
 pub fn create_subscriber<'a>(i: &'a mut Interpreter<'a>,
                              args: &'a AST<'a>,
-                             arena: &'a Arena<'a>,
-                             task_id: usize)
+                             arena: &'a Arena<'a>)
                              -> Context<'a> {
+    println!("print: {:?}", args);
     let (core, pub_id) = match args {
         &AST::Cons(&AST::Value(Value::Number(pub_id)), tail) => {
             match tail {
@@ -105,15 +102,15 @@ pub fn create_subscriber<'a>(i: &'a mut Interpreter<'a>,
         _ => panic!("oops!"),
     };
     i.edge = Message::Sub(Sub {
-        from: task_id,
-        task_id: task_id,
+        from: i.task_id,
+        task_id: i.task_id,
         to: core,
         pub_id: pub_id,
     });
     Context::Intercore(&i.edge)
 }
 
-pub fn snd<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>, task_id: usize) -> Context<'a> {
+pub fn snd<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     println!("SND {:?}", args);
     let (val, pub_id) = match args {
         &AST::Cons(&AST::Value(Value::Number(val)), tail) => {
@@ -130,10 +127,10 @@ pub fn snd<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'
         p.commit();
     }
     // else how can i signal NotReady?
-    Context::Nil
+    Context::Node(i.arena.ast(AST::Value(Value::Nil)))
 }
 
-pub fn rcv<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>, task_id: usize) -> Context<'a> {
+pub fn rcv<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     println!("RECV {:?}", args);
     match args {
         &AST::Value(Value::Number(sub_id)) => {
@@ -147,5 +144,5 @@ pub fn rcv<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'
         }
         _ => panic!("oops!"),
     }
-    Context::Nil
+    Context::Node(i.arena.ast(AST::Value(Value::Nil)))
 }

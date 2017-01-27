@@ -4,7 +4,7 @@ use intercore::bus::{Channel, send};
 use intercore::message::{Message, AckPub, AckSub};
 use reactors::cps::CpsTask;
 use reactors::job::Job;
-use reactors::task::{Task, Context, Termination};
+use reactors::task::{Task, Context, Termination, Poll};
 use reactors::scheduler::Scheduler;
 use handle::{from_raw, into_raw, use_};
 
@@ -37,7 +37,8 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
         Some(&Message::Exec(ref task, ref cmd)) if 0 == bus.id => {
             let mut t = into_raw(sched.tasks.get_mut(task.clone()).expect("no shell"));
             from_raw(t).0.exec(Some(cmd));
-            let x = from_raw(t).0.poll(Context::Nil, use_(sched));
+            let mut x = Poll::Infinite;
+            x = from_raw(t).0.poll(Context::Nil, use_(sched));
             println!("InterCore Exec {:?} {:?} {:?}", task, cmd, x);
             Context::Nil
         }
@@ -45,7 +46,10 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
         Some(&Message::Pub(ref p)) if p.to == p.from && p.to == bus.id => {
             println!("Local Pub {:?} {:?}", bus.id, p);
             sched.queues.publishers().push(Publisher::with_capacity(p.cap));
-            Context::NodeAck(p.task_id, use_(sched).queues.publishers().len() - 1)
+            let mut t = use_(sched).tasks.get_mut(p.task_id).expect("no task");
+            let id = use_(sched).queues.publishers().len() - 1;
+            t.0.poll(Context::NodeAck(id), use_(sched));
+            Context::NodeAck(id)
         }
 
         Some(&Message::Sub(ref sb)) if sb.to == sb.from && sb.to == bus.id => {
@@ -67,7 +71,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
             if let Some(idx) = sub_index {
                 let h = into_raw(sched);
                 let mut t = from_raw(h).tasks.get_mut(sb.task_id).expect("no task");
-                t.0.poll(Context::NodeAck(sb.task_id, idx), from_raw(h));
+                t.0.poll(Context::NodeAck(idx), from_raw(h));
             }
             Context::Nil
         }
@@ -90,7 +94,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
             println!("InterCore AckPub {:?} {:?}", bus.id, a);
             let h = into_raw(sched);
             let mut t = from_raw(h).tasks.get_mut(a.task_id).expect("no task");
-            t.0.poll(Context::NodeAck(a.task_id, a.result_id), from_raw(h));
+            t.0.poll(Context::NodeAck(a.result_id), from_raw(h));
             Context::Nil
         }
 
@@ -129,11 +133,11 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
             }
             let h = into_raw(sched);
             let mut t = from_raw(h).tasks.get_mut(a.task_id).expect("no task");
-            t.0.poll(Context::NodeAck(a.task_id, sub_index), from_raw(h));
-            Context::Nil
+            t.0.poll(Context::NodeAck(sub_index), from_raw(h));
+            Context::NodeAck(sub_index)
         }
         Some(x) => {
-            println!("Test {:?}", x);
+            // println!("Test {:?}", x);
             Context::Nil
         }
         None => Context::Nil,
