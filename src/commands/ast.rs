@@ -191,7 +191,7 @@ impl fmt::Display for Adverb {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(PartialEq, Debug,Clone)]
 pub enum AST<'a> {
     Nil,
     Any,
@@ -211,7 +211,7 @@ pub enum AST<'a> {
     NameInt(u16),
 }
 
-#[derive(Debug,Clone)]
+#[derive(PartialEq, Debug,Clone)]
 pub enum Value<'a> {
     Nil,
     SymbolInt(u16),
