@@ -54,7 +54,7 @@ impl<'a> Task<'a> for CpsTask<'a> {
         s1.interpreter.define_primitives();
         s2.interpreter.task_id = task_id;
         s2.task_id = task_id;
-        println!("TaskId: {:?}", s2.task_id);
+        // println!("TaskId: {:?}", s2.task_id);
         match input {
             Some(i) => {
                 let s = i.to_string();

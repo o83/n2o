@@ -26,16 +26,30 @@ Test The O Language
 
 ```
 $ cargo build ; rlwrap ./target/debug/o -init etc/init.q
-   Compiling kernel v1.1.0 (file:///Users/maxim/depot/voxoz/kernel)
-    Finished dev [unoptimized + debuginfo] target(s) in 8.1 secs
+    Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
 AP core 3
 AP core 2
 AP core 1
 BSP core 0
 Welcome to O language interpreter 1.1.0
-o) fac:{$[x=1;1;x*fac[x-1]]};fac[20]
-2432902008176640000
-o)
+o)InterCore Exec 0 "a:pub 1;b:pub 2;c:pub 2;d:[a;b;c]\n\n" Yield(Nil)
+InterCore Pub 2 1 Pub { from: 0, to: 1, task_id: 0, name: "", cap: 8 }
+InterCore AckPub 0 AckPub { from: 1, to: 0, task_id: 0, result_id: 1 }
+InterCore Pub 3 2 Pub { from: 0, to: 2, task_id: 0, name: "", cap: 8 }
+InterCore AckPub 0 AckPub { from: 2, to: 0, task_id: 0, result_id: 1 }
+InterCore Pub 3 2 Pub { from: 0, to: 2, task_id: 0, name: "", cap: 8 }
+InterCore AckPub 0 AckPub { from: 2, to: 0, task_id: 0, result_id: 2 }
+
+o)a:pub 2
+InterCore Exec 0 "a:pub 2\n" Yield(Nil)
+InterCore Pub 3 2 Pub { from: 0, to: 2, task_id: 0, name: "", cap: 8 }
+InterCore AckPub 0 AckPub { from: 2, to: 0, task_id: 0, result_id: 3 }
+
+o)fac:{$[x=1;1;x*fac[x-1]]};fac[20]
+InterCore Exec 0 "fac:{$[x=1;1;x*fac[x-1]]};fac[20]\n" End(Node(Value(Number(2432902008176640000))))
+
+o)a
+InterCore Exec 0 "a\n" End(Node(Value(Number(3))))
 ```
 
 Enable AVX Vectorization

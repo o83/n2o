@@ -119,7 +119,7 @@ impl<'a> Interpreter<'a> {
         match intercore.clone() {
             Context::NodeAck(task_id, value) => {
                 value_from_sched = from_raw(h).arena.ast(AST::Value(Value::Number(value as i64)));
-                println!("intercore: {:?}", value_from_sched);
+                // println!("intercore: {:?}", value_from_sched);
             }
             //            Context::Nil => return Ok(self.arena.nil()),
             _ => (),
@@ -288,7 +288,7 @@ impl<'a> Interpreter<'a> {
                     Ok((c, f)) => {
                         match c {
                             &AST::NameInt(n) if n < from_raw(h).arena.builtins => {
-                                println!("builtin");
+                                // println!("builtin");
                                 handle_context(f,
                                                from_raw(h),
                                                internals(from_raw(h),
