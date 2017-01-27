@@ -301,9 +301,13 @@ impl<'a> Arena<'a> {
         unsafe { &(*self.asts.get())[1] } // see Arena::init for details
     }
 
-    //   pub fn yield_(&'a self) -> &'a AST<'a> {
-    //       unsafe { &(*self.asts.get())[2] } // see Arena::init for details
-    //   }
+    pub fn yield_(&'a self) -> &'a AST<'a> {
+           unsafe { &(*self.asts.get())[2] } // see Arena::init for details
+    }
+
+    pub fn valnil(&'a self) -> &'a AST<'a> {
+           unsafe { &(*self.asts.get())[3] } // see Arena::init for details
+    }
 
     pub fn dump(&'a self) {
         let x = unsafe { &mut *self.asts.get() };
@@ -367,9 +371,10 @@ impl<'a> Arena<'a> {
     pub fn init(asts: UnsafeCell<Vec<AST<'a>>>) -> (u16, UnsafeCell<Vec<AST<'a>>>) {
         let a = unsafe { &mut *asts.get() };
         assert!(a.len() == 0);
-        a.push(AST::Nil);       // Nil   - index 0
-        a.push(AST::Any);       // Any   - index 1
-//        a.push(AST::Yield(Context::Nil));     // Yield - index 2
+        a.push(AST::Nil);                   // Nil       - index 0
+        a.push(AST::Any);                   // Any       - index 1
+        a.push(AST::Yield(Context::Nil));   // Yield     - index 2
+        a.push(AST::Value(Value::Nil));     // Value Nil - index 3
         (a.len() as u16, asts)
     }
 

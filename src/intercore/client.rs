@@ -14,7 +14,7 @@ pub fn internals<'a>(i: &'a mut Interpreter<'a>,
                      arena: &'a Arena<'a>)
                      -> Context<'a> {
     match f_id {
-        0 => { println!("print: {:?}", args); Context::Node(i.arena.ast(AST::Value(Value::Nil))) },
+        0 => { println!("print: {:?}", args); Context::Node(arena.nil()) },
         1 => create_publisher(i, args, arena),
         2 => create_subscriber(i, args, arena),
         3 => snd(i, args, arena),
@@ -127,7 +127,7 @@ pub fn snd<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'
         p.commit();
     }
     // else how can i signal NotReady?
-    Context::Node(i.arena.ast(AST::Value(Value::Nil)))
+    Context::Node(arena.nil())
 }
 
 pub fn rcv<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
@@ -144,5 +144,5 @@ pub fn rcv<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'
         }
         _ => panic!("oops!"),
     }
-    Context::Node(i.arena.ast(AST::Value(Value::Nil)))
+    Context::Node(arena.nil())
 }
