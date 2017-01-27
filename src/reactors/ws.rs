@@ -8,7 +8,7 @@ use std::str;
 use std::fmt;
 use rustc_serialize::base64::{ToBase64, STANDARD};
 use sha1;
-use reactors::selector::{Select, Slot, Async, Pool};
+use reactors::selector::{Select, Slot};
 use reactors::system::IO;
 use std::fmt::Arguments;
 use handle::split;
@@ -88,7 +88,6 @@ pub struct WsServer {
     clients: HashMap<Token, WsClient>,
     parser: HttpParser,
     internal_buf: [u8; BUF_SIZE],
-    external_buf: [u8; BUF_SIZE],
 }
 
 impl WsServer {
@@ -101,7 +100,6 @@ impl WsServer {
             clients: HashMap::with_capacity(256),
             parser: HttpParser::new(),
             internal_buf: [0u8; BUF_SIZE],
-            external_buf: [0u8; BUF_SIZE],
         }
     }
 
@@ -144,25 +142,25 @@ impl WsServer {
     }
 
     #[inline]
-    fn decode_message(&mut self) -> usize {
+    fn decode_message(&mut self, buf: &mut [u8]) -> usize {
         let opcode = self.internal_buf[0];
         // assume we always have masked message
         let len = (self.internal_buf[1] - 128) as usize;
         let key = &self.internal_buf[2..6];
         for (i, v) in self.internal_buf[6..len + 6].iter().enumerate() {
             let b: u8 = v ^ key[i & 0x3];
-            self.external_buf[i] = b;
+            buf[i] = b;
         }
         len
     }
 
     #[inline]
-    fn read_incoming(&mut self, t: Token) -> usize {
+    fn read_incoming(&mut self, t: Token, buf: &mut [u8]) -> usize {
         let (s1, s2) = split(self);
         let mut c = s1.clients.get_mut(&t).unwrap();
         if c.ready {
             match c.sock.read(&mut s2.internal_buf) {
-                Ok(s) => s2.decode_message(),
+                Ok(s) => s2.decode_message(buf),
                 Err(_) => 0,
             }
         } else {
@@ -191,13 +189,12 @@ impl<'a> Select<'a> for WsServer {
         self.slot = s;
     }
 
-    fn select(&'a mut self, io: &'a mut IO, t: Token) -> Async<Pool<'a>> {
+    fn select(&'a mut self, io: &'a mut IO, t: Token, buf: &mut [u8]) -> usize {
         if t == self.listen_token {
             self.reg_incoming(io);
-            Async::NotReady
+            0
         } else {
-            let l = self.read_incoming(t);
-            Async::Ready(Pool::Raw(&self.external_buf[..l]))
+            self.read_incoming(t, buf)
         }
     }
 

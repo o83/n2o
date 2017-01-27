@@ -1,6 +1,6 @@
 use reactors::task::{Task, Context, TaskId, T3, Termination};
 use reactors::job::Job;
-use reactors::system::IO;
+use reactors::system::{IO, Async};
 use reactors::cps::CpsTask;
 use intercore::message::*;
 use intercore::bus::{Memory, Channel, send};
@@ -10,7 +10,7 @@ use std::{thread, time};
 use std::ffi::CString;
 use handle::{from_raw, into_raw, UnsafeShared, use_};
 use reactors::console::Console;
-use reactors::selector::{Selector, Async, Pool};
+use reactors::selector::Selector;
 use std::str;
 
 const TASKS_MAX_CNT: usize = 256;
@@ -100,7 +100,7 @@ impl<'a> Scheduler<'a> {
         loop {
             self.poll_bus();
             match from_raw(x).io.poll() {
-                Async::Ready((_, Pool::Raw(buf))) => self.handle_shell(from_raw(x).io.cmd(buf), shell),
+                Async::Ready((_, buf)) => self.handle_shell(from_raw(x).io.cmd(buf), shell),
                 _ => (),
             }
             self.hibernate();

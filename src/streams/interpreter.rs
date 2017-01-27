@@ -401,7 +401,7 @@ impl<'a> Interpreter<'a> {
         let h = into_raw(self);
         match con {
             &Cont::Intercore(ref m, cc) => {
-                println!("Intercore: val: {:?} #### cont: {:?}\n", val, cc);
+                // println!("Intercore: val: {:?} #### cont: {:?}\n", val, cc);
                 from_raw(h).edge = m.clone();
                 Ok(Lazy::Continuation(node, val, cc))
             }
