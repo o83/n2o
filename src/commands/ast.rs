@@ -191,7 +191,7 @@ impl fmt::Display for Adverb {
     }
 }
 
-#[derive(PartialEq,Debug,Clone)]
+#[derive(Debug,Clone)]
 pub enum AST<'a> {
     Nil,
     Any,
@@ -211,7 +211,7 @@ pub enum AST<'a> {
     NameInt(u16),
 }
 
-#[derive(PartialEq,Debug,Clone)]
+#[derive(Debug,Clone)]
 pub enum Value<'a> {
     Nil,
     SymbolInt(u16),
@@ -395,7 +395,10 @@ impl<'a> AST<'a> {
         }
     }
     pub fn is_empty(&self) -> bool {
-        self == &AST::Nil
+        match self {
+            &AST::Nil => true,
+            _ => false,
+        }
     }
     pub fn is_cons(&self) -> bool {
         match self {

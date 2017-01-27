@@ -80,7 +80,8 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
                         from: bus.id,
                         to: sb.from,
                         task_id: sb.task_id,
-                        result_id: sched.queues.subscribers().len(), //                        s: subscriber.clone(),
+                        result_id: sched.queues.subscribers().len(),
+                        s: subscriber.clone(),
                     });
                     subs.push(subscriber);
                     send(bus, message);

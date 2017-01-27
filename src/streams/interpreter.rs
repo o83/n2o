@@ -10,6 +10,10 @@ use intercore::message::Message;
 use reactors::scheduler::Scheduler;
 use handle::{self, into_raw, from_raw, UnsafeShared};
 
+unsafe impl<'a> Sync for Cont<'a> {}
+unsafe impl<'a> Sync for AST<'a> {}
+unsafe impl Sync for Message {}
+
 const PREEMPTION: u64 = 20000000; // Yield each two instructions
 
 #[derive(Clone, Debug)]
@@ -426,10 +430,10 @@ impl<'a> Interpreter<'a> {
                         }
                     };
                 }
-                if partial == &AST::Nil {
-                    from_raw(h).evaluate_expr(f, val, cont)
-                } else {
-                    Ok(Lazy::Defer(f,
+
+                match partial {
+                    &AST::Nil => from_raw(h).evaluate_expr(f, val, cont),
+                    _ => Ok(Lazy::Defer(f,
                                    from_raw(h).arena.ast(AST::Lambda(Some(f), partial, body)),
                                    cont))
                 }

@@ -28,7 +28,7 @@ pub enum Error {
     WrongContext,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub enum Context<'a> {
     Cont(usize, &'a Message),
     Node(&'a AST<'a>),
