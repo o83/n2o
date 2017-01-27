@@ -28,8 +28,7 @@ pub fn park<'a>(mut scheds: Vec<Scheduler<'a>>) -> Scheduler<'a> {
         if let Some(mut core) = scheds.pop() {
             unsafe {
                 spawn_on(id, move || {
-                    let mut c = core.clone();
-                    c.run();
+                    core.run();
                 });
             }
         }
