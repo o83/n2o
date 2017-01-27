@@ -1,12 +1,12 @@
 
 use queues::publisher::{Publisher, Subscriber};
-use intercore::bus::{Memory, Channel, send};
+use intercore::bus::{Channel, send};
 use intercore::message::{Message, AckPub, AckSub};
 use reactors::cpstask::CpsTask;
 use reactors::job::Job;
 use reactors::task::{Task, Context, Termination};
 use reactors::scheduler::Scheduler;
-use handle::{from_raw, into_raw, UnsafeShared, use_};
+use handle::{from_raw, into_raw, use_};
 
 // The Server of InterCore protocol is handled in Scheduler context
 
@@ -23,7 +23,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
         Some(&Message::Spawn(ref v)) if v.to == bus.id => {
             println!("InterCore Spawn {:?} {:?}", bus.id, v);
             let x = into_raw(sched);
-            from_raw(x).spawn(Job::Cps(CpsTask::new(unsafe { UnsafeShared::new(&mut sched.queues as *mut Memory) })),
+            from_raw(x).spawn(Job::Cps(CpsTask::new(sched.mem())),
                               Termination::Recursive,
                               Some(&v.txt));
             Context::Nil
