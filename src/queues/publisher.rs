@@ -9,8 +9,6 @@ use std::ffi::CString;
 use std::fmt::Formatter;
 use std::fmt::Debug;
 use std::fmt;
-use std::slice;
-use std::mem;
 
 type Sequence = usize;
 

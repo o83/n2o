@@ -1,12 +1,10 @@
 
-use commands::ast::{self, Error, AST, Arena, Value};
+use commands::ast::{Error, AST, Arena, Value};
 use streams::otree;
 use streams::interpreter::{Interpreter, Lazy, Cont};
-use intercore::message::{Pub, Sub, Spawn, Message};
-use intercore::bus::Memory;
+use intercore::message::{Pub, Sub, Message};
 use reactors::task::Context;
-use queues::publisher::Publisher;
-use handle::{self, into_raw, from_raw};
+use handle::{into_raw, from_raw};
 
 // The InterCore messages are being sent fron client in Interpreter
 

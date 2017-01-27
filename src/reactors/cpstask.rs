@@ -1,11 +1,8 @@
 use reactors::task::{Task, Context, Poll, Error};
 use streams::interpreter::*;
-use commands::ast::{AST, Value};
+use commands::ast::AST;
 use handle::*;
-use std::sync::Arc;
 use intercore::bus::{send, Memory};
-use intercore::message::Message;
-use core::ops::Deref;
 use reactors::scheduler::Scheduler;
 
 pub struct CpsTask<'a> {
@@ -29,7 +26,10 @@ impl<'a> CpsTask<'a> {
         match r {
             Ok(r) => {
                 match *r {
-                    AST::Yield(Context::Intercore(msg)) => { send(&sched.bus, msg.clone()); Poll::Yield(Context::Nil) },
+                    AST::Yield(Context::Intercore(msg)) => {
+                        send(&sched.bus, msg.clone());
+                        Poll::Yield(Context::Nil)
+                    }
                     AST::Yield(ref c) => Poll::Yield(c.clone()),
                     _ => Poll::End(Context::Node(r)),
                 }

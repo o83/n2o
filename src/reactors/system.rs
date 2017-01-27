@@ -6,7 +6,7 @@ use io::options::PollOpt;
 use io::event::Evented;
 use reactors::selector::{Slot, Selector, Async, Pool};
 use std::time::Duration;
-use std::str::{from_utf8, Utf8Error};
+use std::str::from_utf8;
 use handle;
 
 const EVENTS_CAPACITY: usize = 1024;

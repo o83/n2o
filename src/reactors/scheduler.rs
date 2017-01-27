@@ -1,17 +1,14 @@
-use reactors::task::{self, Task, Context, Poll, TaskId, T3, Termination};
+use reactors::task::{Task, Context, TaskId, T3, Termination};
 use reactors::job::Job;
 use reactors::system::IO;
 use reactors::cpstask::CpsTask;
 use intercore::message::*;
 use intercore::bus::{Memory, Channel, send};
 use intercore::server::handle_intercore;
-use queues::publisher::{Publisher, Subscriber};
-use commands::ast::{AST, Value};
-use std::sync::Arc;
-use std::mem;
+use queues::publisher::Publisher;
 use std::{thread, time};
 use std::ffi::CString;
-use handle::{self, from_raw, into_raw, with, split, UnsafeShared, use_};
+use handle::{from_raw, into_raw, UnsafeShared};
 use reactors::console::Console;
 use reactors::selector::{Selector, Async, Pool};
 use std::str;
@@ -81,7 +78,9 @@ impl<'a> Scheduler<'a> {
     fn poll_tasks(&'a mut self) {
         let a = into_raw(self);
         let l = from_raw(a).tasks.len();
-        for i in 1..l { from_raw(a).tasks[i].0.poll(Context::Nil, from_raw(a)); };
+        for i in 1..l {
+            from_raw(a).tasks[i].0.poll(Context::Nil, from_raw(a));
+        }
     }
 
     pub fn mem(&mut self) -> UnsafeShared<Memory> {
@@ -92,10 +91,9 @@ impl<'a> Scheduler<'a> {
         println!("BSP run on core {:?}", self.bus.id);
         self.io.spawn(Selector::Rx(Console::new()));
         let x = into_raw(self);
-        let shell = from_raw(x)
-            .spawn(Job::Cps(CpsTask::new(self.mem())),
-                   Termination::Corecursive,
-                   input);
+        let shell = from_raw(x).spawn(Job::Cps(CpsTask::new(self.mem())),
+                                      Termination::Corecursive,
+                                      input);
         loop {
             from_raw(x).poll_bus();
             match from_raw(x).io.poll() {

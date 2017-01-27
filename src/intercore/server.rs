@@ -1,13 +1,12 @@
 
 use queues::publisher::{Publisher, Subscriber};
 use intercore::bus::{Memory, Channel, send};
-use intercore::message::{Message, Pub, Sub, AckPub, AckSub, Spawn, AckSpawn};
+use intercore::message::{Message, AckPub, AckSub};
 use reactors::cpstask::CpsTask;
-use commands::ast::{AST, Value};
 use reactors::job::Job;
-use reactors::task::{Task, Context, Poll, Termination};
+use reactors::task::{Task, Context, Termination};
 use reactors::scheduler::Scheduler;
-use handle::{self, split, from_raw, into_raw, UnsafeShared, use_};
+use handle::{from_raw, into_raw, UnsafeShared, use_};
 
 // The Server of InterCore protocol is handled in Scheduler context
 

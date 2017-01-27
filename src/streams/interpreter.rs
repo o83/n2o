@@ -5,7 +5,6 @@ use streams::{verb, env, otree};
 use commands::ast::{self, Error, AST, Verb, Adverb, Arena, Value};
 use intercore::bus::Memory;
 use intercore::client::{handle_context, internals};
-use std::sync::Arc;
 use reactors::task::Context;
 use intercore::message::Message;
 use reactors::scheduler::Scheduler;
@@ -98,7 +97,11 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn run(&'a mut self, ast: &'a AST<'a>, intercore: Context<'a>, sched: &'a Scheduler<'a>) -> Result<&'a AST<'a>, Error> {
+    pub fn run(&'a mut self,
+               ast: &'a AST<'a>,
+               intercore: Context<'a>,
+               sched: &'a Scheduler<'a>)
+               -> Result<&'a AST<'a>, Error> {
         let h = into_raw(self);
         let mut tick;
         let mut value_from_sched = from_raw(h).arena.nil();
@@ -118,7 +121,7 @@ impl<'a> Interpreter<'a> {
                 value_from_sched = from_raw(h).arena.ast(AST::Value(Value::Number(value as i64)));
                 println!("intercore: {:?}", value_from_sched);
             }
-//            Context::Nil => return Ok(self.arena.nil()),
+            //            Context::Nil => return Ok(self.arena.nil()),
             _ => (),
         }
 
