@@ -50,6 +50,9 @@ InterCore Exec 0 "fac:{$[x=1;1;x*fac[x-1]]};fac[20]\n" End(Node(Value(Number(243
 
 o)a
 InterCore Exec 0 "a\n" End(Node(Value(Number(3))))
+
+o)(1;2;3)*(2;4;9)
+InterCore Exec 0 "(1;2;3)*(2;4;9)\n" End(Node(Value(VecInt([2, 8, 27]))))
 ```
 
 Enable AVX Vectorization
