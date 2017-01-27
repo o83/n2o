@@ -1,4 +1,6 @@
 
+use queues::publisher::Subscriber;
+
 #[derive(PartialEq, Debug,Clone)]
 pub struct Pub {
     pub from: usize,
@@ -23,12 +25,22 @@ pub struct Spawn {
     pub txt: String,
 }
 
-#[derive(PartialEq, Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct AckSub {
     pub from: usize,
     pub to: usize,
     pub task_id: usize,
-    pub result_id: usize, //    pub s: Subscriber<Message>,
+    pub result_id: usize,
+    pub s: Subscriber<Message>,
+}
+
+impl PartialEq for AckSub {
+    fn eq(&self, other: &AckSub) -> bool {
+        self.from == other.from &&
+        self.to == other.to &&
+        self.task_id == other.task_id &&
+        self.result_id == other.result_id
+    }
 }
 
 #[derive(PartialEq, Debug,Clone)]

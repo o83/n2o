@@ -1,6 +1,6 @@
 use reactors::task::{Task, Context, TaskId, T3, Termination};
 use reactors::job::Job;
-use reactors::system::IO;
+use reactors::system::{IO, Async};
 use reactors::cps::CpsTask;
 use intercore::message::*;
 use intercore::bus::{Memory, Channel, send};
@@ -10,7 +10,7 @@ use std::{thread, time};
 use std::ffi::CString;
 use handle::{from_raw, into_raw, UnsafeShared, use_};
 use reactors::console::Console;
-use reactors::selector::{Selector, Async, Pool};
+use reactors::selector::Selector;
 use std::str;
 
 const TASKS_MAX_CNT: usize = 256;
@@ -64,8 +64,8 @@ impl<'a> Scheduler<'a> {
         }
     }
 
-    pub fn handle_shell(&mut self, buf: &'a [u8], shell: TaskId) {
-        if let Ok(x) = self.io.cmd(buf) {
+    pub fn handle_shell(&mut self, buf: Option<&'a str>, shell: TaskId) {
+        if let Some(x) = buf {
             send(&self.bus, Message::Exec(shell.0, x.to_string()));
         }
     }
@@ -94,14 +94,13 @@ impl<'a> Scheduler<'a> {
         let shell = from_raw(x).spawn(Job::Cps(CpsTask::new(self.mem())),
                                       Termination::Corecursive,
                                       input);
-        if let Some(i) = input {
-            send(&self.bus, Message::Exec(shell.0, i.to_string()));
-        };
+
+        self.handle_shell(input, shell);
 
         loop {
             self.poll_bus();
             match from_raw(x).io.poll() {
-                Async::Ready((_, Pool::Raw(buf))) => self.handle_shell(buf, shell),
+                Async::Ready((_, buf)) => self.handle_shell(from_raw(x).io.cmd(buf), shell),
                 _ => (),
             }
             self.hibernate();

@@ -4,13 +4,20 @@ use io::token::Token;
 use io::ready::Ready;
 use io::options::PollOpt;
 use io::event::Evented;
-use reactors::selector::{Slot, Selector, Async, Pool};
+use reactors::selector::{Slot, Selector};
 use std::time::Duration;
 use std::str::from_utf8;
 use handle;
 
 const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;
+const BUFFER_CAPACITY: usize = 1024;
+
+#[derive(Debug)]
+pub enum Async<T> {
+    Ready(T),
+    NotReady,
+}
 
 pub struct IO {
     tokens: usize,
@@ -19,7 +26,8 @@ pub struct IO {
     selectors: Vec<Selector>,
     slots: Vec<Slot>,
     running: bool,
-    i: usize,
+    buf: [u8; BUFFER_CAPACITY],
+    polled: usize,
 }
 
 impl<'a> IO {
@@ -31,7 +39,8 @@ impl<'a> IO {
             selectors: Vec::with_capacity(SUBSCRIBERS_CAPACITY),
             slots: Vec::with_capacity(SUBSCRIBERS_CAPACITY),
             running: true,
-            i: 0,
+            buf: [0u8; BUFFER_CAPACITY],
+            polled: 0,
         }
     }
 
@@ -67,39 +76,40 @@ impl<'a> IO {
 
     #[inline]
     fn poll_if_need(&mut self) {
-        if self.i == 0 {
+        if self.polled == 0 {
             self.poll.poll(&mut self.events, Some(Duration::from_millis(100))).expect("No events in poll.");
-            self.i = self.events.len();
+            self.polled = self.events.len();
         }
     }
 
-    pub fn cmd(&mut self, buf: &'a [u8]) -> Result<&'a str, ()> {
+    pub fn cmd(&mut self, buf: &'a [u8]) -> Option<&'a str> {
         if buf.len() == 0 {
-            return Err(());
+            return None;
         }
         if buf.len() == 1 && buf[0] == 0x0A {
             self.write_all(&[0u8; 0]);
-            return Err(());
+            return None;
         }
         match from_utf8(buf) {
-            Ok(x) => Ok(x),
-            Err(x) => Err(()),
+            Ok(x) => Some(x),
+            Err(x) => None,
         }
     }
 
-    pub fn poll(&'a mut self) -> Async<(Slot, Pool<'a>)> {
+    pub fn poll(&'a mut self) -> Async<(Slot, &'a [u8])> {
         self.poll_if_need();
-        match self.i {
+        match self.polled {
             0 => Async::NotReady,
             id => {
-                self.i -= 1;
-                let e = self.events.get(self.i).expect("Can't retrieve an event.");
+                self.polled -= 1;
+                let e = self.events.get(self.polled).expect("Can't retrieve an event.");
                 let (s1, s2) = handle::split(self);
+                let buf = &mut s1.buf;
                 let slot = s1.slots.get(e.token().0).expect("Can't retrieve a slot.");
                 let sel = s1.selectors.get_mut(slot.0).expect("Can't retrieve a selector.");
-                match sel.unpack().select(s2, e.token()) {
-                    Async::Ready(p) => Async::Ready((Slot(slot.0), p)),
-                    Async::NotReady => Async::NotReady,
+                match sel.unpack().select(s2, e.token(), buf) {
+                    0 => Async::NotReady,
+                    x => Async::Ready((Slot(slot.0), &buf[..x])),
                 }
             }
         }

@@ -9,19 +9,9 @@ const EVENTS_CAPACITY: usize = 1024;
 const SUBSCRIBERS_CAPACITY: usize = 16;
 const READ_BUF_SIZE: usize = 2048;
 
-#[derive(Debug)]
-pub enum Async<T> {
-    Ready(T),
-    NotReady,
-}
-
-pub enum Pool<'a> {
-    Raw(&'a [u8]),
-}
-
 pub trait Select<'a>: Write {
     fn init(&mut self, io: &mut IO, s: Slot);
-    fn select(&'a mut self, io: &'a mut IO, t: Token) -> Async<Pool<'a>>;
+    fn select(&'a mut self, io: &'a mut IO, t: Token, buf: &mut [u8]) -> usize;
     fn finalize(&mut self);
 }
 
