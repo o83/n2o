@@ -26,20 +26,25 @@ impl<'a> CpsTask<'a> {
            intercore: Context<'a>,
            sched: Option<&'a Scheduler<'a>>)
            -> Poll<Context<'a>, Error> {
-        let r = self.interpreter.run(n, intercore, sched);
+        let x = into_raw(self);
+        let r = from_raw(x).interpreter.run(n, intercore, sched);
         match r {
             Ok(r) => {
-                match *r {
-                    AST::Yield(Context::Intercore(msg)) => {
-                        match sched {
-                            Some(ref s) => {
-                                send(&s.bus, msg.clone());
-                                return Poll::Yield(Context::Nil);
+                match r.clone() {
+                    AST::Yield(x) => {
+                        match x {
+                            Context::Intercore(msg) => {
+                                match sched {
+                                    Some(ref s) => {
+                                        send(&s.bus, msg.clone());
+                                        return Poll::Yield(x.clone());
+                                    }
+                                    None => Poll::Yield(Context::Nil), 
+                                }
                             }
-                            None => Poll::Yield(Context::Nil),
+                            _ => Poll::Yield(x.clone()),
                         }
                     }
-                    AST::Yield(ref c) => Poll::Yield(c.clone()),
                     _ => Poll::End(Context::Node(r)),
                 }
             }

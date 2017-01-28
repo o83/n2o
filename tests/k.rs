@@ -11,6 +11,8 @@ use kernel::reactors::cps::CpsTask;
 use kernel::reactors::scheduler::Scheduler;
 use kernel::handle::{into_raw, UnsafeShared, use_, from_raw};
 use kernel::intercore::bus::Memory;
+use kernel::intercore::message::Message;
+use kernel::intercore::server::handle_intercore;
 
 #[test]
 pub fn k_ariph() {
@@ -358,25 +360,76 @@ pub fn k_partial1() {
 #[test]
 pub fn k_pubsub() {
     let ref mut sched = Scheduler::with_channel(0);
-    println!("{:?}", sched.tasks.len());
-    let x = into_raw(sched);
+    let s = into_raw(sched);
     let code = "p0:pub[0;8]; s1:sub[0;p0]; s2:sub[0;p0]; snd[p0;11]; snd[p0;12]; print[rcv s1; rcv s2; rcv s1; rcv s2]";
-    let shell = from_raw(x).spawn(Job::Cps(CpsTask::new(sched.mem())),
+    let shell = from_raw(s).spawn(Job::Cps(CpsTask::new(sched.mem())),
                                   Termination::Corecursive,
                                   Some(code));
 
-    println!("{:?}", shell);
     let mut t = into_raw(sched.tasks.get_mut(shell.0).expect("no shell"));
-    println!("{:?}", t);
     from_raw(t).0.exec(Some(code));
-    let mut x = from_raw(t).0.poll(Context::Nil, use_(sched));
-    println!("{:?}", x);
-            x = from_raw(t).0.poll(Context::Nil, use_(sched));
-    println!("{:?}", x);
-            x = from_raw(t).0.poll(Context::Nil, use_(sched));
-    println!("{:?}", x);
-    if let Poll::End(Context::Node(s)) = x {
-       assert_eq!(format!("{}", s), "[12 12 11 11]");
+    let mut poll = Poll::End(Context::Nil);
+    let mut msg1 = Message::Nop;
+    let mut ctx = Context::Nil;
+    poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
+    match poll.clone() {
+        Poll::Yield(c) => {
+            ctx = c.clone();
+            match ctx {
+                Context::Intercore(i) => msg1 = i.clone(),
+                _ => (),
+            }
+        }
+        _ => (),
+    }
+    ctx = handle_intercore(from_raw(s), Some(use_(&mut msg1)), &mut from_raw(s).bus);
+    println!("ctx 1: {:?}", ctx.clone());
+    poll = from_raw(t).0.poll(ctx, from_raw(sched));
+    let mut msg2 = Message::Nop;
+    match poll.clone() {
+        Poll::Yield(c) => {
+            ctx = c.clone();
+            match ctx {
+                Context::Intercore(i) => msg2 = i.clone(),
+                _ => (),
+            }
+        }
+        _ => (),
+    }
+    ctx = handle_intercore(from_raw(s), Some(use_(&mut msg2)), &mut from_raw(s).bus);
+    poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
+    println!("ctx 2: {:?}", ctx.clone());
+    let mut msg3 = Message::Nop;
+    match poll.clone() {
+        Poll::Yield(c) => {
+            ctx = c.clone();
+            match ctx {
+                Context::Intercore(i) => msg3 = i.clone(),
+                _ => (),
+            }
+        }
+        _ => (),
+    }
+    ctx = handle_intercore(from_raw(s), Some(use_(&mut msg3)), &mut from_raw(s).bus);
+    poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
+    println!("ctx 3: {:?}", ctx.clone());
+    let mut msg4 = Message::Nop;
+    match poll.clone() {
+        Poll::Yield(c) => {
+            ctx = c.clone();
+            match ctx {
+                Context::Intercore(i) => msg4 = i.clone(),
+                _ => (),
+            }
+        }
+        _ => (),
+    }
+    ctx = handle_intercore(from_raw(s), Some(use_(&mut msg4)), &mut from_raw(s).bus);
+    poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
+    println!("ctx 4: {:?}", ctx.clone());
+    match poll.clone() {
+        Poll::End(Context::Node(s)) => assert_eq!(format!("{}",s),"ok"),
+        _ => assert_eq!(1,0)
     }
 }
 

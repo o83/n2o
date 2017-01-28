@@ -14,7 +14,7 @@ pub enum Termination {
 #[derive(Debug)]
 pub struct T3<T>(pub T, pub Termination);
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum Poll<T, E> {
     Yield(T),
     End(T),
@@ -22,7 +22,7 @@ pub enum Poll<T, E> {
     Infinite,
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum Error {
     RuntimeError,
     WrongContext,

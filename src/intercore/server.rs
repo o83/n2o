@@ -12,8 +12,7 @@ use handle::{from_raw, into_raw, use_};
 
 pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
                             message: Option<&'a Message>,
-                            bus: &'a Channel,
-                            s: &'a Subscriber<Message>)
+                            bus: &'a Channel) //, s: &'a Subscriber<Message>)
                             -> Context<'a> {
 
     // println!("{:?}", s);
@@ -74,7 +73,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
         Some(&Message::Pub(ref p)) if p.to == bus.id => {
             let mut pb = Publisher::with_capacity(p.cap);
             sched.queues.publishers().push(pb);
-            println!("InterCore Pub {:?} {:?} {:?}", s.token, bus.id, p);
+            println!("InterCore Pub {:?} {:?}", bus.id, p);
             send(bus,
                  Message::AckPub(AckPub {
                      from: bus.id,
