@@ -5,8 +5,11 @@ extern crate kernel;
 use kernel::commands::ast::*;
 use kernel::streams::interpreter::*;
 use kernel::handle;
-use kernel::reactors::task::Context;
-use kernel::handle::UnsafeShared;
+use kernel::reactors::task::{Termination, Context, Poll, Task};
+use kernel::reactors::job::Job;
+use kernel::reactors::cps::CpsTask;
+use kernel::reactors::scheduler::Scheduler;
+use kernel::handle::{into_raw, UnsafeShared, use_, from_raw};
 use kernel::intercore::bus::Memory;
 
 #[test]
@@ -354,15 +357,27 @@ pub fn k_partial1() {
 
 #[test]
 pub fn k_pubsub() {
-    let mut mem = Memory::new();
-    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
-    h.borrow_mut().define_primitives();
-    let code = h.borrow_mut()
-        .parse(&"p0: pub 8; s1: sub 0; s2: sub 0; snd[p0;41]; snd[p0;42]; [rcv s1; rcv s2; rcv s1; rcv s2]"
-            .to_string());
-    let _ = h.borrow_mut().run(code, Context::Nil, None);
-    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
-               "[41 41 42 42]");
+    let ref mut sched = Scheduler::with_channel(0);
+    println!("{:?}", sched.tasks.len());
+    let x = into_raw(sched);
+    let code = "p0:pub[0;8]; s1:sub[0;p0]; s2:sub[0;p0]; snd[p0;11]; snd[p0;12]; print[rcv s1; rcv s2; rcv s1; rcv s2]";
+    let shell = from_raw(x).spawn(Job::Cps(CpsTask::new(sched.mem())),
+                                  Termination::Corecursive,
+                                  Some(code));
+
+    println!("{:?}", shell);
+    let mut t = into_raw(sched.tasks.get_mut(shell.0).expect("no shell"));
+    println!("{:?}", t);
+    from_raw(t).0.exec(Some(code));
+    let mut x = from_raw(t).0.poll(Context::Nil, use_(sched));
+    println!("{:?}", x);
+            x = from_raw(t).0.poll(Context::Nil, use_(sched));
+    println!("{:?}", x);
+            x = from_raw(t).0.poll(Context::Nil, use_(sched));
+    println!("{:?}", x);
+    if let Poll::End(Context::Node(s)) = x {
+       assert_eq!(format!("{}", s), "[12 12 11 11]");
+    }
 }
 
 #[test]

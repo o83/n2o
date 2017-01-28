@@ -14,7 +14,7 @@ pub fn internals<'a>(i: &'a mut Interpreter<'a>,
                      arena: &'a Arena<'a>)
                      -> Context<'a> {
     match f_id {
-        0 => { println!("print: {:?}", args); Context::Node(arena.nil()) },
+        0 => { println!("print: {}", args); Context::Node(arena.nil()) },
         1 => create_publisher(i, args, arena),
         2 => create_subscriber(i, args, arena),
         3 => snd(i, args, arena),

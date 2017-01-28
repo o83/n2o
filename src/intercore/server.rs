@@ -4,7 +4,7 @@ use intercore::bus::{Channel, send};
 use intercore::message::{Message, AckPub, AckSub};
 use reactors::cps::CpsTask;
 use reactors::job::Job;
-use reactors::task::{Task, Context, Termination, Poll};
+use reactors::task::{Task, Context, Termination};
 use reactors::scheduler::Scheduler;
 use handle::{from_raw, into_raw, use_};
 
@@ -37,8 +37,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
         Some(&Message::Exec(ref task, ref cmd)) if 0 == bus.id => {
             let mut t = into_raw(sched.tasks.get_mut(task.clone()).expect("no shell"));
             from_raw(t).0.exec(Some(cmd));
-            let mut x = Poll::Infinite;
-            x = from_raw(t).0.poll(Context::Nil, use_(sched));
+            let x = from_raw(t).0.poll(Context::Nil, use_(sched));
             println!("InterCore Exec {:?} {:?} {:?}", task, cmd, x);
             Context::Nil
         }
@@ -57,11 +56,6 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
             let mut sub_index = None;
             if let Some(p) = sched.queues.publishers().get_mut(sb.pub_id as usize) {
                 let subscriber = p.subscribe();
-                // send bit just for test
-                if let Some(slot) = p.next() {
-                    *slot = 42;
-                    p.commit();
-                }
                 {
                     let subs = sched.queues.subscribers();
                     subs.push(subscriber);
@@ -72,6 +66,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
                 let h = into_raw(sched);
                 let mut t = from_raw(h).tasks.get_mut(sb.task_id).expect("no task");
                 t.0.poll(Context::NodeAck(idx), from_raw(h));
+                return Context::NodeAck(idx);
             }
             Context::Nil
         }
@@ -95,21 +90,15 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
             let h = into_raw(sched);
             let mut t = from_raw(h).tasks.get_mut(a.task_id).expect("no task");
             t.0.poll(Context::NodeAck(a.result_id), from_raw(h));
-            Context::Nil
+            Context::NodeAck(a.result_id)
         }
 
         Some(&Message::Sub(ref sb)) if sb.to == bus.id => {
             println!("InterCore Sub {:?} {:?}", bus.id, sb);
-            let pubs = sched.queues.publishers();
+            let pubs = sched.queues.publishers(); 
             if sb.pub_id < pubs.len() {
                 if let Some(p) = pubs.get_mut(sb.pub_id as usize) {
                     let subscriber = p.subscribe();
-                    // send bit just for test
-                    if let Some(slot) = p.next() {
-                        *slot = 42;
-                        p.commit();
-                    }
-
                     let message = Message::AckSub(AckSub {
                         from: bus.id,
                         to: sb.from,
