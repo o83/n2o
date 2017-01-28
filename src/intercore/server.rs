@@ -46,7 +46,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
             sched.queues.publishers().push(Publisher::with_capacity(p.cap));
             let mut t = use_(sched).tasks.get_mut(p.task_id).expect("no task");
             let id = use_(sched).queues.publishers().len() - 1;
-            t.0.poll(Context::NodeAck(id), use_(sched));
+//            t.0.poll(Context::NodeAck(id), use_(sched));
             Context::NodeAck(id)
         }
 
@@ -64,7 +64,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
             if let Some(idx) = sub_index {
                 let h = into_raw(sched);
                 let mut t = from_raw(h).tasks.get_mut(sb.task_id).expect("no task");
-                t.0.poll(Context::NodeAck(idx), from_raw(h));
+//                t.0.poll(Context::NodeAck(idx), from_raw(h));
                 return Context::NodeAck(idx);
             }
             Context::Nil

@@ -383,8 +383,8 @@ pub fn k_pubsub() {
         _ => (),
     }
     ctx = handle_intercore(from_raw(s), Some(use_(&mut msg1)), &mut from_raw(s).bus);
+    poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
     println!("ctx 1: {:?}", ctx.clone());
-    poll = from_raw(t).0.poll(ctx, from_raw(sched));
     let mut msg2 = Message::Nop;
     match poll.clone() {
         Poll::Yield(c) => {
@@ -413,22 +413,9 @@ pub fn k_pubsub() {
     ctx = handle_intercore(from_raw(s), Some(use_(&mut msg3)), &mut from_raw(s).bus);
     poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
     println!("ctx 3: {:?}", ctx.clone());
-    let mut msg4 = Message::Nop;
+    println!("poll: {:?}", poll.clone());
     match poll.clone() {
-        Poll::Yield(c) => {
-            ctx = c.clone();
-            match ctx {
-                Context::Intercore(i) => msg4 = i.clone(),
-                _ => (),
-            }
-        }
-        _ => (),
-    }
-    ctx = handle_intercore(from_raw(s), Some(use_(&mut msg4)), &mut from_raw(s).bus);
-    poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
-    println!("ctx 4: {:?}", ctx.clone());
-    match poll.clone() {
-        Poll::End(Context::Node(s)) => assert_eq!(format!("{}",s),"ok"),
+        Poll::End(Context::Node(s)) => assert_eq!(format!("{}",s),"[11 11 12 12]"),
         _ => assert_eq!(1,0)
     }
 }
