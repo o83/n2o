@@ -10,6 +10,14 @@ use handle::{from_raw, into_raw, use_};
 
 // The Server of InterCore protocol is handled in Scheduler context
 
+pub fn intercore_outer<'a>(context: Context<'a>, sched: &'a mut Scheduler<'a>) {
+    match context {
+          Context::NodeAck(task, res) => {
+             use_(sched).tasks.get_mut(task).expect("no shell").0.poll(context, sched); }
+          _ => ()
+    }
+}
+
 pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
                             message: Option<&'a Message>,
                             bus: &'a Channel) //, s: &'a Subscriber<Message>)
@@ -46,8 +54,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
             sched.queues.publishers().push(Publisher::with_capacity(p.cap));
             let mut t = use_(sched).tasks.get_mut(p.task_id).expect("no task");
             let id = use_(sched).queues.publishers().len() - 1;
-//            t.0.poll(Context::NodeAck(id), use_(sched));
-            Context::NodeAck(id)
+            Context::NodeAck(p.task_id, id)
         }
 
         Some(&Message::Sub(ref sb)) if sb.to == sb.from && sb.to == bus.id => {
@@ -64,8 +71,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
             if let Some(idx) = sub_index {
                 let h = into_raw(sched);
                 let mut t = from_raw(h).tasks.get_mut(sb.task_id).expect("no task");
-//                t.0.poll(Context::NodeAck(idx), from_raw(h));
-                return Context::NodeAck(idx);
+                return Context::NodeAck(sb.task_id, idx);
             }
             Context::Nil
         }
@@ -88,8 +94,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
             println!("InterCore AckPub {:?} {:?}", bus.id, a);
             let h = into_raw(sched);
             let mut t = from_raw(h).tasks.get_mut(a.task_id).expect("no task");
-            t.0.poll(Context::NodeAck(a.result_id), from_raw(h));
-            Context::NodeAck(a.result_id)
+            Context::NodeAck(a.task_id, a.result_id)
         }
 
         Some(&Message::Sub(ref sb)) if sb.to == bus.id => {
@@ -121,8 +126,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
             }
             let h = into_raw(sched);
             let mut t = from_raw(h).tasks.get_mut(a.task_id).expect("no task");
-            t.0.poll(Context::NodeAck(sub_index), from_raw(h));
-            Context::NodeAck(sub_index)
+            Context::NodeAck(a.task_id, sub_index)
         }
         Some(x) => {
             // println!("Test {:?}", x);
