@@ -84,7 +84,6 @@ pub fn publisher<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a A
 }
 
 pub fn subscriber<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
-    println!("print: {:?}", args);
     let (core, pub_id) = match args {
         &AST::Cons(&AST::Value(Value::Number(pub_id)), tail) => {
             match tail {
@@ -104,7 +103,6 @@ pub fn subscriber<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a 
 }
 
 pub fn send<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
-    println!("SND {:?}", args);
     let (val, pub_id) = match args {
         &AST::Cons(&AST::Value(Value::Number(val)), tail) => {
             match tail {
@@ -124,7 +122,6 @@ pub fn send<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<
 }
 
 pub fn receive<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
-    println!("RECV {:?}", args);
     match args {
         &AST::Value(Value::Number(sub_id)) => {
             let mut s = i.queues.subscribers().get(sub_id as usize).expect(&format!("Wrong subscriber id: {}", sub_id));
