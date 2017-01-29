@@ -49,8 +49,7 @@ impl<'a> Scheduler<'a> {
         self.tasks.get_mut(t.0).expect("Scheduler: can't retrieve a task.").0.exec(input);
     }
 
-    #[inline]
-    fn terminate(&'a mut self, t: Termination, i: usize) {
+    pub fn terminate(&'a mut self, t: Termination, i: usize) {
         if t == Termination::Recursive {
             self.tasks.remove(i);
         }
@@ -75,7 +74,6 @@ impl<'a> Scheduler<'a> {
         thread::sleep(time::Duration::from_millis(10)); // Green Peace
     }
 
-    #[inline]
     fn poll_tasks(&mut self) {
         let a = into_raw(self);
         let l = from_raw(a).tasks.len();
