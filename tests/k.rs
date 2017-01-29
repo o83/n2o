@@ -372,13 +372,7 @@ pub fn k_pubsub() {
     let mut ctx = Context::Nil;
     poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
     match poll.clone() {
-        Poll::Yield(c) => {
-            ctx = c.clone();
-            match ctx {
-                Context::Intercore(i) => msg1 = i.clone(),
-                _ => (),
-            }
-        }
+        Poll::Yield(Context::Intercore(i)) => msg1 = i.clone(),
         _ => (),
     }
     ctx = intercore(from_raw(s), Some(use_(&mut msg1)), &mut from_raw(s).bus);
@@ -386,13 +380,7 @@ pub fn k_pubsub() {
     println!("ctx 1: {:?}", ctx.clone());
     let mut msg2 = Message::Nop;
     match poll.clone() {
-        Poll::Yield(c) => {
-            ctx = c.clone();
-            match ctx {
-                Context::Intercore(i) => msg2 = i.clone(),
-                _ => (),
-            }
-        }
+        Poll::Yield(Context::Intercore(i)) => msg2 = i.clone(),
         _ => (),
     }
     ctx = intercore(from_raw(s), Some(use_(&mut msg2)), &mut from_raw(s).bus);
@@ -400,13 +388,7 @@ pub fn k_pubsub() {
     println!("ctx 2: {:?}", ctx.clone());
     let mut msg3 = Message::Nop;
     match poll.clone() {
-        Poll::Yield(c) => {
-            ctx = c.clone();
-            match ctx {
-                Context::Intercore(i) => msg3 = i.clone(),
-                _ => (),
-            }
-        }
+        Poll::Yield(Context::Intercore(i)) => msg3 = i.clone(),
         _ => (),
     }
     ctx = intercore(from_raw(s), Some(use_(&mut msg3)), &mut from_raw(s).bus);
