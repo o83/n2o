@@ -15,7 +15,7 @@ pub fn delivery<'a>(context: Context<'a>, sched: &'a mut Scheduler<'a>) {
         Context::NodeAck(task, res) => {
             use_(sched).tasks.get_mut(task).expect("no shell").0.poll(context, sched);
         }
-        _ => (), 
+        _ => (),
     }
 }
 

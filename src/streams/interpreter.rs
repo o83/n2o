@@ -108,7 +108,7 @@ impl<'a> Interpreter<'a> {
                -> Result<&'a AST<'a>, Error> {
         let h = into_raw(self);
         let mut tick;
-        let mut value_from_sched = from_raw(h).arena.nil();
+        let mut ret = from_raw(h).arena.nil();
 
 
         match from_raw(h).registers {
@@ -122,14 +122,11 @@ impl<'a> Interpreter<'a> {
 
         match intercore.clone() {
             Context::NodeAck(_, value) => {
-                value_from_sched = from_raw(h).arena.ast(AST::Value(Value::Number(value as i64)));
-                // println!("intercore: {:?}", value_from_sched);
+                ret = from_raw(h).arena.ast(AST::Value(Value::Number(value as i64)));
             }
-            //            Context::Nil => return Ok(self.arena.nil()),
             _ => (),
         }
 
-        // println!("Counter: {:?}", ast);
         loop {
             let mut counter = from_raw(h).counter;
             match tick {
@@ -142,10 +139,9 @@ impl<'a> Interpreter<'a> {
                         tick = try!({
                             from_raw(h).edge = Message::Nop;
                             let a = match ast_ {
-                                &AST::Yield(..) => value_from_sched,
+                                &AST::Yield(..) => ret,
                                 x => x,
                             };
-                            // println!("ast_: {:?}", a);
                             from_raw(h).counter = counter + 1;
                             from_raw(h).handle_defer(node, a, cont)
                         })

@@ -365,9 +365,9 @@ pub fn k_pubsub() {
                                   Termination::Corecursive,
                                   Some(code));
 
-    let mut t = into_raw(sched.tasks.get_mut(shell.0).expect("no shell"));
+    let t = into_raw(sched.tasks.get_mut(shell.0).expect("no shell"));
     from_raw(t).0.exec(Some(code));
-    let mut poll = Poll::End(Context::Nil);
+    let mut poll;
     let mut msg1 = Message::Nop;
     let mut ctx = Context::Nil;
     poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));

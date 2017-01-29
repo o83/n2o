@@ -29,26 +29,21 @@ impl<'a> CpsTask<'a> {
         let x = into_raw(self);
         let r = from_raw(x).interpreter.run(n, intercore, sched);
         match r {
-            Ok(r) => {
-                match r.clone() {
-                    AST::Yield(x) => {
-                        match x {
-                            Context::Intercore(msg) => {
-                                match sched {
-                                    Some(ref s) => {
-                                        send(&s.bus, msg.clone());
-                                        return Poll::Yield(x.clone());
-                                    }
-                                    None => Poll::Yield(Context::Nil), 
-                                }
-                            }
-                            _ => Poll::Yield(x.clone()),
+            Ok(&AST::Yield(ref ic)) => {
+                if let &Context::Intercore(msg) = ic {
+                    match sched {
+                        Some(ref s) => {
+                            send(&s.bus, msg.clone());
+                            return Poll::Yield(ic.clone());
                         }
+                        None => Poll::Yield(Context::Nil),
                     }
-                    _ => Poll::End(Context::Node(r)),
+                } else {
+                    return Poll::Yield(ic.clone());
                 }
             }
-            Err(e) => Poll::Err(Error::RuntimeError),
+            Ok(r) => return Poll::End(Context::Node(r)),
+            Err(e) => return Poll::Err(Error::RuntimeError),
         }
     }
 }
@@ -59,7 +54,6 @@ impl<'a> Task<'a> for CpsTask<'a> {
         s1.interpreter.define_primitives();
         s2.interpreter.task_id = task_id;
         s2.task_id = task_id;
-        // println!("TaskId: {:?}", s2.task_id);
         match input {
             Some(i) => {
                 let s = i.to_string();
