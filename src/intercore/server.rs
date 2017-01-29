@@ -1,5 +1,5 @@
 
-use queues::publisher::{Publisher, Subscriber};
+use queues::publisher::Publisher;
 use intercore::bus::{Channel, send};
 use intercore::message::{Message, AckPub, AckSub};
 use reactors::cps::CpsTask;
@@ -8,22 +8,20 @@ use reactors::task::{Task, Context, Termination};
 use reactors::scheduler::Scheduler;
 use handle::{from_raw, into_raw, use_};
 
-// The Server of InterCore protocol is handled in Scheduler context
+// The InterCore Delivery by Adressee
 
-pub fn intercore_outer<'a>(context: Context<'a>, sched: &'a mut Scheduler<'a>) {
+pub fn delivery<'a>(context: Context<'a>, sched: &'a mut Scheduler<'a>) {
     match context {
-          Context::NodeAck(task, res) => {
-             use_(sched).tasks.get_mut(task).expect("no shell").0.poll(context, sched); }
-          _ => ()
+        Context::NodeAck(task, res) => {
+            use_(sched).tasks.get_mut(task).expect("no shell").0.poll(context, sched);
+        }
+        _ => (), 
     }
 }
 
-pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
-                            message: Option<&'a Message>,
-                            bus: &'a Channel) //, s: &'a Subscriber<Message>)
-                            -> Context<'a> {
+// InterCore State Machine
 
-    // println!("{:?}", s);
+pub fn intercore<'a>(sched: &'a mut Scheduler<'a>, message: Option<&'a Message>, bus: &'a Channel) -> Context<'a> {
 
     match message {
 
@@ -99,7 +97,7 @@ pub fn handle_intercore<'a>(sched: &'a mut Scheduler<'a>,
 
         Some(&Message::Sub(ref sb)) if sb.to == bus.id => {
             println!("InterCore Sub {:?} {:?}", bus.id, sb);
-            let pubs = sched.queues.publishers(); 
+            let pubs = sched.queues.publishers();
             if sb.pub_id < pubs.len() {
                 if let Some(p) = pubs.get_mut(sb.pub_id as usize) {
                     let subscriber = p.subscribe();

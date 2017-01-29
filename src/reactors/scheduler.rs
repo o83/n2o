@@ -4,10 +4,9 @@ use reactors::system::{IO, Async};
 use reactors::cps::CpsTask;
 use intercore::message::*;
 use intercore::bus::{Memory, Channel, send};
-use intercore::server::{handle_intercore, intercore_outer};
+use intercore::server::{intercore, delivery};
 use queues::publisher::Publisher;
 use std::{thread, time};
-use std::ffi::CString;
 use handle::{from_raw, into_raw, UnsafeShared};
 use reactors::console::Console;
 use reactors::selector::Selector;
@@ -60,7 +59,8 @@ impl<'a> Scheduler<'a> {
     pub fn poll_bus(&mut self) {
         let x = into_raw(self);
         for s in &from_raw(x).bus.subscribers {
-            intercore_outer(handle_intercore(from_raw(x), s.recv(), &mut from_raw(x).bus), from_raw(x));
+            delivery(intercore(from_raw(x), s.recv(), &mut from_raw(x).bus),
+                     from_raw(x));
             s.commit();
         }
     }

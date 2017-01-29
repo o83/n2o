@@ -1,6 +1,5 @@
 use std::fmt;
 use std::fmt::Debug;
-use handle;
 
 #[derive(PartialEq, Clone, Debug)]
 struct Node {

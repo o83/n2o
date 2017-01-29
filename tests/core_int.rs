@@ -1,19 +1,21 @@
-#![feature(target_feature)]
+// #![feature(target_feature)]
 
 // $ rustc -C opt-level=3 --emit asm core_int.rs
 // $ cat core_int.s | grep mul
 
-//#[target_feature = "+avx"]
+// #[target_feature = "+avx"]
 pub fn mul_array_float<'a>(x: &mut [f64], y: &[f64]) {
     let n: Vec<f64> = x.iter().zip(y).map(|(d, c)| d * c).collect();
     println!("{:?}", n);
 }
 
-//#[target_feature = "+avx"]
+// #[target_feature = "+avx"]
 pub fn mul_array<'a>(x: &mut [u64], y: &[u64]) {
     let n: Vec<u64> = x.iter().zip(y).map(|(d, c)| d * c).collect();
     println!("{:?}", n);
 }
+
+// intead of target feaure look at README how to enable AVX
 
 fn main() {
     let mut fa = vec![0.0, 1.0, 4.0, 9.0, 0.0, 1.0, 4.0, 9.0, 0.0, 1.0, 4.0, 9.0, 0.0, 1.0, 4.0, 9.0];

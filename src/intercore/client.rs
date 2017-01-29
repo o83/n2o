@@ -6,7 +6,7 @@ use intercore::message::{Pub, Sub, Message, Spawn};
 use reactors::task::Context;
 use handle::{into_raw, from_raw};
 
-// The InterCore messages are being sent fron client in Interpreter
+// The InterCore messages + Buildins are being handled in Interpreter
 
 pub fn internals<'a>(i: &'a mut Interpreter<'a>, f_id: u16, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     match f_id {
@@ -14,21 +14,21 @@ pub fn internals<'a>(i: &'a mut Interpreter<'a>, f_id: u16, args: &'a AST<'a>, a
             println!("print: {}", args);
             Context::Node(args)
         }
-        1 => create_publisher(i, args, arena),
-        2 => create_subscriber(i, args, arena),
-        3 => snd(i, args, arena),
-        4 => rcv(i, args, arena),
+        1 => publisher(i, args, arena),
+        2 => subscriber(i, args, arena),
+        3 => send(i, args, arena),
+        4 => receive(i, args, arena),
         5 => spawn(i, args, arena),
         6 => Context::Nil,
         _ => panic!("unknown internal func"),
     }
 }
 
-pub fn handle_context<'a>(f: otree::NodeId,
-                          i: &'a mut Interpreter<'a>,
-                          x: Context<'a>,
-                          cont: &'a Cont<'a>)
-                          -> Result<Lazy<'a>, Error> {
+pub fn eval_context<'a>(f: otree::NodeId,
+                        i: &'a mut Interpreter<'a>,
+                        x: Context<'a>,
+                        cont: &'a Cont<'a>)
+                        -> Result<Lazy<'a>, Error> {
 
     let h = into_raw(i);
     match x {
@@ -63,7 +63,7 @@ pub fn spawn<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena
     Context::Intercore(&i.edge)
 }
 
-pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
+pub fn publisher<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     let (core, cap) = match args {
         &AST::Cons(&AST::Value(Value::Number(cap)), tail) => {
             match tail {
@@ -83,7 +83,7 @@ pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena
     Context::Intercore(&i.edge)
 }
 
-pub fn create_subscriber<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
+pub fn subscriber<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     println!("print: {:?}", args);
     let (core, pub_id) = match args {
         &AST::Cons(&AST::Value(Value::Number(pub_id)), tail) => {
@@ -103,7 +103,7 @@ pub fn create_subscriber<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, aren
     Context::Intercore(&i.edge)
 }
 
-pub fn snd<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
+pub fn send<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     println!("SND {:?}", args);
     let (val, pub_id) = match args {
         &AST::Cons(&AST::Value(Value::Number(val)), tail) => {
@@ -123,7 +123,7 @@ pub fn snd<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'
     Context::Node(arena.nil())
 }
 
-pub fn rcv<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
+pub fn receive<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     println!("RECV {:?}", args);
     match args {
         &AST::Value(Value::Number(sub_id)) => {
@@ -131,7 +131,7 @@ pub fn rcv<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'
             if let Some(slot) = s.recv() {
                 let res = *slot;
                 s.commit();
-                println!("subs recv {:?}", res);
+                //                println!("subs recv {:?}", res);
                 return Context::Node(arena.ast(AST::Value(Value::Number(res as i64))));
             }
         }

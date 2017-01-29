@@ -4,15 +4,14 @@ extern crate kernel;
 
 use kernel::commands::ast::*;
 use kernel::streams::interpreter::*;
-use kernel::handle;
 use kernel::reactors::task::{Termination, Context, Poll, Task};
 use kernel::reactors::job::Job;
 use kernel::reactors::cps::CpsTask;
 use kernel::reactors::scheduler::Scheduler;
-use kernel::handle::{into_raw, UnsafeShared, use_, from_raw};
+use kernel::handle::{self, into_raw, UnsafeShared, use_, from_raw};
 use kernel::intercore::bus::Memory;
 use kernel::intercore::message::Message;
-use kernel::intercore::server::handle_intercore;
+use kernel::intercore::server::intercore;
 
 #[test]
 pub fn k_ariph() {
@@ -382,7 +381,7 @@ pub fn k_pubsub() {
         }
         _ => (),
     }
-    ctx = handle_intercore(from_raw(s), Some(use_(&mut msg1)), &mut from_raw(s).bus);
+    ctx = intercore(from_raw(s), Some(use_(&mut msg1)), &mut from_raw(s).bus);
     poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
     println!("ctx 1: {:?}", ctx.clone());
     let mut msg2 = Message::Nop;
@@ -396,7 +395,7 @@ pub fn k_pubsub() {
         }
         _ => (),
     }
-    ctx = handle_intercore(from_raw(s), Some(use_(&mut msg2)), &mut from_raw(s).bus);
+    ctx = intercore(from_raw(s), Some(use_(&mut msg2)), &mut from_raw(s).bus);
     poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
     println!("ctx 2: {:?}", ctx.clone());
     let mut msg3 = Message::Nop;
@@ -410,13 +409,13 @@ pub fn k_pubsub() {
         }
         _ => (),
     }
-    ctx = handle_intercore(from_raw(s), Some(use_(&mut msg3)), &mut from_raw(s).bus);
+    ctx = intercore(from_raw(s), Some(use_(&mut msg3)), &mut from_raw(s).bus);
     poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
     println!("ctx 3: {:?}", ctx.clone());
     println!("poll: {:?}", poll.clone());
     match poll.clone() {
-        Poll::End(Context::Node(s)) => assert_eq!(format!("{}",s),"[11 11 12 12]"),
-        _ => assert_eq!(1,0)
+        Poll::End(Context::Node(s)) => assert_eq!(format!("{}", s), "[11 11 12 12]"),
+        _ => assert_eq!(1, 0),
     }
 }
 

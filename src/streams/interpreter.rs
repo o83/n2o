@@ -4,7 +4,7 @@
 use streams::{verb, env, otree};
 use commands::ast::{self, Error, AST, Verb, Adverb, Arena, Value};
 use intercore::bus::Memory;
-use intercore::client::{handle_context, internals};
+use intercore::client::{eval_context, internals};
 use reactors::task::Context;
 use intercore::message::Message;
 use reactors::scheduler::Scheduler;
@@ -288,10 +288,10 @@ impl<'a> Interpreter<'a> {
                     Ok((c, f)) => {
                         match c {
                             &AST::NameInt(n) if n < from_raw(h).arena.builtins => {
-                                handle_context(f,
-                                               from_raw(h),
-                                               internals(from_raw(h), n, args, &from_raw(h).arena),
-                                               cont)
+                                eval_context(f,
+                                             from_raw(h),
+                                             internals(from_raw(h), n, args, &from_raw(h).arena),
+                                             cont)
                             }
                             _ => from_raw(h).evaluate_fun(f, c, args, cont),
                         }
