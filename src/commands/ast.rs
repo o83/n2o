@@ -201,7 +201,7 @@ pub enum AST<'a> {
     Call(&'a AST<'a>, &'a AST<'a>),
     Assign(&'a AST<'a>, &'a AST<'a>),
     Cond(&'a AST<'a>, &'a AST<'a>, &'a AST<'a>),
-    Lambda(Option<&'a otree::Node<'a>>, &'a AST<'a>, &'a AST<'a>),
+    Lambda(Option<otree::NodeId>, &'a AST<'a>, &'a AST<'a>),
     Verb(Verb, &'a AST<'a>, &'a AST<'a>),
     Adverb(Adverb, &'a AST<'a>, &'a AST<'a>),
     Table(&'a AST<'a>, &'a AST<'a>),
@@ -266,7 +266,7 @@ impl<'a> fmt::Display for Cont<'a> {
 impl<'a> fmt::Display for Lazy<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &Lazy::Defer(node, ast, cont) => write!(f, "defer {} {} {}", node, ast, cont),
+            &Lazy::Defer(node, ast, cont) => write!(f, "defer {:?} {} {}", node, ast, cont),
             x => write!(f, "return"),
         }
     }
@@ -302,11 +302,11 @@ impl<'a> Arena<'a> {
     }
 
     pub fn yield_(&'a self) -> &'a AST<'a> {
-           unsafe { &(*self.asts.get())[2] } // see Arena::init for details
+        unsafe { &(*self.asts.get())[2] } // see Arena::init for details
     }
 
     pub fn valnil(&'a self) -> &'a AST<'a> {
-           unsafe { &(*self.asts.get())[3] } // see Arena::init for details
+        unsafe { &(*self.asts.get())[3] } // see Arena::init for details
     }
 
     pub fn dump(&'a self) {

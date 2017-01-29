@@ -8,13 +8,12 @@ use handle::{into_raw, from_raw};
 
 // The InterCore messages are being sent fron client in Interpreter
 
-pub fn internals<'a>(i: &'a mut Interpreter<'a>,
-                     f_id: u16,
-                     args: &'a AST<'a>,
-                     arena: &'a Arena<'a>)
-                     -> Context<'a> {
+pub fn internals<'a>(i: &'a mut Interpreter<'a>, f_id: u16, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     match f_id {
-        0 => { println!("print: {}", args); Context::Node(args) },
+        0 => {
+            println!("print: {}", args);
+            Context::Node(args)
+        }
         1 => create_publisher(i, args, arena),
         2 => create_subscriber(i, args, arena),
         3 => snd(i, args, arena),
@@ -25,7 +24,7 @@ pub fn internals<'a>(i: &'a mut Interpreter<'a>,
     }
 }
 
-pub fn handle_context<'a>(f: &'a otree::Node<'a>,
+pub fn handle_context<'a>(f: otree::NodeId,
                           i: &'a mut Interpreter<'a>,
                           x: Context<'a>,
                           cont: &'a Cont<'a>)
@@ -64,10 +63,7 @@ pub fn spawn<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena
     Context::Intercore(&i.edge)
 }
 
-pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>,
-                            args: &'a AST<'a>,
-                            arena: &'a Arena<'a>)
-                            -> Context<'a> {
+pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     let (core, cap) = match args {
         &AST::Cons(&AST::Value(Value::Number(cap)), tail) => {
             match tail {
@@ -87,10 +83,7 @@ pub fn create_publisher<'a>(i: &'a mut Interpreter<'a>,
     Context::Intercore(&i.edge)
 }
 
-pub fn create_subscriber<'a>(i: &'a mut Interpreter<'a>,
-                             args: &'a AST<'a>,
-                             arena: &'a Arena<'a>)
-                             -> Context<'a> {
+pub fn create_subscriber<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     println!("print: {:?}", args);
     let (core, pub_id) = match args {
         &AST::Cons(&AST::Value(Value::Number(pub_id)), tail) => {

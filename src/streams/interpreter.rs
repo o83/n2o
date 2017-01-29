@@ -34,8 +34,8 @@ pub enum Cont<'a> {
 
 #[derive(Clone, Debug)]
 pub enum Lazy<'a> {
-    Defer(&'a otree::Node<'a>, &'a AST<'a>, &'a Cont<'a>),
-    Continuation(&'a otree::Node<'a>, &'a AST<'a>, &'a Cont<'a>),
+    Defer(otree::NodeId, &'a AST<'a>, &'a Cont<'a>),
+    Continuation(otree::NodeId, &'a AST<'a>, &'a Cont<'a>),
     Return(&'a AST<'a>),
     Start,
 }
@@ -191,11 +191,7 @@ impl<'a> Interpreter<'a> {
         self.env.clean() + self.arena.clean()
     }
 
-    fn handle_defer(&'a mut self,
-                    node: &'a otree::Node<'a>,
-                    a: &'a AST<'a>,
-                    cont: &'a Cont<'a>)
-                    -> Result<Lazy<'a>, Error> {
+    fn handle_defer(&'a mut self, node: otree::NodeId, a: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<Lazy<'a>, Error> {
         let h = into_raw(self);
 
         match a {
@@ -249,10 +245,10 @@ impl<'a> Interpreter<'a> {
     }
 
     fn lookup(&'a mut self,
-              node: &'a otree::Node<'a>,
+              node: otree::NodeId,
               name: u16,
               env: &'a env::Environment<'a>)
-              -> Result<(&'a AST<'a>, &'a otree::Node<'a>), Error> {
+              -> Result<(&'a AST<'a>, otree::NodeId), Error> {
         let h = into_raw(self);
         match env.get(name, node) {
             Some((v, f)) => Ok((v, f)),
@@ -266,7 +262,7 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn evaluate_fun(&'a mut self,
-                        node: &'a otree::Node<'a>,
+                        node: otree::NodeId,
                         fun: &'a AST<'a>,
                         args: &'a AST<'a>,
                         cont: &'a Cont<'a>)
@@ -294,10 +290,7 @@ impl<'a> Interpreter<'a> {
                             &AST::NameInt(n) if n < from_raw(h).arena.builtins => {
                                 handle_context(f,
                                                from_raw(h),
-                                               internals(from_raw(h),
-                                                         n,
-                                                         args,
-                                                         &from_raw(h).arena),
+                                               internals(from_raw(h), n, args, &from_raw(h).arena),
                                                cont)
                             }
                             _ => from_raw(h).evaluate_fun(f, c, args, cont),
@@ -316,7 +309,7 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn evaluate_expr(&'a mut self,
-                         node: &'a otree::Node<'a>,
+                         node: otree::NodeId,
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
                          -> Result<Lazy<'a>, Error> {
@@ -336,7 +329,7 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn evaluate_list(&'a mut self,
-                         node: &'a otree::Node<'a>,
+                         node: otree::NodeId,
                          acc: &'a AST<'a>,
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
@@ -357,7 +350,7 @@ impl<'a> Interpreter<'a> {
     }
 
     pub fn evaluate_dict(&'a mut self,
-                         node: &'a otree::Node<'a>,
+                         node: otree::NodeId,
                          acc: &'a AST<'a>,
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
@@ -394,11 +387,7 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn run_cont(&'a mut self,
-                    node: &'a otree::Node<'a>,
-                    val: &'a AST<'a>,
-                    con: &'a Cont<'a>)
-                    -> Result<Lazy<'a>, Error> {
+    pub fn run_cont(&'a mut self, node: otree::NodeId, val: &'a AST<'a>, con: &'a Cont<'a>) -> Result<Lazy<'a>, Error> {
         // println!("run_cont: val: {:?} #### cont: {:?}\n", val, cont);
         let h = into_raw(self);
         match con {

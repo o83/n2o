@@ -1,14 +1,14 @@
 
 use commands::ast::*;
 use std::cell::UnsafeCell;
-use streams::otree::*;
+use streams::otree::{Tree, NodeId};
 
 #[derive(Debug, Clone)]
 pub struct Entry<'a>(u16, &'a AST<'a>);
 
 #[derive(Debug)]
 pub struct Environment<'a> {
-    pub tree: UnsafeCell<Tree<'a, Entry<'a>>>,
+    pub tree: UnsafeCell<Tree<Entry<'a>>>,
 }
 
 impl<'a> Environment<'a> {
@@ -17,22 +17,22 @@ impl<'a> Environment<'a> {
         Ok(Environment { tree: UnsafeCell::new(s) })
     }
 
-    pub fn last(&'a self) -> &'a Node<'a> {
+    pub fn last(&self) -> NodeId {
         let tree = unsafe { &*self.tree.get() };
-        tree.last_node()
+        tree.last()
     }
 
-    pub fn dump(&'a self) {
+    pub fn dump(&self) {
         let tree = unsafe { &*self.tree.get() };
         tree.dump()
     }
 
-    pub fn len(&'a self) -> (usize,usize) {
+    pub fn len(&self) -> (usize, usize) {
         let tree = unsafe { &*self.tree.get() };
         tree.len()
     }
 
-    pub fn new_child(&'a self, n: &'a Node<'a>) -> &'a Node<'a> {
+    pub fn new_child(&self, n: NodeId) -> NodeId {
         let tree = unsafe { &mut *self.tree.get() };
         tree.append_node(n)
     }
@@ -43,7 +43,7 @@ impl<'a> Environment<'a> {
         Ok(())
     }
 
-    pub fn get(&'a self, key: u16, n: &'a Node<'a>) -> Option<(&'a AST, &Node<'a>)> {
+    pub fn get(&'a self, key: u16, n: NodeId) -> Option<(&'a AST, NodeId)> {
         let tree = unsafe { &mut *self.tree.get() };
         match tree.get(n, |e| e.0 == key) {
             Some(x) => Some(((x.0).1, x.1)),

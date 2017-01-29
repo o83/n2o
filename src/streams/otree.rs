@@ -2,30 +2,33 @@ use std::fmt;
 use std::fmt::Debug;
 use handle;
 
-#[derive(PartialEq, Debug)]
-pub struct Node<'a> {
-    pub bounds: (usize, usize),
-    pub parent: Option<&'a Node<'a>>,
+#[derive(PartialEq, Clone, Debug)]
+struct Node {
+    bounds: (usize, usize),
+    parent: Option<usize>,
 }
 
-
-impl<'a> fmt::Display for Node<'a> {
+impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.parent {
-            Some(parent) => write!(f, "[{:?}—{:?}]", self.bounds, parent.bounds),
+            Some(parent) => write!(f, "[{:?}—{:?}]", self.bounds, parent),
             _ => write!(f, "[{:?}—(root)]", self.bounds),
         }
     }
 }
 
+// Node index inside otree store.
+#[derive(PartialEq, Clone, Copy, Debug)]
+pub struct NodeId(usize);
+
 #[derive(Debug)]
-pub struct Tree<'a, T> {
-    pub nodes: Vec<Node<'a>>,
-    pub items: Vec<T>,
+pub struct Tree<T> {
+    nodes: Vec<Node>,
+    items: Vec<T>,
 }
 
 // TODO: Remove T: Debug
-impl<'a, T: Debug> Tree<'a, T> {
+impl<T: Debug> Tree<T> {
     pub fn with_capacity(cap: usize) -> Self {
         let mut n = Vec::with_capacity(cap);
         n.push(Node {
@@ -38,48 +41,31 @@ impl<'a, T: Debug> Tree<'a, T> {
         }
     }
 
-    pub fn len(&'a self) -> (usize, usize) {
+    pub fn len(&self) -> (usize, usize) {
         (self.nodes.len(), self.items.len())
     }
 
-    pub fn dump(&'a self) {
+    pub fn dump(&self) {
         for i in self.items[0..self.items.len()].iter() {
             println!("item {:?}", i);
         }
         for i in self.nodes[0..self.nodes.len()].iter() {
             println!("node {}", i);
         }
-
     }
 
     #[inline]
-    pub fn last_node(&'a self) -> &'a Node<'a> {
-        self.nodes.last().unwrap()
+    pub fn last(&self) -> NodeId {
+        NodeId(self.nodes.len() - 1)
     }
 
-    #[inline]
-    pub fn first_node(&'a self) -> &'a Node<'a> {
-        self.nodes.first().unwrap()
-    }
-
-    pub fn append_node(&'a mut self, n: &'a Node<'a>) -> &'a Node<'a> {
-        let (s1, s2) = handle::split(self);
-        let nl = s1.last_node();
-        s2.nodes.push(Node {
-            bounds: (nl.bounds.1, nl.bounds.1),
-            parent: Some(n),
+    pub fn append_node(&mut self, n: NodeId) -> NodeId {
+        let bound = self.nodes.last().expect("There is no root in otree.").bounds.1;
+        self.nodes.push(Node {
+            bounds: (bound, bound),
+            parent: Some(n.0),
         });
-        s1.last_node()
-    }
-
-    pub fn alloc_node(&'a mut self) -> &'a Node<'a> {
-        let (s1, s2) = handle::split(self);
-        let n = s1.last_node();
-        s2.nodes.push(Node {
-            bounds: (n.bounds.1, n.bounds.1),
-            parent: Some(n),
-        });
-        s1.last_node()
+        NodeId(self.nodes.len() - 1)
     }
 
     pub fn insert(&mut self, item: T) {
@@ -88,16 +74,17 @@ impl<'a, T: Debug> Tree<'a, T> {
         n.bounds.1 += 1;
     }
 
-    pub fn get<F>(&'a self, n: &'a Node<'a>, mut f: F) -> Option<(&'a T, &'a Node<'a>)>
+    pub fn get<'a, F>(&'a self, n: NodeId, mut f: F) -> Option<(&'a T, NodeId)>
         where for<'r> F: FnMut(&'r &T) -> bool
     {
-        for i in self.items[n.bounds.0..n.bounds.1].iter().rev() {
+        let nd = self.nodes.get(n.0).expect("Error getting node.");
+        for i in self.items[nd.bounds.0..nd.bounds.1].iter().rev() {
             if f(&i) {
                 return Some((i, n));
             }
         }
-        match n.parent {
-            Some(p) => self.get(p, f),
+        match nd.parent {
+            Some(p) => self.get(NodeId(p), f),
             None => None,
         }
     }
