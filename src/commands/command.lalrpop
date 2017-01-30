@@ -1,55 +1,58 @@
-
 use commands::ast::*;
 use core::str::FromStr;
     grammar<'ast>(arena: &'ast Arena<'ast>);
-pub Mex:   &'ast AST<'ast> = { ExprList };
 
-Dict:      &'ast AST<'ast> = { "[" "]"                                     => arena.nil(),
-                               "["     <l:ExprList> "]"                    => dict(l, arena), };
+Decimal:   ASTNode<'ast> = { <n:r"\d+">            => ASTNode::AST(AST::Value(Value::Number(i64::from_str(n).unwrap()))), };
+Hex:       ASTNode<'ast> = { <h:r"0x[a-zA-Z\d]+">  => ASTNode::AST(AST::Value(Value::Number(i64::from_str_radix(&h[2..], 16).unwrap()))), };
+Bin:       ASTNode<'ast> = { <b:r"[01]+b">         => ASTNode::AST(AST::Value(Value::Number(i64::from_str_radix(&b[0..b.len()-1], 2).unwrap()))), };
+Ioverb:    ASTNode<'ast> = { <i:r"\d+:">           => ASTNode::AST(AST::Value(Value::Ioverb(String::from(i)))), };
 
-List:      &'ast AST<'ast> = { "(" ")"                                     => arena.nil(),
-                               "(["    <c:NameList> "]" <m:FieldList> ")"  => table(c, m, arena),
-                               "("     <l:ExprList> ")"                    => list(l, arena), };
+Name:      ASTNode<'ast> = { <n:r"[a-zA-Z][a-zA-Z\d]*"> => arena.intern(String::from(n)), };
+Symbol:    ASTNode<'ast> = { <s:r"`([a-z][a-z0-9]*)?">  => arena.intern_symbol(String::from(&s[1..s.len()])), };
 
-Lambda:    &'ast AST<'ast> = { "{" "}"                                     => fun(arena.nil(), arena.nil(), arena),
-                               "{["    <c:NameList> "]" <m:ExprList> "}"   => fun(c, m, arena),
-                               "{"     <m:ExprList> "}"                    => fun(arena.nil(), m, arena), };
+Sequence:  ASTNode<'ast> = { <s:r"\x22(\\.|[^\x5C\x22])*\x22"> => arena.intern_sequence(String::from(&s[1..s.len()-1])), };
+Adverb:           Adverb = { <a:r"[\x27:\x5C\x2F]:?">          => Adverb::from_str(a).unwrap(), };
+Verb:               Verb = { <v:r"[+\x2D*$%!&|<>=~,^#_?@.]">   => Verb::from_str(v).unwrap(), };
 
-Noun:      &'ast AST<'ast> = { Name, Decimal, Hex, Bin, Symbol, List, Dict, Sequence, Lambda, Ioverb };
-Expr:      &'ast AST<'ast> = { Verbs, Adverbs, Call };
+Noun:      ASTNode<'ast> = { Name, Decimal, Hex, Bin, Symbol, List, Dict, Sequence, Lambda, Ioverb };
 
-NameCont:  &'ast AST<'ast> = { ";" => arena.nil(), ";" <m:NameList>   => m };
-FieldCont: &'ast AST<'ast> = { ";" => arena.nil(), ";" <m:FieldList>  => m };
-ExprCont:  &'ast AST<'ast> = { ";" => arena.nil(), ";" <m:ExprList>   => m };
+Expr:      ASTNode<'ast> = { Verbs, Adverbs, Call };
 
-NameList:  &'ast AST<'ast> = { Name, <o:Name> <m:NameCont>  => cons(o, m, arena), };
-FieldList: &'ast AST<'ast> = { Expr, <o:Expr> <m:FieldCont> => cons(o, m, arena), };
+ExprVec<AST>: Vec<AST> = {
+    <h:(<AST?> ";")*> <t:AST?> => {
+        let mut r = vec![];
+        for v in h {
+            match v {
+                Some(e) => { r.push(e); },
+                None => { r.push( ASTNode::AST(AST::Any) ); }
+            }
+        }
+        match t {
+            Some(e) => { r.push(e); },
+            None => { r.push( ASTNode::AST(AST::Any) ); }
+        }
+        r
+    }
+};
+ExprList:  ASTNode<'ast> = { ExprVec<Expr>  => ASTNode::VecAST(<>) };
+NameList:  ASTNode<'ast> = { ExprVec<Name>  => ASTNode::VecAST(<>) };
+FieldList: ASTNode<'ast> = { ExprVec<Expr>  => ASTNode::VecAST(<>) };
 
-ExprList:  &'ast AST<'ast> = { Expr, 
-           <o:Expr> ";" <m:ExprList>  => cons(o, m, arena),
-                                  ";" => cons(arena.any(),cons(arena.any(),arena.nil(), arena), arena),
-                         <o:Expr> ";" => cons(o, cons(arena.any(),arena.nil(), arena), arena),
-                    ";" <m:ExprList>  => cons(arena.any(), m, arena), };
+Dict:      ASTNode<'ast> = { "["     <ExprList> "]"                        => dict(arena.ast(<>), arena), };
+List:      ASTNode<'ast> = { "(["    <c:NameList> "]" <m:FieldList> ")"    => table(arena.ast(c), arena.ast(m), arena),
+                             "("     <ExprList> ")"                        => list(arena.ast(<>), arena), };
 
-Verbs:     &'ast AST<'ast> = {          <v:Verb>            => verb(v, arena.nil(), arena.nil(), arena),
-                                        <v:Verb> <r:Expr>   => verb(v, arena.nil(), r, arena), };
-Adverbs:   &'ast AST<'ast> = {          <a:Adverb>          => adverb(a, arena.nil(), arena.nil(), arena),
-                                        <v:Adverb> <r:Expr> => adverb(v, arena.nil(), r, arena), };
-Call:      &'ast AST<'ast> = {    Noun, <c:Noun>   <a:Call> => call(c, a, arena),
-                               <l:Noun> <a:Adverb>          => adverb(a, l, arena.nil(), arena),
-                               <l:Noun> <v:Verb>            => verb(v, l, arena.nil(), arena),
-                               <l:Noun> <a:Adverb> <r:Expr> => adverb(a, l, r, arena),
-                               <l:Noun> <v:Verb>   <r:Expr> => verb(v, l, r, arena), };
+Lambda:    ASTNode<'ast> = { "{["    <c:NameList> "]" <m:ExprList> "}"   => fun(arena.ast(c), arena.ast(m), arena),
+                             "{"     <m:ExprList> "}"                    => fun(arena.nil(), arena.ast(m), arena), };
 
-Decimal:   &'ast AST<'ast> = { <n:r"\d+">            => ast(AST::Value(Value::Number(i64::from_str(n).unwrap())), arena), };
-Hex:       &'ast AST<'ast> = { <h:r"0x[a-zA-Z\d]+">  => ast(AST::Value(Value::Number(i64::from_str_radix(&h[2..], 16).unwrap())), arena), };
-Bin:       &'ast AST<'ast> = { <b:r"[01]+b">         => ast(AST::Value(Value::Number(i64::from_str_radix(&b[0..b.len()-1], 2).unwrap())), arena), };
-Ioverb:    &'ast AST<'ast> = { <i:r"\d+:">           => ast(AST::Value(Value::Ioverb(String::from(i))), arena), };
+Verbs:     ASTNode<'ast> = {          <v:Verb>            => verb(v, arena.nil(), arena.nil(), arena),
+                                      <v:Verb> <r:Expr>   => verb(v, arena.nil(), arena.ast(r), arena), };
+Adverbs:   ASTNode<'ast> = {          <a:Adverb>          => adverb(a, arena.nil(), arena.nil(), arena),
+                                      <v:Adverb> <r:Expr> => adverb(v, arena.nil(), arena.ast(r), arena), };
+Call:      ASTNode<'ast> = {      Noun, <c:Noun>   <a:Call> => call(arena.ast(c), arena.ast(a), arena),
+                               <l:Noun> <a:Adverb>          => adverb(a, arena.ast(l), arena.nil(), arena),
+                               <l:Noun> <v:Verb>            => verb(v, arena.ast(l), arena.nil(), arena),
+                               <l:Noun> <a:Adverb> <r:Expr> => adverb(a, arena.ast(l), arena.ast(r), arena),
+                               <l:Noun> <v:Verb>   <r:Expr> => verb(v, arena.ast(l), arena.ast(r), arena), };
 
-Name:      &'ast AST<'ast> = { <n:r"[a-zA-Z][a-zA-Z\d]*"> => arena.intern(String::from(n)), };
-Symbol:    &'ast AST<'ast> = { <s:r"`([a-z][a-z0-9]*)?">  => arena.intern_symbol(String::from(&s[1..s.len()])), };
-
-Sequence:  &'ast AST<'ast> = { <s:r"\x22(\\.|[^\x5C\x22])*\x22"> => arena.intern_sequence(String::from(&s[1..s.len()-1])), };
-Adverb:             Adverb = { <a:r"[\x27:\x5C\x2F]:?">          => Adverb::from_str(a).unwrap(), };
-Verb:                 Verb = { <v:r"[+\x2D*$%!&|<>=~,^#_?@.]">   => Verb::from_str(v).unwrap(), };
-
+pub Mex:   ASTNode<'ast> = { ExprList };
