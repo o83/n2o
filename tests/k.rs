@@ -523,7 +523,7 @@ pub fn rust_pubsub() {
 pub fn k_pubsub() {
     let ref mut sched = Scheduler::with_channel(0);
     let s = into_raw(sched);
-    let code = "p0:pub[0;8]; s1:sub[0;p0]; s2:sub[0;p0]; snd[11;p0]; snd[12;p0]; print[rcv s1; rcv s2; rcv s1; rcv s2]";
+    let code = "p0:pub[0;8]; s1:sub[0;p0]; s2:sub[0;p0]; snd[p0;11]; snd[p0;12]; print[rcv s1; rcv s2; rcv s1; rcv s2]";
     let shell = from_raw(s).spawn(Job::Cps(CpsTask::new(sched.mem())),
                                   Termination::Corecursive,
                                   Some(code));

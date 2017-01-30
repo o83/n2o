@@ -81,7 +81,7 @@ pub fn publisher<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a A
     let (core, cap) = match args {
         &AST::Vector(ref v) if v.len() == 2 => {
             match (&v[0], &v[1]) {
-                (&AST::Atom(Atom::Value(Value::Number(cap))), &AST::Atom(Atom::Value(Value::Number(core)))) => {
+                (&AST::Atom(Atom::Value(Value::Number(core))), &AST::Atom(Atom::Value(Value::Number(cap)))) => {
                     (core as usize, cap as usize)
                 }
                 _ => panic!("oops!"),
@@ -106,7 +106,7 @@ pub fn subscriber<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a 
     let (core, pub_id) = match args {
         &AST::Vector(ref v) if v.len() == 2 => {
             match (&v[0], &v[1]) {
-                (&AST::Atom(Atom::Value(Value::Number(pub_id))), &AST::Atom(Atom::Value(Value::Number(core)))) => {
+                (&AST::Atom(Atom::Value(Value::Number(core))), &AST::Atom(Atom::Value(Value::Number(pub_id)))) => {
                     (core as usize, pub_id as usize)
                 }
                 _ => panic!("oops!"),
@@ -130,7 +130,7 @@ pub fn send<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<
     let (val, pub_id) = match args {
         &AST::Vector(ref v) if v.len() == 2 => {
             match (&v[0], &v[1]) {
-                (&AST::Atom(Atom::Value(Value::Number(val))), &AST::Atom(Atom::Value(Value::Number(pub_id)))) => {
+                (&AST::Atom(Atom::Value(Value::Number(pub_id))), &AST::Atom(Atom::Value(Value::Number(val)))) => {
                     (val, pub_id)
                 }
                 _ => panic!("oops!"),
