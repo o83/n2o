@@ -360,27 +360,64 @@ pub fn k_partial1() {
 
 #[test]
 pub fn rust_pubsub() {
-    let mut p: Publisher<i64> = Publisher::with_capacity(8);
+    use std::mem;
+    #[derive(PartialEq, Debug,Clone)]
+    // #[repr(C,packed)]
+    struct S {
+        inner: u64,
+        desc: String,
+    };
+    #[derive(PartialEq, Debug,Clone)]
+    enum M {
+        A(S),
+        B(u32, u32),
+    };
+    impl Default for M {
+        fn default() -> M {
+            M::B(Default::default(), Default::default())
+        }
+    }
+    let mut p: Publisher<M> = Publisher::with_capacity(4);
     let s1 = p.subscribe();
     let s2 = p.subscribe();
+    let mut msg = M::A(S {
+        inner: 1,
+        desc: String::from("asd"),
+    });
+    let mut msg1 = M::A(S {
+        inner: 1,
+        desc: String::from("asd"),
+    });
     if let Some(v) = p.next() {
-        *v = 11;
+        // mem::swap(v, &mut msg);
+        // mem::forget(msg);
+        *v = msg;
         p.commit();
     }
     if let Some(v) = p.next() {
-        *v = 12;
-        p.commit();
-    }
+        // mem::swap(v, &mut msg1);
+        // mem::forget(msg1);
+        *v = msg1;
 
+        p.commit();
+    }
     for i in 0..2 {
         if let Some(v) = s1.recv() {
-            assert!(*v == 11 + i);
+            assert!(*v ==
+                    M::A(S {
+                inner: 1,
+                desc: String::from("asd"),
+            }));
             s1.commit();
         }
     }
     for i in 0..2 {
         if let Some(v) = s2.recv() {
-            assert!(*v == 11 + i);
+            assert!(*v ==
+                    M::A(S {
+                inner: 1,
+                desc: String::from("asd"),
+            }));
             s2.commit();
         }
     }

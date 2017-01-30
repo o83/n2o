@@ -8,6 +8,7 @@ use std::io;
 use std::io::Result;
 use libc;
 use std::mem;
+use std::default::Default;
 
 #[repr(C)]
 pub struct RingBuffer<T> {
@@ -15,11 +16,18 @@ pub struct RingBuffer<T> {
     mask: usize,
 }
 
-impl<T> RingBuffer<T> {
+impl<T: Default> RingBuffer<T> {
     pub fn with_capacity(cap: usize) -> Self {
         let adjusted = cap.next_power_of_two();
+
+        let mut v: RawVec<T> = RawVec::with_capacity(adjusted);
+        for i in 0..v.cap() {
+            unsafe {
+                ptr::write(v.ptr().offset(i as isize), Default::default());
+            }
+        }
         RingBuffer {
-            buffer: RawVec::with_capacity(adjusted),
+            buffer: v,
             mask: adjusted - 1,
         }
     }

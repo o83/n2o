@@ -65,6 +65,12 @@ pub enum Message {
     Nop,
 }
 
+impl Default for Message {
+    fn default() -> Message {
+        Message::Nop
+    }
+}
+
 impl Message {
     pub fn from_u8(b: &[u8]) -> Self {
         //

@@ -102,7 +102,7 @@ pub struct Publisher<T> {
     cursors: UncheckedUnsafeArc<Vec<Cursor>>,
 }
 
-impl<T> Publisher<T> {
+impl<T: Default> Publisher<T> {
     pub fn with_capacity(cap: usize) -> Self {
         let mut cursors = vec![];
         cursors.push(Cursor::new(0));
@@ -183,13 +183,13 @@ pub struct Subscriber<T> {
     cursors: UncheckedUnsafeArc<Vec<Cursor>>,
 }
 
-impl<T> PartialEq for Subscriber<T> {
+impl<T: Default> PartialEq for Subscriber<T> {
     fn eq(&self, other: &Subscriber<T>) -> bool {
         self.token == other.token
     }
 }
 
-impl<T> Debug for Subscriber<T> {
+impl<T: Default> Debug for Subscriber<T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let tail = self.tail(self.token);
         write!(f,
@@ -201,19 +201,19 @@ impl<T> Debug for Subscriber<T> {
     }
 }
 
-impl<T> Debug for Publisher<T> {
+impl<T: Default> Debug for Publisher<T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "Publisher {{ seq: {} }}", self.next_seq_cache.get())
     }
 }
 
-unsafe impl<T: Send> Send for Subscriber<T> {}
-unsafe impl<T: Send> Send for Publisher<T> {}
+unsafe impl<T: Send + Default> Send for Subscriber<T> {}
+unsafe impl<T: Send + Default> Send for Publisher<T> {}
 
-impl<T> !Sync for Subscriber<T> {}
-impl<T> !Sync for Publisher<T> {}
+impl<T: Default> !Sync for Subscriber<T> {}
+impl<T: Default> !Sync for Publisher<T> {}
 
-impl<T> Clone for Subscriber<T> {
+impl<T: Default> Clone for Subscriber<T> {
     #[inline]
     fn clone(&self) -> Subscriber<T> {
         // let tail_seq = self.tail(self.token).load();
@@ -225,7 +225,7 @@ impl<T> Clone for Subscriber<T> {
     }
 }
 
-impl<T> Subscriber<T> {
+impl<T: Default> Subscriber<T> {
     pub fn new(ring: Arc<RingBuffer<T>>, cursors: UncheckedUnsafeArc<Vec<Cursor>>, token: usize) -> Self {
         Subscriber::<T> {
             ring: ring,
@@ -390,12 +390,25 @@ mod tests {
         }
 
     }
+
     #[derive(PartialEq)]
     enum Proto {
         A,
         B(u64),
-        C(bool, u8),
+        C { bl: bool, by: u8 },
     }
+    impl Default for Proto {
+        fn default() -> Proto {
+            Proto::A
+        }
+    }
+    // use std::ops::Drop;
+
+    // impl Drop for Proto {
+    //     fn drop(&mut self) {
+    //         println!("Dropping!");
+    //     }
+    // }
 
     #[test]
     fn test_publisher_recv_enum() {
@@ -406,7 +419,10 @@ mod tests {
             match publisher.next_n(2) {
                 Some(vs) => {
                     vs[0] = Proto::A;
-                    vs[1] = Proto::C(false, 13u8);
+                    vs[1] = Proto::C {
+                        bl: false,
+                        by: 13u8,
+                    };
                     publisher.commit();
                 }
                 None => {}
@@ -418,12 +434,24 @@ mod tests {
                 Some(vs) => {
                     match vs[0] {
                         Proto::A => assert!(vs[0] == Proto::A),
-                        Proto::C(bl, bt) => assert!(vs[0] == Proto::C(false, 13u8)),
+                        Proto::C { bl, by } => {
+                            assert!(vs[0] ==
+                                    Proto::C {
+                                bl: false,
+                                by: 13u8,
+                            })
+                        }
                         _ => assert!(false),
                     }
                     match vs[1] {
                         Proto::A => assert!(vs[1] == Proto::A),
-                        Proto::C(bl, bt) => assert!(vs[1] == Proto::C(false, 13u8)),
+                        Proto::C { bl, by } => {
+                            assert!(vs[1] ==
+                                    Proto::C {
+                                bl: false,
+                                by: 13u8,
+                            })
+                        }
                         _ => assert!(false),
                     }
                     subscriber.commit();
