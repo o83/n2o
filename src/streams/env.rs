@@ -4,7 +4,7 @@ use std::cell::UnsafeCell;
 use streams::otree::{Tree, NodeId};
 
 #[derive(Debug, Clone)]
-pub struct Entry<'a>(u16, &'a ASTNode<'a>);
+pub struct Entry<'a>(u16, &'a AST<'a>);
 
 #[derive(Debug)]
 pub struct Environment<'a> {
@@ -37,13 +37,13 @@ impl<'a> Environment<'a> {
         tree.append_node(n)
     }
 
-    pub fn define(&'a self, key: u16, value: &'a ASTNode<'a>) -> Result<(), Error> {
+    pub fn define(&'a self, key: u16, value: &'a AST<'a>) -> Result<(), Error> {
         let tree = unsafe { &mut *self.tree.get() };
         tree.insert(Entry(key, value));
         Ok(())
     }
 
-    pub fn get(&'a self, key: u16, n: NodeId) -> Option<(&'a ASTNode, NodeId)> {
+    pub fn get(&'a self, key: u16, n: NodeId) -> Option<(&'a AST, NodeId)> {
         let tree = unsafe { &mut *self.tree.get() };
         match tree.get(n, |e| e.0 == key) {
             Some(x) => Some(((x.0).1, x.1)),

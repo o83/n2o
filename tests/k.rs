@@ -14,8 +14,8 @@ use kernel::intercore::message::Message;
 use kernel::intercore::server::intercore;
 use kernel::queues::publisher::{Publisher, Subscriber};
 
-fn av<'a>(x: Value) -> ASTNode<'a> {
-    ASTNode::AST(AST::Value(x))
+fn av<'a>(x: Value) -> AST<'a> {
+    AST::Atom(Atom::Value(x))
 }
 
 #[test]
@@ -25,17 +25,15 @@ pub fn k_ariph() {
     let code = h.borrow_mut().parse(&"1+2".to_string());
 
     assert_eq!(code,
-               &ASTNode::VecAST(vec![ASTNode::AST(AST::Verb(Verb::Plus,
-                                                            &av(Value::Number(1)),
-                                                            &av(Value::Number(2))))]));
+               &AST::Vector(vec![AST::Atom(Atom::Verb(Verb::Plus, &av(Value::Number(1)), &av(Value::Number(2))))]));
 
     let code = h.borrow_mut().parse(&"1+2*4".to_string());
     assert_eq!(code,
-               &ASTNode::VecAST(vec![ASTNode::AST(AST::Verb(Verb::Plus,
-                                                            &av(Value::Number(1)),
-                                                            &ASTNode::AST(AST::Verb(Verb::Times,
-                                                                                    &av(Value::Number(2)),
-                                                                                    &av(Value::Number(4))))))]));
+               &AST::Vector(vec![AST::Atom(Atom::Verb(Verb::Plus,
+                                                      &av(Value::Number(1)),
+                                                      &AST::Atom(Atom::Verb(Verb::Times,
+                                                                            &av(Value::Number(2)),
+                                                                            &av(Value::Number(4))))))]));
 }
 
 #[test]
@@ -44,10 +42,10 @@ pub fn k_list() {
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
     let code = h.borrow_mut().parse(&"(1;\"2\";3;4.1111)".to_string());
 
-    let v: Vec<ASTNode> =
+    let v: Vec<AST> =
         vec![av(Value::Number(1)), av(Value::SequenceInt(0)), av(Value::Number(3)), av(Value::Float(4.1111))];
     assert_eq!(code,
-               &ASTNode::VecAST(vec![ASTNode::AST(AST::List(&ASTNode::VecAST(v)))]));
+               &AST::Vector(vec![AST::Atom(Atom::List(&AST::Vector(v)))]));
 }
 
 #[test]
@@ -56,19 +54,19 @@ pub fn k_symbols() {
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
     let code = h.borrow_mut().parse(&"`a`b`c;`1`1`1".to_string());
     assert_eq!(code,
-               &ASTNode::VecAST(
+               &AST::Vector(
                    vec![
                        // symbols
-                       ASTNode::AST(AST::Call(&av(Value::SymbolInt(0)),
-                                              &ASTNode::AST(AST::Call(&av(Value::SymbolInt(1)),
+                       AST::Atom(Atom::Call(&av(Value::SymbolInt(0)),
+                                              &AST::Atom(Atom::Call(&av(Value::SymbolInt(1)),
                                                                       &av(Value::SymbolInt(2)))))), 
 
                        // values
-                       ASTNode::AST(AST::Call(&av(Value::SymbolInt(3)),
-                                              &ASTNode::AST(AST::Call(&av(Value::Number(1)),
-                                                                      &ASTNode::AST(AST::Call(&av(Value::SymbolInt(3)),
-                                                                                              &ASTNode::AST(AST::Call(&av(Value::Number(1)),
-                                                                                                                      &ASTNode::AST(AST::Call(&av(Value::SymbolInt(3)), &av(Value::Number(1))))))))))))
+                       AST::Atom(Atom::Call(&av(Value::SymbolInt(3)),
+                                              &AST::Atom(Atom::Call(&av(Value::Number(1)),
+                                                                      &AST::Atom(Atom::Call(&av(Value::SymbolInt(3)),
+                                                                                              &AST::Atom(Atom::Call(&av(Value::Number(1)),
+                                                                                                                      &AST::Atom(Atom::Call(&av(Value::SymbolInt(3)), &av(Value::Number(1))))))))))))
                            
                    ]));
 }
@@ -79,10 +77,10 @@ pub fn k_assign() {
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
     let code = h.borrow_mut().parse(&"a:b:c:1".to_string());
     assert_eq!(code,
-               &ASTNode::VecAST(
-                   vec![ASTNode::AST(AST::Assign(&ASTNode::AST(AST::NameInt(0)),
-                                                 &ASTNode::AST(AST::Assign(&ASTNode::AST(AST::NameInt(1)),
-                                                                           &ASTNode::AST(AST::Assign(&ASTNode::AST(AST::NameInt(2)), &av(Value::Number(1))))))))]));
+               &AST::Vector(
+                   vec![AST::Atom(Atom::Assign(&AST::Atom(Atom::NameInt(0)),
+                                                 &AST::Atom(Atom::Assign(&AST::Atom(Atom::NameInt(1)),
+                                                                           &AST::Atom(Atom::Assign(&AST::Atom(Atom::NameInt(2)), &av(Value::Number(1))))))))]));
 }
 
 #[test]
@@ -92,7 +90,7 @@ pub fn k_anyargs0() {
 
     let code = h.borrow_mut().parse(&"[]".to_string());
     assert_eq!(code,
-               &ASTNode::VecAST(vec![ASTNode::AST(AST::Dict(&ASTNode::VecAST(vec![ASTNode::AST(AST::Any)])))]));
+               &AST::Vector(vec![AST::Atom(Atom::Dict(&AST::Vector(vec![AST::Atom(Atom::Any)])))]));
 }
 
 #[test]
@@ -102,8 +100,8 @@ pub fn k_anyargs1() {
 
     let code = h.borrow_mut().parse(&"[;]".to_string());
     assert_eq!(code,
-               &ASTNode::VecAST(vec![ASTNode::AST(AST::Dict(&ASTNode::VecAST(vec![ASTNode::AST(AST::Any),
-                                                                                  ASTNode::AST(AST::Any)])))]));
+               &AST::Vector(vec![AST::Atom(Atom::Dict(&AST::Vector(vec![AST::Atom(Atom::Any),
+                                                                        AST::Atom(Atom::Any)])))]));
 }
 
 #[test]
@@ -113,9 +111,9 @@ pub fn k_anyargs2() {
 
     let code = h.borrow_mut().parse(&"[;;]".to_string());
     assert_eq!(code,
-               &ASTNode::VecAST(vec![ASTNode::AST(AST::Dict(&ASTNode::VecAST(vec![ASTNode::AST(AST::Any),
-                                                                                  ASTNode::AST(AST::Any),
-                                                                                  ASTNode::AST(AST::Any)])))]));
+               &AST::Vector(vec![AST::Atom(Atom::Dict(&AST::Vector(vec![AST::Atom(Atom::Any),
+                                                                        AST::Atom(Atom::Any),
+                                                                        AST::Atom(Atom::Any)])))]));
 }
 
 #[test]
@@ -125,9 +123,9 @@ pub fn k_anyargs3() {
 
     let code = h.borrow_mut().parse(&"[;;3]".to_string());
     assert_eq!(code,
-               &ASTNode::VecAST(vec![ASTNode::AST(AST::Dict(&ASTNode::VecAST(vec![ASTNode::AST(AST::Any),
-                                                                                  ASTNode::AST(AST::Any),
-                                                                                  av(Value::Number(3))])))]));
+               &AST::Vector(vec![AST::Atom(Atom::Dict(&AST::Vector(vec![AST::Atom(Atom::Any),
+                                                                        AST::Atom(Atom::Any),
+                                                                        av(Value::Number(3))])))]));
 }
 
 #[test]
@@ -137,9 +135,9 @@ pub fn k_anyargs4() {
 
     let code = h.borrow_mut().parse(&"[1;;]".to_string());
     assert_eq!(code,
-               &ASTNode::VecAST(vec![ASTNode::AST(AST::Dict(&ASTNode::VecAST(vec![av(Value::Number(1)),
-                                                                                  ASTNode::AST(AST::Any),
-                                                                                  ASTNode::AST(AST::Any)])))]));
+               &AST::Vector(vec![AST::Atom(Atom::Dict(&AST::Vector(vec![av(Value::Number(1)),
+                                                                        AST::Atom(Atom::Any),
+                                                                        AST::Atom(Atom::Any)])))]));
 }
 
 #[test]
@@ -149,7 +147,7 @@ pub fn k_vecconst1() {
 
     let code = h.borrow_mut().parse(&"(1;2;3)".to_string());
     assert_eq!(code,
-               &ASTNode::VecAST(vec![ASTNode::AST(AST::List(&av(Value::VecInt(vec![1, 2, 3]))))]));
+               &AST::Vector(vec![AST::Atom(Atom::List(&av(Value::VecInt(vec![1, 2, 3]))))]));
 }
 
 #[test]
@@ -159,7 +157,7 @@ pub fn k_vecconst2() {
 
     let code = h.borrow_mut().parse(&"(1.0;2.0;3.0)".to_string());
     assert_eq!(code,
-               &ASTNode::VecAST(vec![ASTNode::AST(AST::List(&av(Value::VecFloat(vec![1.0, 2.0, 3.0]))))]));
+               &AST::Vector(vec![AST::Atom(Atom::List(&av(Value::VecFloat(vec![1.0, 2.0, 3.0]))))]));
 }
 
 #[test]
@@ -179,8 +177,8 @@ pub fn k_func() {
 
     let code = h.borrow_mut().parse(&"{x*2}[(1;2;3)]".to_string());
     assert_eq!(format!("{:?}", code),
-               "VecAST([AST(Call(AST(Lambda(None, AST(NameInt(0)), VecAST([AST(Verb(Times, AST(NameInt(0)), \
-                AST(Value(Number(2)))))]))), AST(Dict(VecAST([AST(List(AST(Value(VecInt([1, 2, 3])))))])))))])");
+               "Vector([Atom(Call(Atom(Lambda(None, Atom(NameInt(0)), Vector([Atom(Verb(Times, Atom(NameInt(0)), \
+                Atom(Value(Number(2)))))]))), Atom(Dict(Vector([Atom(List(Atom(Value(VecInt([1, 2, 3])))))])))))])");
 }
 
 #[test]
@@ -190,8 +188,8 @@ pub fn k_adverb() {
 
     let code = h.borrow_mut().parse(&"{x+2}/(1;2;3)".to_string());
     assert_eq!(format!("{:?}", code),
-               "VecAST([AST(Adverb(Over, AST(Lambda(None, AST(NameInt(0)), VecAST([AST(Verb(Plus, AST(NameInt(0)), \
-                AST(Value(Number(2)))))]))), AST(List(AST(Value(VecInt([1, 2, 3])))))))])");
+               "Vector([Atom(Adverb(Over, Atom(Lambda(None, Atom(NameInt(0)), Vector([Atom(Verb(Plus, \
+                Atom(NameInt(0)), Atom(Value(Number(2)))))]))), Atom(List(Atom(Value(VecInt([1, 2, 3])))))))])");
 }
 
 
@@ -202,10 +200,10 @@ pub fn k_reduce() {
 
     let code = h.borrow_mut().parse(&"+/{x*y}[(1;3;4;5;6);(2;6;2;1;3)]".to_string());
     assert_eq!(format!("{:?}", code),
-               "VecAST([AST(Adverb(Over, AST(Verb(Plus, AST(Value(Nil)), AST(Value(Nil)))), \
-                AST(Call(AST(Lambda(None, AST(NameInt(0)), VecAST([AST(Verb(Times, AST(NameInt(0)), \
-                AST(NameInt(1))))]))), AST(Dict(VecAST([AST(List(AST(Value(VecInt([1, 3, 4, 5, 6]))))), \
-                AST(List(AST(Value(VecInt([2, 6, 2, 1, 3])))))])))))))])");
+               "Vector([Atom(Adverb(Over, Atom(Verb(Plus, Atom(Value(Nil)), Atom(Value(Nil)))), \
+                Atom(Call(Atom(Lambda(None, Atom(NameInt(0)), Vector([Atom(Verb(Times, Atom(NameInt(0)), \
+                Atom(NameInt(1))))]))), Atom(Dict(Vector([Atom(List(Atom(Value(VecInt([1, 3, 4, 5, 6]))))), \
+                Atom(List(Atom(Value(VecInt([2, 6, 2, 1, 3])))))])))))))])");
 }
 
 #[test]

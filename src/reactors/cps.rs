@@ -1,13 +1,13 @@
 use reactors::task::{Task, Context, Poll, Error};
 use streams::interpreter::*;
-use commands::ast::{ASTNode, AST};
+use commands::ast::{Atom, AST};
 use handle::*;
 use intercore::bus::{send, Memory};
 use reactors::scheduler::Scheduler;
 
 pub struct CpsTask<'a> {
     pub interpreter: Interpreter<'a>,
-    pub ast: Option<&'a ASTNode<'a>>,
+    pub ast: Option<&'a AST<'a>>,
     task_id: usize,
 }
 
@@ -22,14 +22,14 @@ impl<'a> CpsTask<'a> {
 
     #[inline]
     fn run(&'a mut self,
-           n: &'a ASTNode<'a>,
+           n: &'a AST<'a>,
            intercore: Context<'a>,
            sched: Option<&'a Scheduler<'a>>)
            -> Poll<Context<'a>, Error> {
         let x = into_raw(self);
         let r = from_raw(x).interpreter.run(n, intercore, sched);
         match r {
-            Ok(&ASTNode::AST(AST::Yield(ref ic))) => {
+            Ok(&AST::Atom(Atom::Yield(ref ic))) => {
                 if let &Context::Intercore(msg) = ic {
                     match sched {
                         Some(ref s) => {

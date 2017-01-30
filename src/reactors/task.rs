@@ -1,4 +1,4 @@
-use commands::ast::ASTNode;
+use commands::ast::{AST, Atom};
 use intercore::message::Message;
 use reactors::scheduler::Scheduler;
 
@@ -31,7 +31,7 @@ pub enum Error {
 #[derive(PartialEq, Clone, Debug)]
 pub enum Context<'a> {
     Cont(usize, &'a Message),
-    Node(&'a ASTNode<'a>),
+    Node(&'a AST<'a>),
     NodeAck(usize, usize),
     Intercore(&'a Message),
     Init(usize),
