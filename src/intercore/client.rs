@@ -69,7 +69,7 @@ pub fn spawn<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena
 
     i.edge = Message::Spawn(Spawn {
         from: 0,
-        to: 0, // core as usize,
+        to: core as usize,
         txt: txt,
     });
     Context::Intercore(&i.edge)
@@ -93,9 +93,9 @@ pub fn publisher<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a A
     i.edge = Message::Pub(Pub {
         from: 0,
         task_id: 0,
-        to: 0, // core,
+        to: core,
         name: "".to_string(),
-        cap: 8, // cap,
+        cap: cap,
     });
     Context::Intercore(&i.edge)
 }
@@ -118,8 +118,8 @@ pub fn subscriber<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a 
     i.edge = Message::Sub(Sub {
         from: i.task_id,
         task_id: i.task_id,
-        to: 0, // core,
-        pub_id: 0, // pub_id,
+        to: core,
+        pub_id: pub_id,
     });
     Context::Intercore(&i.edge)
 }
