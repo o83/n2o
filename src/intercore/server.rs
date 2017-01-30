@@ -4,18 +4,19 @@ use intercore::bus::{Channel, send};
 use intercore::message::{Message, AckPub, AckSub};
 use reactors::cps::CpsTask;
 use reactors::job::Job;
-use reactors::task::{Task, Context, Termination};
+use reactors::task::{Task, Context, Termination, Poll, Error};
 use reactors::scheduler::Scheduler;
 use handle::{from_raw, into_raw, use_};
 
 // The InterCore Delivery by Adressee
 
-pub fn delivery<'a>(context: Context<'a>, sched: &'a mut Scheduler<'a>) {
+pub fn delivery<'a>(context: Context<'a>, sched: &'a mut Scheduler<'a>) -> Poll<Context<'a>, Error> {
     match context {
         Context::NodeAck(task, res) => {
-            use_(sched).tasks.get_mut(task).expect("no shell").0.poll(context, sched);
+            use_(sched).tasks.get_mut(task).expect("no shell").0.poll(context, sched)
         }
-        _ => (),
+        Context::Node(..) => Poll::End(context),
+        _ => Poll::Yield(Context::Nil)
     }
 }
 
@@ -126,10 +127,12 @@ pub fn intercore<'a>(sched: &'a mut Scheduler<'a>, message: Option<&'a Message>,
             let mut t = from_raw(h).tasks.get_mut(a.task_id).expect("no task");
             Context::NodeAck(a.task_id, sub_index)
         }
+
         Some(x) => {
             // println!("Test {:?}", x);
             Context::Nil
         }
+
         None => Context::Nil,
     }
 }
