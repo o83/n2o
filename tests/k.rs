@@ -13,6 +13,8 @@ use kernel::intercore::bus::Memory;
 use kernel::intercore::message::Message;
 use kernel::intercore::server::intercore;
 
+use kernel::queues::publisher::{Publisher, Subscriber};
+
 #[test]
 pub fn k_ariph() {
     let mut mem = Memory::new();
@@ -354,6 +356,34 @@ pub fn k_partial1() {
     let code = h.borrow_mut().parse(&"aa:{[x;y]x+y};bb:aa[;2];bb 3".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
                "5");
+}
+
+#[test]
+pub fn rust_pubsub() {
+    let mut p: Publisher<i64> = Publisher::with_capacity(8);
+    let s1 = p.subscribe();
+    let s2 = p.subscribe();
+    if let Some(v) = p.next() {
+        *v = 11;
+        p.commit();
+    }
+    if let Some(v) = p.next() {
+        *v = 12;
+        p.commit();
+    }
+
+    for i in 0..2 {
+        if let Some(v) = s1.recv() {
+            assert!(*v == 11 + i);
+            s1.commit();
+        }
+    }
+    for i in 0..2 {
+        if let Some(v) = s2.recv() {
+            assert!(*v == 11 + i);
+            s2.commit();
+        }
+    }
 }
 
 #[test]
