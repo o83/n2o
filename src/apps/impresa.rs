@@ -27,9 +27,7 @@ pub fn park<'a>(mut scheds: Vec<Scheduler<'a>>) -> Scheduler<'a> {
     for id in 1..sz {
         if let Some(mut core) = scheds.pop() {
             unsafe {
-                spawn_on(id, move || {
-                    core.run();
-                });
+                spawn_on(id, move || core.run());
             }
         }
     }
@@ -53,6 +51,7 @@ pub unsafe fn spawn_on<'a, F>(id: usize, f: F) -> thread::JoinHandle<()>
     use std::mem;
     let closure: Box<FnBox + 'a> = Box::new(f);
     let closure: Box<FnBox + Send> = mem::transmute(closure);
+
     thread::Builder::new()
         .name(format!("core_{}", id))
         .spawn(move || {
@@ -60,6 +59,7 @@ pub unsafe fn spawn_on<'a, F>(id: usize, f: F) -> thread::JoinHandle<()>
             closure.call_box()
         })
         .expect("Can't spawn new thread!")
+
 }
 
 fn main() {
