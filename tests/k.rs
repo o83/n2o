@@ -593,6 +593,9 @@ pub fn k_vecop_va() {
     let code = h.borrow_mut().parse(&"(1;2;3)+1".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
                "#i[2;3;4]");
+    let code = h.borrow_mut().parse(&"(1;2;3)=1".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
+               "#i[1;0;0]");
 }
 
 #[test]
@@ -603,4 +606,7 @@ pub fn k_vecop_vv() {
     let code = h.borrow_mut().parse(&"(1;2;3)+(1;2;3)".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
                "#i[2;4;6]");
+    let code = h.borrow_mut().parse(&"(1;2;3)=(1;2;3)".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
+               "#i[1;1;1]");
 }
