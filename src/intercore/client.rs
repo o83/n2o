@@ -10,10 +10,7 @@ use handle::{into_raw, from_raw};
 
 pub fn internals<'a>(i: &'a mut Interpreter<'a>, f_id: u16, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     match f_id {
-        0 => {
-            println!("print: {}", args);
-            Context::Node(args)
-        }
+        0 => print(i, args, arena),
         1 => publisher(i, args, arena),
         2 => subscriber(i, args, arena),
         3 => send(i, args, arena),
@@ -46,6 +43,12 @@ pub fn eval_context<'a>(f: otree::NodeId,
 
         _ => panic!("TODO"),
     }
+}
+
+
+pub fn print<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
+    println!("print: {}", args);
+    Context::Node(args)
 }
 
 pub fn spawn<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
@@ -117,7 +120,6 @@ pub fn send<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<
         *slot = val;
         p.commit();
     }
-    // else how can i signal NotReady?
     Context::Node(arena.nil())
 }
 
@@ -128,7 +130,6 @@ pub fn receive<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Are
             if let Some(slot) = s.recv() {
                 let res = *slot;
                 s.commit();
-                //                println!("subs recv {:?}", res);
                 return Context::Node(arena.ast(AST::Value(Value::Number(res as i64))));
             }
         }
