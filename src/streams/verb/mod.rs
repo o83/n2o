@@ -32,7 +32,7 @@ pub fn eval<'ast>(verb: Verb, left: &'ast AST<'ast>, right: &'ast AST<'ast>) -> 
         x => {
             Err(Error::EvalError {
                 desc: "Verb is not implemented".to_string(),
-                ast: format!("{:?}", AST::Nil),
+                ast: format!("{:?}", AST::Atom(Atom::Value(Value::Nil))),
             })
         }
     }

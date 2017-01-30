@@ -1,4 +1,4 @@
-use commands::ast::AST;
+use commands::ast::{AST, Atom};
 use intercore::message::Message;
 use reactors::scheduler::Scheduler;
 

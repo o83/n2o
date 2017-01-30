@@ -2,7 +2,7 @@
 // O-CPS INTERPRETER by 5HT et all
 
 use streams::{verb, env, otree};
-use commands::ast::{self, Error, AST, Verb, Adverb, Arena, Value};
+use commands::ast::{self, Error, AST, Atom, Verb, Adverb, Arena, Value, ASTAcc, ASTIter};
 use intercore::bus::Memory;
 use intercore::client::{eval_context, internals};
 use reactors::task::Context;
@@ -10,20 +10,17 @@ use intercore::message::Message;
 use reactors::scheduler::Scheduler;
 use handle::{self, into_raw, from_raw, UnsafeShared};
 
-unsafe impl<'a> Sync for Cont<'a> {}
-unsafe impl<'a> Sync for AST<'a> {}
-unsafe impl Sync for Message {}
-
 const PREEMPTION: u64 = 20000000; // Yield each two instructions
 
 #[derive(Clone, Debug)]
 pub enum Cont<'a> {
-    Expressions(&'a AST<'a>, &'a Cont<'a>),
+    Expressions(&'a AST<'a>, Option<ASTIter<'a>>, &'a Cont<'a>),
     Assign(&'a AST<'a>, &'a Cont<'a>),
     Cond(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
     Func(&'a AST<'a>, &'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
-    List(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
-    Dict(&'a AST<'a>, &'a AST<'a>, &'a Cont<'a>),
+    List(&'a AST<'a>, ASTIter<'a>, &'a Cont<'a>),
+    Dict(ASTAcc<'a>, ASTIter<'a>, &'a Cont<'a>),
+    DictComplete(ASTAcc<'a>, ASTIter<'a>, usize, &'a Cont<'a>),
     Call(&'a AST<'a>, &'a Cont<'a>),
     Verb(Verb, &'a AST<'a>, u8, &'a Cont<'a>),
     Adverb(Adverb, &'a AST<'a>, &'a Cont<'a>),
@@ -68,20 +65,18 @@ impl<'a> Interpreter<'a> {
 
     pub fn define_primitives(&'a mut self) {
         let (s1, s2) = handle::split(self);
-        let print = s1.arena.intern("print".to_string());
-        let publ = s1.arena.intern("pub".to_string());
-        let subs = s1.arena.intern("sub".to_string());
-        let snd = s1.arena.intern("snd".to_string());
-        let rcv = s1.arena.intern("rcv".to_string());
-        let spawn = s1.arena.intern("spawn".to_string());
-        let select = s1.arena.intern("select".to_string());
-        s1.env.define(ast::extract_name(print), print);
-        s1.env.define(ast::extract_name(publ), publ);
-        s1.env.define(ast::extract_name(subs), subs);
-        s1.env.define(ast::extract_name(snd), snd);
-        s1.env.define(ast::extract_name(rcv), rcv);
-        s1.env.define(ast::extract_name(spawn), spawn);
-        s1.env.define(ast::extract_name(select), select);
+        let print = s1.arena.intern_ast("print".to_string());
+        let publ = s1.arena.intern_ast("pub".to_string());
+        let subs = s1.arena.intern_ast("sub".to_string());
+        let snd = s1.arena.intern_ast("snd".to_string());
+        let rcv = s1.arena.intern_ast("rcv".to_string());
+        let spawn = s1.arena.intern_ast("spawn".to_string());
+        s1.env.define(ast::extract_name(&print), print);
+        s1.env.define(ast::extract_name(&publ), publ);
+        s1.env.define(ast::extract_name(&subs), subs);
+        s1.env.define(ast::extract_name(&snd), snd);
+        s1.env.define(ast::extract_name(&rcv), rcv);
+        s1.env.define(ast::extract_name(&spawn), spawn);
         let x = unsafe { &mut *s1.arena.asts.get() };
         s2.arena.builtins = x.len() as u16;
     }
@@ -122,7 +117,7 @@ impl<'a> Interpreter<'a> {
 
         match intercore.clone() {
             Context::NodeAck(_, value) => {
-                ret = from_raw(h).arena.ast(AST::Value(Value::Number(value as i64)));
+                ret = from_raw(h).arena.ast(AST::Atom(Atom::Value(Value::Number(value as i64))));
             }
             _ => (),
         }
@@ -134,12 +129,12 @@ impl<'a> Interpreter<'a> {
                     if counter % PREEMPTION == 0 {
                         from_raw(h).registers = tick;
                         from_raw(h).counter = counter + 1;
-                        return Ok(from_raw(h).arena.ast(AST::Yield(Context::Nil)));
+                        return Ok(from_raw(h).arena.ast(AST::Atom(Atom::Yield(Context::Nil))));
                     } else {
                         tick = try!({
                             from_raw(h).edge = Message::Nop;
                             let a = match ast_ {
-                                &AST::Yield(..) => ret,
+                                &AST::Atom(Atom::Yield(..)) => ret,
                                 x => x,
                             };
                             from_raw(h).counter = counter + 1;
@@ -149,7 +144,7 @@ impl<'a> Interpreter<'a> {
                 }
                 Lazy::Start => break,
                 Lazy::Continuation(node, ast, cont) => {
-                    let ast_ = from_raw(h).arena.ast(AST::Yield(Context::Intercore(&from_raw(h).edge)));
+                    let ast_ = from_raw(h).arena.ast(AST::Atom(Atom::Yield(Context::Intercore(&from_raw(h).edge))));
                     from_raw(h).registers = Lazy::Defer(node, ast, cont);
                     from_raw(h).counter = counter + 1;
                     return Ok(ast_);
@@ -179,7 +174,7 @@ impl<'a> Interpreter<'a> {
         }
         Err(Error::EvalError {
             desc: "Program is terminated abnormally".to_string(),
-            ast: format!("{:?}", AST::Nil),
+            ast: format!("{:?}", self.arena.nil()),
         })
     }
 
@@ -189,26 +184,30 @@ impl<'a> Interpreter<'a> {
 
     fn handle_defer(&'a mut self, node: otree::NodeId, a: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<Lazy<'a>, Error> {
         let h = into_raw(self);
-
         match a {
-            &AST::Assign(name, body) => Ok(Lazy::Defer(node, body, from_raw(h).arena.cont(Cont::Assign(name, cont)))),
-            &AST::Cond(val, left, right) => {
+            &AST::Atom(Atom::Assign(name, body)) => {
+                Ok(Lazy::Defer(node, body, from_raw(h).arena.cont(Cont::Assign(name, cont))))
+            }
+            &AST::Atom(Atom::Cond(val, left, right)) => {
                 Ok(Lazy::Defer(node,
                                val,
                                from_raw(h).arena.cont(Cont::Cond(left, right, cont))))
             }
-            &AST::List(x) => from_raw(h).evaluate_expr(node, x, cont),
-            &AST::Dict(x) => from_raw(h).evaluate_dict(node, from_raw(h).arena.nil(), x, cont),
-            &AST::Call(c, a) => Ok(Lazy::Defer(node, a, from_raw(h).arena.cont(Cont::Call(c, cont)))),
-            &AST::Verb(ref verb, left, right) => {
+            &AST::Atom(Atom::List(x)) => from_raw(h).defer_dict(node, x, cont), // so far list are treated the same as dicts
+            &AST::Atom(Atom::Dict(x)) => from_raw(h).defer_dict(node, x, cont),
+            &AST::Atom(Atom::Call(c, a)) => {
+                // println!("Defer call: {:?} {:?}", c, a);
+                Ok(Lazy::Defer(node, a, from_raw(h).arena.cont(Cont::Call(c, cont))))
+            }
+            &AST::Atom(Atom::Verb(ref verb, left, right)) => {
                 // println!("Defer Verb: {:?} {:?}", left, right);
                 match (left, right) {
-                    (&AST::Value(_), _) => {
+                    (&AST::Atom(Atom::Value(_)), _) => {
                         Ok(Lazy::Defer(node,
                                        right,
                                        from_raw(h).arena.cont(Cont::Verb(verb.clone(), left, 0, cont))))
                     }
-                    (_, &AST::Value(_)) => {
+                    (_, &AST::Atom(Atom::Value(_))) => {
                         Ok(Lazy::Defer(node,
                                        left,
                                        from_raw(h)
@@ -224,16 +223,16 @@ impl<'a> Interpreter<'a> {
                     }
                 }
             }
-            &AST::NameInt(name) => {
+            &AST::Atom(Atom::NameInt(name)) => {
                 let l = from_raw(h).lookup(node, name, &from_raw(h).env);
                 match l {
                     Ok((v, f)) => from_raw(h).run_cont(f, v, cont),
                     Err(x) => Err(x),
                 }
             }
-            &AST::Lambda(_, x, y) => {
+            &AST::Atom(Atom::Lambda(_, x, y)) => {
                 from_raw(h).run_cont(node,
-                                     from_raw(h).arena.ast(AST::Lambda(Some(node), x, y)),
+                                     from_raw(h).arena.ast(AST::Atom(Atom::Lambda(Some(node), x, y))),
                                      cont)
             }
             x => from_raw(h).run_cont(node, x, cont),
@@ -251,7 +250,7 @@ impl<'a> Interpreter<'a> {
             None => {
                 Err(Error::EvalError {
                     desc: "Identifier not found".to_string(),
-                    ast: format!("{:?}", AST::NameInt(name)),
+                    ast: format!("{:?}", Atom::NameInt(name)),
                 })
             }
         }
@@ -266,24 +265,22 @@ impl<'a> Interpreter<'a> {
         // println!("Eval Fun: {:?}", fun);
         let h = into_raw(self);
         match fun {
-            &AST::Lambda(closure, names, body) => {
-                let mut rev = ast::rev_dict(args, &from_raw(h).arena);
-                // println!("Args Fun: {:?} orig: {:?}, names: {:?}", rev, args, names);
-                from_raw(h).run_cont(if closure == None {
-                                         node
-                                     } else {
-                                         closure.unwrap()
-                                     },
-                                     body,
-                                     from_raw(h).arena.cont(Cont::Func(names, rev, body, cont)))
+            &AST::Atom(Atom::Lambda(closure, names, body)) => {
+                self.run_cont(if closure == None {
+                                  node
+                              } else {
+                                  closure.unwrap()
+                              },
+                              body,
+                              from_raw(h).arena.cont(Cont::Func(names, args, body, cont)))
             }
-            &AST::NameInt(s) => {
+            &AST::Atom(Atom::NameInt(s)) => {
                 // println!("{:?}", s);
                 let v = from_raw(h).lookup(node, s, &from_raw(h).env);
                 match v {
                     Ok((c, f)) => {
                         match c {
-                            &AST::NameInt(n) if n < from_raw(h).arena.builtins => {
+                            &AST::Atom(Atom::NameInt(n)) if n < from_raw(h).arena.builtins => {
                                 eval_context(f,
                                              from_raw(h),
                                              internals(from_raw(h), n, args, &from_raw(h).arena),
@@ -304,82 +301,28 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    pub fn evaluate_expr(&'a mut self,
+    pub fn evaluate_expr(&'a self,
                          node: otree::NodeId,
                          exprs: &'a AST<'a>,
                          cont: &'a Cont<'a>)
                          -> Result<Lazy<'a>, Error> {
-        // println!("Eval Expr: {:?}", exprs);
-        let h = into_raw(self);
-        match exprs {
-            &AST::Cons(car, cdr) => {
-                Ok(Lazy::Defer(node,
-                               car,
-                               from_raw(h)
-                                   .arena
-                                   .cont(Cont::Expressions(cdr, cont))))
-            }
-            &AST::Nil => from_raw(h).run_cont(node, exprs, cont),
-            x => Ok(Lazy::Defer(node, x, cont)),
-        }
+
+        Ok(Lazy::Defer(node,
+                       self.arena.any(),
+                       self.arena.cont(Cont::Expressions(exprs, None, cont))))
     }
 
-    pub fn evaluate_list(&'a mut self,
-                         node: otree::NodeId,
-                         acc: &'a AST<'a>,
-                         exprs: &'a AST<'a>,
-                         cont: &'a Cont<'a>)
-                         -> Result<Lazy<'a>, Error> {
-        // println!("Eval List: {:?}", exprs);
-        let h = into_raw(self);
-        match exprs {
-            &AST::Cons(car, cdr) => {
-                Ok(Lazy::Defer(node,
-                               car,
-                               from_raw(h)
-                                   .arena
-                                   .cont(Cont::List(acc, cdr, cont))))
-            }
-            &AST::Nil => from_raw(h).run_cont(node, acc, cont),
-            x => Ok(Lazy::Defer(node, x, cont)),
-        }
-    }
+    pub fn defer_dict(&'a self, node: otree::NodeId, dict: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<Lazy<'a>, Error> {
 
-    pub fn evaluate_dict(&'a mut self,
-                         node: otree::NodeId,
-                         acc: &'a AST<'a>,
-                         exprs: &'a AST<'a>,
-                         cont: &'a Cont<'a>)
-                         -> Result<Lazy<'a>, Error> {
-        // println!("Eval Dict: {:?}", exprs);
-        let h = into_raw(self);
-        match exprs {
-            &AST::Cons(car, cdr) => {
+        // println!("defer Dict: {:?}", dict);
+        match dict {
+            &AST::Vector(ref v) => {
+                // create new accumulator and start calculating dict values
                 Ok(Lazy::Defer(node,
-                               car,
-                               from_raw(h)
-                                   .arena
-                                   .cont(Cont::Dict(acc, cdr, cont))))
+                               dict,
+                               self.arena.cont(Cont::Dict(ASTAcc::new(), v.as_slice().iter(), cont))))
             }
-            &AST::Nil => from_raw(h).run_cont(node, acc, cont),
             x => Ok(Lazy::Defer(node, x, cont)),
-        }
-    }
-
-    pub fn emit_return(&'a mut self, val: &'a AST<'a>, cont: &'a Cont<'a>) -> Result<Lazy<'a>, Error> {
-        // println!("Emit: {:?}", val);
-        let h = into_raw(self);
-        match val {
-            &AST::Dict(x) => {
-                let mut dict = ast::rev_dict(x, &from_raw(h).arena);
-                Ok(Lazy::Return(from_raw(h).arena.ast(AST::Dict(dict))))
-            }
-            &AST::Cons(x, y) => {
-                Ok(Lazy::Return(from_raw(h)
-                    .arena
-                    .ast(AST::Dict(ast::rev_dict(from_raw(h).arena.ast(AST::Cons(x, y)), &from_raw(h).arena)))))
-            }
-            x => Ok(Lazy::Return(x)),
         }
     }
 
@@ -396,37 +339,44 @@ impl<'a> Interpreter<'a> {
             &Cont::Call(callee, cont) => {
                 let c;
                 match val {
-                    &AST::Dict(v) => c = from_raw(h).evaluate_fun(node, callee, v, cont),
+                    &AST::Atom(Atom::Dict(v)) => c = from_raw(h).evaluate_fun(node, callee, v, cont),
                     x => c = from_raw(h).evaluate_fun(node, callee, x, cont),
                 };
                 c
             }
-            &Cont::Func(names, args, body, cont) => {
-                // println!("names={:?} args={:?}", names, args);
+            &Cont::Func(ref names, ref args, body, cont) => {
+                // println!("cont_func names={:?} args={:?}", names, args);
                 let f = from_raw(h).env.new_child(node);
-                let mut partial = from_raw(h).arena.nil(); // empty list of unfilled/empty arguments
+                let mut partial: Vec<AST> = Vec::new(); // vector of unfilled/empty names
+
                 for (k, v) in names.into_iter().zip(args.into_iter()) {
+                    // println!("cont_func name={:?} arg={:?}", k, v);
                     match v {
-                        &AST::Any => partial = from_raw(h).arena.ast(AST::Cons(k, partial)),
+                        &AST::Atom(Atom::Any) => partial.push(k.clone()),
                         _ => {
                             from_raw(h).env.define(ast::extract_name(k), v);
                         }
                     };
                 }
-
-                match partial {
-                    &AST::Nil => from_raw(h).evaluate_expr(f, val, cont),
-                    _ => {
-                        Ok(Lazy::Defer(f,
-                                       from_raw(h).arena.ast(AST::Lambda(Some(f), partial, body)),
-                                       cont))
-                    }
+                if partial.len() == 0 {
+                    // println!("run_cont func: val={:?}", val);
+                    from_raw(h).evaluate_expr(f, val, cont)
+                } else {
+                    Ok(Lazy::Defer(f,
+                                   from_raw(h)
+                                       .arena
+                                       .ast(AST::Atom(Atom::Lambda(Some(f),
+                                                                   from_raw(h)
+                                                                       .arena
+                                                                       .ast(AST::Vector(partial)),
+                                                                   body))),
+                                   cont))
                 }
             }
             &Cont::Cond(if_expr, else_expr, cont) => {
                 match val {
-                    &AST::Value(Value::Number(0)) => Ok(Lazy::Defer(node, else_expr, cont)),
-                    &AST::Value(_) => Ok(Lazy::Defer(node, if_expr, cont)),
+                    &AST::Atom(Atom::Value(Value::Number(0))) => Ok(Lazy::Defer(node, else_expr, cont)),
+                    &AST::Atom(Atom::Value(_)) => Ok(Lazy::Defer(node, if_expr, cont)),
                     x => {
                         Ok(Lazy::Defer(node,
                                        x,
@@ -436,7 +386,7 @@ impl<'a> Interpreter<'a> {
             }
             &Cont::Assign(name, cont) => {
                 match name {
-                    &AST::NameInt(s) => {
+                    &AST::Atom(Atom::NameInt(s)) => {
                         // println!("Assign: {:?}:{:?}", s, val);
                         try!(from_raw(h).env.define(s, val));
                         from_raw(h).evaluate_expr(node, val, cont)
@@ -450,47 +400,55 @@ impl<'a> Interpreter<'a> {
 
                 }
             }
-            &Cont::Dict(acc, rest, cont) => {
-                // println!("Cont Dict: {:?} {:?}", val, rest);
-                let new_acc;
+            &Cont::DictComplete(ref acc, ref rest, idx, cont) => {
+                // println!("run_cont dict_complete: acc={} idx={} val={} #### cont: {:?}\n", acc, idx, val, cont);
+                acc.set(idx, val.clone()); // TODO Get rid of clone!!!
+
+                Ok(Lazy::Defer(node,
+                               val,
+                               from_raw(h).arena.cont(Cont::Dict(acc.clone(), rest.clone(), cont))))
+            }
+            &Cont::Dict(ref acc, ref rest, cont) => {
+                // println!("run_cont dict: acc={} #### cont: {:?}\n", acc, cont);
+
                 match val {
-                    &AST::Cons(x, y) => {
-                        new_acc = from_raw(h).arena.ast(AST::Cons(from_raw(h).arena.ast(AST::Dict(val)), acc))
+                    &AST::Atom(_) => {
+                        acc.push(val);
                     }
-                    _ => new_acc = from_raw(h).arena.ast(AST::Cons(val, acc)),
-                };
-                match rest {
-                    &AST::Cons(head, tail) => {
-                        from_raw(h).evaluate_dict(node,
-                                                  from_raw(h).arena.nil(),
-                                                  head,
-                                                  from_raw(h)
-                                                      .arena
-                                                      .cont(Cont::Dict(new_acc, tail, cont)))
-                    }
-                    &AST::Value(Value::Number(s)) => {
-                        from_raw(h).run_cont(node, from_raw(h).arena.ast(AST::Cons(rest, new_acc)), cont)
-                    }
-                    &AST::Nil => from_raw(h).run_cont(node, new_acc, cont),
-                    &AST::NameInt(name) => {
-                        match from_raw(h).lookup(node, name, &from_raw(h).env) {
-                            Ok((v, f)) => from_raw(h).run_cont(f, from_raw(h).arena.ast(AST::Cons(v, new_acc)), cont),
-                            Err(x) => Err(x),
+                    _ => {}
+                }
+
+                let mut r = rest.clone();
+                match r.next() {
+                    Some(v) => {
+                        // println!("run_cont dict next: x={} #### cont: {:?}\n", v, cont);
+                        match v {
+                            &AST::Atom(Atom::Dict(ref astv)) |
+                            &AST::Atom(Atom::List(ref astv)) // so far list are treated the same as dicts
+                                => {
+                                //println!("run_cont dict vec: val={} #### cont: {:?}\n", val, cont);
+                                let idx = acc.push( from_raw(h).arena.any()); // allocate empty place for vector result
+                                 from_raw(h).defer_dict(node, astv,
+                                                 from_raw(h).arena.cont(Cont::DictComplete(acc.clone(), r, idx, cont)))
+                            }
+                            x => {
+                                //println!("run_cont dict defer: x={} #### cont: {:?}\n", x, cont);
+                                Ok(Lazy::Defer(node,
+                                               x,
+                                                from_raw(h).arena.cont(Cont::Dict(acc.clone(), r, cont))))
+                            }
                         }
                     }
-                    x => {
-                        Ok(Lazy::Defer(node,
-                                       x,
-                                       from_raw(h)
-                                           .arena
-                                           .cont(Cont::Dict(new_acc, from_raw(h).arena.nil(), cont))))
+                    _ => {
+                        // entire vector calculated, time to move calculation on
+                        from_raw(h).run_cont(node, from_raw(h).arena.ast(AST::Vector(acc.disown())), cont)
                     }
                 }
             }
             &Cont::Verb(ref verb, right, swap, cont) => {
                 // println!("Cont Verb: {:?}", val);
                 match (right, val) {
-                    (&AST::Value(_), &AST::Value(_)) => {
+                    (&AST::Atom(Atom::Value(_)), &AST::Atom(Atom::Value(_))) => {
                         match swap {
                             0 => {
                                 let a = verb::eval(verb.clone(), right, val).unwrap();
@@ -502,7 +460,7 @@ impl<'a> Interpreter<'a> {
                             }
                         }
                     }
-                    (x, &AST::Nil) => Ok(Lazy::Defer(node, x, cont)),
+                    (x, &AST::Atom(Atom::Value(Value::Nil))) => Ok(Lazy::Defer(node, x, cont)),
                     (x, y) => {
                         Ok(Lazy::Defer(node,
                                        x,
@@ -512,18 +470,40 @@ impl<'a> Interpreter<'a> {
                     }
                 }
             }
-            &Cont::Expressions(rest, cont) => {
-                if rest.is_cons() || !rest.is_empty() {
-                    from_raw(h).evaluate_expr(node, rest, cont)
-                } else {
-                    from_raw(h).run_cont(node, val, cont)
+
+            &Cont::Expressions(ast, ref rest, cont) => {
+                // println!("run_cont expr: ast={:?} #### cont: {:?}\n", ast, cont);
+
+                match ast {
+                    &AST::Atom(ref x) => {
+                        // println!("run_cont expr ast: #### cont: {:?}\n", cont);
+                        Ok(Lazy::Defer(node, ast, cont))
+                    }
+                    &AST::Vector(ref v) => {
+                        match *rest {
+                            Some(ref x) => {
+                                let mut e = x.clone();
+                                match e.next() {
+                                    Some(n) => {
+                                        // println!("run_cont expr vec n={:?} #### cont: {:?}\n", n, cont);
+                                        Ok(Lazy::Defer(node,
+                                                       n,
+                                                       from_raw(h).arena.cont(Cont::Expressions(ast, Some(e), cont))))
+                                    }
+                                    _ => from_raw(h).run_cont(node, val, cont),
+                                }
+                            }
+                            _ => {
+                                // println!("run_cont expr vec end: #### cont: {:?}\n", cont);
+                                Ok(Lazy::Defer(node,
+                                               ast,
+                                               from_raw(h).arena.cont(Cont::Expressions(ast, Some(v.iter()), cont))))
+                            }
+                        }
+                    }
                 }
             }
-            x => {
-                let o = from_raw(h).emit_return(val, con);
-                // println!("Return: {:?}", o);
-                o
-            }
+            _ => Ok(Lazy::Return(val)),
         }
     }
 }

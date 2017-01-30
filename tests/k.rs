@@ -12,69 +12,85 @@ use kernel::handle::{self, into_raw, UnsafeShared, use_, from_raw};
 use kernel::intercore::bus::Memory;
 use kernel::intercore::message::Message;
 use kernel::intercore::server::intercore;
-
 use kernel::queues::publisher::{Publisher, Subscriber};
+
+fn av<'a>(x: Value) -> AST<'a> {
+    AST::Atom(Atom::Value(x))
+}
 
 #[test]
 pub fn k_ariph() {
     let mut mem = Memory::new();
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
     let code = h.borrow_mut().parse(&"1+2".to_string());
-    assert_eq!(*code,
-               AST::Verb(Verb::Plus,
-                         &AST::Value(Value::Number(1)),
-                         &AST::Value(Value::Number(2))));
+
+    assert_eq!(code,
+               &AST::Vector(vec![AST::Atom(Atom::Verb(Verb::Plus, &av(Value::Number(1)), &av(Value::Number(2))))]));
 
     let code = h.borrow_mut().parse(&"1+2*4".to_string());
-    assert_eq!(*code,
-               AST::Verb(Verb::Plus,
-                         &AST::Value(Value::Number(1)),
-                         &AST::Verb(Verb::Times,
-                                    &AST::Value(Value::Number(2)),
-                                    &AST::Value(Value::Number(4)))));
+    assert_eq!(code,
+               &AST::Vector(vec![AST::Atom(Atom::Verb(Verb::Plus,
+                                                      &av(Value::Number(1)),
+                                                      &AST::Atom(Atom::Verb(Verb::Times,
+                                                                            &av(Value::Number(2)),
+                                                                            &av(Value::Number(4))))))]));
 }
 
 #[test]
 pub fn k_list() {
     let mut mem = Memory::new();
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
+    let code = h.borrow_mut().parse(&"(1;\"2\";3;4.1111)".to_string());
 
-    let code = h.borrow_mut().parse(&"(1;\"2\";3;4)".to_string());
-    assert_eq!(*code,
-               AST::List(&AST::Cons(&AST::Value(Value::Number(1)),
-                                    &AST::Cons(&AST::Value(Value::SequenceInt(0)),
-                                               &AST::Cons(&AST::Value(Value::Number(3)),
-                                                          &AST::Value(Value::Number(4)))))));
+    let v: Vec<AST> =
+        vec![av(Value::Number(1)), av(Value::SequenceInt(0)), av(Value::Number(3)), av(Value::Float(4.1111))];
+    assert_eq!(code,
+               &AST::Vector(vec![AST::Atom(Atom::List(&AST::Vector(v)))]));
 }
 
 #[test]
 pub fn k_symbols() {
     let mut mem = Memory::new();
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
-
     let code = h.borrow_mut().parse(&"`a`b`c;`1`1`1".to_string());
-    assert_eq!(*code,
-               AST::Cons(&AST::Call(&AST::Value(Value::SymbolInt(0)),
-                                    &AST::Call(&AST::Value(Value::SymbolInt(1)),
-                                               &AST::Value(Value::SymbolInt(2)))),
-                         &AST::Call(&AST::Value(Value::SymbolInt(3)),
-                                    &AST::Call(&AST::Value(Value::Number(1)),
-                                               &AST::Call(&AST::Value(Value::SymbolInt(3)),
-                                                          &AST::Call(&AST::Value(Value::Number(1)),
-                                                                     &AST::Call(&AST::Value(Value::SymbolInt(3)),
-                                                                                &AST::Value(Value::Number(1)))))))));
+    assert_eq!(code,
+               &AST::Vector(
+                   vec![
+                       // symbols
+                       AST::Atom(Atom::Call(&av(Value::SymbolInt(0)),
+                                              &AST::Atom(Atom::Call(&av(Value::SymbolInt(1)),
+                                                                      &av(Value::SymbolInt(2)))))), 
+
+                       // values
+                       AST::Atom(Atom::Call(&av(Value::SymbolInt(3)),
+                                              &AST::Atom(Atom::Call(&av(Value::Number(1)),
+                                                                      &AST::Atom(Atom::Call(&av(Value::SymbolInt(3)),
+                                                                                              &AST::Atom(Atom::Call(&av(Value::Number(1)),
+                                                                                                                      &AST::Atom(Atom::Call(&av(Value::SymbolInt(3)), &av(Value::Number(1))))))))))))
+                           
+                   ]));
 }
 
 #[test]
 pub fn k_assign() {
     let mut mem = Memory::new();
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
-
     let code = h.borrow_mut().parse(&"a:b:c:1".to_string());
-    assert_eq!(*code,
-               AST::Assign(&AST::NameInt(0),
-                           &AST::Assign(&AST::NameInt(1),
-                                        &AST::Assign(&AST::NameInt(2), &AST::Value(Value::Number(1))))));
+    assert_eq!(code,
+               &AST::Vector(
+                   vec![AST::Atom(Atom::Assign(&AST::Atom(Atom::NameInt(0)),
+                                                 &AST::Atom(Atom::Assign(&AST::Atom(Atom::NameInt(1)),
+                                                                           &AST::Atom(Atom::Assign(&AST::Atom(Atom::NameInt(2)), &av(Value::Number(1))))))))]));
+}
+
+#[test]
+pub fn k_anyargs0() {
+    let mut mem = Memory::new();
+    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
+
+    let code = h.borrow_mut().parse(&"[]".to_string());
+    assert_eq!(code,
+               &AST::Vector(vec![AST::Atom(Atom::Dict(&AST::Vector(vec![AST::Atom(Atom::Any)])))]));
 }
 
 #[test]
@@ -83,8 +99,9 @@ pub fn k_anyargs1() {
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
 
     let code = h.borrow_mut().parse(&"[;]".to_string());
-    assert_eq!(*code,
-               AST::Dict(&AST::Cons(&AST::Any, &AST::Cons(&&AST::Any, &&AST::Nil))));
+    assert_eq!(code,
+               &AST::Vector(vec![AST::Atom(Atom::Dict(&AST::Vector(vec![AST::Atom(Atom::Any),
+                                                                        AST::Atom(Atom::Any)])))]));
 }
 
 #[test]
@@ -93,9 +110,10 @@ pub fn k_anyargs2() {
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
 
     let code = h.borrow_mut().parse(&"[;;]".to_string());
-    assert_eq!(*code,
-               AST::Dict(&AST::Cons(&AST::Any,
-                                    &AST::Cons(&AST::Any, &AST::Cons(&AST::Any, &AST::Nil)))));
+    assert_eq!(code,
+               &AST::Vector(vec![AST::Atom(Atom::Dict(&AST::Vector(vec![AST::Atom(Atom::Any),
+                                                                        AST::Atom(Atom::Any),
+                                                                        AST::Atom(Atom::Any)])))]));
 }
 
 #[test]
@@ -104,9 +122,10 @@ pub fn k_anyargs3() {
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
 
     let code = h.borrow_mut().parse(&"[;;3]".to_string());
-    assert_eq!(*code,
-               AST::Dict(&AST::Cons(&AST::Any,
-                                    &AST::Cons(&AST::Any, &AST::Value(Value::Number(3))))));
+    assert_eq!(code,
+               &AST::Vector(vec![AST::Atom(Atom::Dict(&AST::Vector(vec![AST::Atom(Atom::Any),
+                                                                        AST::Atom(Atom::Any),
+                                                                        av(Value::Number(3))])))]));
 }
 
 #[test]
@@ -115,9 +134,10 @@ pub fn k_anyargs4() {
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
 
     let code = h.borrow_mut().parse(&"[1;;]".to_string());
-    assert_eq!(*code,
-               AST::Dict(&AST::Cons(&AST::Value(Value::Number(1)),
-                                    &AST::Cons(&AST::Any, &AST::Cons(&AST::Any, &AST::Nil)))));
+    assert_eq!(code,
+               &AST::Vector(vec![AST::Atom(Atom::Dict(&AST::Vector(vec![av(Value::Number(1)),
+                                                                        AST::Atom(Atom::Any),
+                                                                        AST::Atom(Atom::Any)])))]));
 }
 
 #[test]
@@ -126,8 +146,18 @@ pub fn k_vecconst1() {
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
 
     let code = h.borrow_mut().parse(&"(1;2;3)".to_string());
-    let a: Vec<i64> = vec![1, 2, 3];
-    assert_eq!(*code, AST::Value(Value::VecInt(a)));
+    assert_eq!(code,
+               &AST::Vector(vec![AST::Atom(Atom::List(&av(Value::VecInt(vec![1, 2, 3]))))]));
+}
+
+#[test]
+pub fn k_vecconst2() {
+    let mut mem = Memory::new();
+    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
+
+    let code = h.borrow_mut().parse(&"(1.0;2.0;3.0)".to_string());
+    assert_eq!(code,
+               &AST::Vector(vec![AST::Atom(Atom::List(&av(Value::VecFloat(vec![1.0, 2.0, 3.0]))))]));
 }
 
 #[test]
@@ -135,9 +165,9 @@ pub fn k_plus() {
     let mut mem = Memory::new();
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
 
-    let code = h.borrow_mut().parse(&"2+5".to_string());
+    let code = h.borrow_mut().parse(&"2+5+3".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
-               "7");
+               "10");
 }
 
 #[test]
@@ -147,8 +177,8 @@ pub fn k_func() {
 
     let code = h.borrow_mut().parse(&"{x*2}[(1;2;3)]".to_string());
     assert_eq!(format!("{:?}", code),
-               "Call(Lambda(None, NameInt(0), Verb(Times, NameInt(0), Value(Number(2)))), \
-                Value(VecInt([1, 2, 3])))");
+               "Vector([Atom(Call(Atom(Lambda(None, Atom(NameInt(0)), Vector([Atom(Verb(Times, Atom(NameInt(0)), \
+                Atom(Value(Number(2)))))]))), Atom(Dict(Vector([Atom(List(Atom(Value(VecInt([1, 2, 3])))))])))))])");
 }
 
 #[test]
@@ -158,8 +188,8 @@ pub fn k_adverb() {
 
     let code = h.borrow_mut().parse(&"{x+2}/(1;2;3)".to_string());
     assert_eq!(format!("{:?}", code),
-               "Adverb(Over, Lambda(None, NameInt(0), Verb(Plus, NameInt(0), Value(Number(2)))), \
-                Value(VecInt([1, 2, 3])))");
+               "Vector([Atom(Adverb(Over, Atom(Lambda(None, Atom(NameInt(0)), Vector([Atom(Verb(Plus, \
+                Atom(NameInt(0)), Atom(Value(Number(2)))))]))), Atom(List(Atom(Value(VecInt([1, 2, 3])))))))])");
 }
 
 
@@ -168,18 +198,42 @@ pub fn k_reduce() {
     let mut mem = Memory::new();
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
 
-    let ref mut code = h.borrow_mut().parse(&"+/{x*y}[(1;3;4;5;6);(2;6;2;1;3)]".to_string());
+    let code = h.borrow_mut().parse(&"+/{x*y}[(1;3;4;5;6);(2;6;2;1;3)]".to_string());
     assert_eq!(format!("{:?}", code),
-               "Adverb(Over, Verb(Plus, Nil, Nil), Call(Lambda(None, NameInt(0), Verb(Times, NameInt(0), \
-                NameInt(1))), Dict(Cons(Value(VecInt([1, 3, 4, 5, 6])), Value(VecInt([2, 6, 2, 1, 3]))))))");
+               "Vector([Atom(Adverb(Over, Atom(Verb(Plus, Atom(Value(Nil)), Atom(Value(Nil)))), \
+                Atom(Call(Atom(Lambda(None, Atom(NameInt(0)), Vector([Atom(Verb(Times, Atom(NameInt(0)), \
+                Atom(NameInt(1))))]))), Atom(Dict(Vector([Atom(List(Atom(Value(VecInt([1, 3, 4, 5, 6]))))), \
+                Atom(List(Atom(Value(VecInt([2, 6, 2, 1, 3])))))])))))))])");
 }
 
 #[test]
-pub fn k_repl() {
+pub fn k_dict1() {
     let mut mem = Memory::new();
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
 
-    let _ = h.borrow_mut().parse(&"y:3;add:{[x]y};f:{[x]add x};f 1".to_string());
+    let code = h.borrow_mut().parse(&"a:10;[1;2;a;5]".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
+               "#a[1;2;10;5]");
+}
+
+#[test]
+pub fn k_dict2() {
+    let mut mem = Memory::new();
+    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
+
+    let code = h.borrow_mut().parse(&"[1;[\"2\";3];4;5]".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
+               "#a[1;#a[0s;3];4;5]");
+}
+
+#[test]
+pub fn k_dict3() {
+    let mut mem = Memory::new();
+    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
+
+    let code = h.borrow_mut().parse(&"[1;[\"2\";[\"3\";3]];4;5]".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
+               "#a[1;#a[0s;#a[1s;3]];4;5]");
 }
 
 #[test]
@@ -189,9 +243,53 @@ pub fn k_nested_dict() {
 
     let code = h.borrow_mut().parse(&"a:10;[1;2;[a+a;[4+a;3];2];5]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
-               "[1 2 [20 [14 3] 2] 5]");
+               "#a[1;2;#a[20;#a[14;3];2];5]");
 }
 
+#[test]
+pub fn k_list1() {
+    let mut mem = Memory::new();
+    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
+
+    let code = h.borrow_mut().parse(&"(1;(\"2\";(\"3\";3));4;5)".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
+               "#a[1;#a[0s;#a[1s;3]];4;5]");
+}
+
+#[test]
+pub fn k_nested_list() {
+    let mut mem = Memory::new();
+    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
+
+    let code = h.borrow_mut().parse(&"a:10;(1;2;(a+a;(4+a;3);2);5)".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
+               "#a[1;2;#a[20;#a[14;3];2];5]");
+}
+
+#[test]
+pub fn k_expr1() {
+    let mut mem = Memory::new();
+    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
+
+    let code = h.borrow_mut().parse(&"1;[\"2\";1]".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
+               "#a[0s;1]");
+}
+
+#[test]
+pub fn k_repl1() {
+    let mut mem = Memory::new();
+    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
+
+    let code = h.borrow_mut().parse(&"xo:{[x;y]y};xo[1;[2;3]]".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
+               "#i[2;3]");
+
+    // test to avoid specializing vectors in function arguments
+    let code = h.borrow_mut().parse(&"xo:{[x;y;z]y};xo[1;2;3]".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
+               "2");
+}
 
 #[test]
 pub fn k_repl2() {
@@ -201,6 +299,16 @@ pub fn k_repl2() {
     let code = h.borrow_mut().parse(&"xo:{1};z:{[x]xo x};d:{[x]z x};e:{[x]d x};e[3]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
                "1");
+}
+
+#[test]
+pub fn k_repl3() {
+    let mut mem = Memory::new();
+    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
+
+    let code = h.borrow_mut().parse(&"y:3;addy:{y};f:{[g;y]g y};f[addy;1]".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
+               "3");
 }
 
 #[test]
@@ -224,7 +332,17 @@ pub fn k_tail_factorial() {
 }
 
 #[test]
-pub fn k_cond() {
+pub fn k_cond1() {
+    let mut mem = Memory::new();
+    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
+
+    let code = h.borrow_mut().parse(&"a:{[x;y]x y};a[{x};10]".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
+               "10");
+}
+
+#[test]
+pub fn k_cond2() {
     let mut mem = Memory::new();
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
 
@@ -234,7 +352,7 @@ pub fn k_cond() {
 }
 
 #[test]
-pub fn k_cond2() {
+pub fn k_cond3() {
     let mut mem = Memory::new();
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
 
@@ -254,17 +372,6 @@ pub fn k_14() {
                "14");
 }
 
-
-#[test]
-pub fn k_multiargs2() {
-    let mut mem = Memory::new();
-    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
-
-    let code = h.borrow_mut().parse(&"b:2;a:3;fac:{[x;y]x*y};fac[b*a;a+1]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
-               "24");
-}
-
 #[test]
 pub fn k_multiargs() {
     let mut mem = Memory::new();
@@ -276,23 +383,22 @@ pub fn k_multiargs() {
 }
 
 #[test]
-pub fn k_repl1() {
+pub fn k_multiargs2() {
     let mut mem = Memory::new();
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
 
-    let code = h.borrow_mut().parse(&"y:3;addy:{y};f:{[g;y]g y};f[addy;1]".to_string());
+    let code = h.borrow_mut().parse(&"b:2;a:3;fac:{[x;y]x*y};fac[b*a;a+1]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
-               "3");
+               "24");
 }
-
 #[test]
-pub fn k_tensor() {
+pub fn k_tensor0() {
     let mut mem = Memory::new();
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
 
     let code = h.borrow_mut().parse(&"g:1;b:1;[[g;g*b;1;0];[g*b;g;180;0];[0;0;270;0];[0;0;0;1]]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
-               "[[1 1 1 0] [1 1 180 0] [0 0 270 0] [0 0 0 1]]");
+               "#a[#a[1;1;1;0];#a[1;1;180;0];#i[0;0;270;0];#i[0;0;270;0];#i[0;0;0;1];#i[0;0;0;1]]");
 }
 
 #[test]
@@ -302,7 +408,7 @@ pub fn k_tensor1() {
 
     let code = h.borrow_mut().parse(&"a:10;[[[a;2;3];[1;[a;4];3]];[1;2]]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
-               "[[[10 2 3] [1 [10 4] 3]] [1 2]]");
+               "#a[#a[#a[10;2;3];#a[1;#a[10;4];3]];#i[1;2];#i[1;2]]");
 }
 
 #[test]
@@ -312,7 +418,17 @@ pub fn k_tensor2() {
 
     let code = h.borrow_mut().parse(&"a:10;[[[a;2;3];[[a;4];[3;0]]];[1;2]]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
-               "[[[10 2 3] [[10 4] [3 0]]] [1 2]]");
+               "#a[#a[#a[10;2;3];#a[#a[10;4];#i[3;0];#i[3;0]]];#i[1;2];#i[1;2]]");
+}
+
+#[test]
+pub fn k_tensor3() {
+    let mut mem = Memory::new();
+    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
+
+    let code = h.borrow_mut().parse(&"a:10;[[[[a;2;3];[[a;4];[3;0]]];[1;2]];1]".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
+               "#a[#a[#a[#a[10;2;3];#a[#a[10;4];#i[3;0];#i[3;0]]];#i[1;2];#i[1;2]];1]");
 }
 
 #[test]
@@ -336,26 +452,6 @@ pub fn k_akkerman() {
     let code = h.borrow_mut().parse(&"f:{[x;y]$[0=x;1+y;$[0=y;f[x-1;1];f[x-1;f[x;y-1]]]]};f[3;4]".to_string());
     assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
                "125");
-}
-
-#[test]
-pub fn k_tensor3() {
-    let mut mem = Memory::new();
-    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
-
-    let code = h.borrow_mut().parse(&"a:10;[[[[a;2;3];[[a;4];[3;0]]];[1;2]];1]".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
-               "[[[[10 2 3] [[10 4] [3 0]]] [1 2]] 1]");
-}
-
-#[test]
-pub fn k_partial1() {
-    let mut mem = Memory::new();
-    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
-
-    let code = h.borrow_mut().parse(&"aa:{[x;y]x+y};bb:aa[;2];bb 3".to_string());
-    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
-               "5");
 }
 
 #[test]
@@ -422,50 +518,59 @@ pub fn rust_pubsub() {
         }
     }
 }
-
+// #[test]
+// pub fn k_pubsub() {
+// let ref mut sched = Scheduler::with_channel(0);
+// let s = into_raw(sched);
+// let code = "p0:pub[0;8]; s1:sub[0;p0]; s2:sub[0;p0]; snd[p0;11]; snd[p0;12]; print[rcv s1; rcv s2; rcv s1; rcv s2]";
+// let shell = from_raw(s).spawn(Job::Cps(CpsTask::new(sched.mem())),
+// Termination::Corecursive,
+// Some(code));
+//
+// let t = into_raw(sched.tasks.get_mut(shell.0).expect("no shell"));
+// from_raw(t).0.exec(Some(code));
+// let mut poll;
+// let mut msg1 = Message::Nop;
+// let mut ctx = Context::Nil;
+// poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
+// match poll.clone() {
+// Poll::Yield(Context::Intercore(i)) => msg1 = i.clone(),
+// _ => (),
+// }
+// ctx = intercore(from_raw(s), Some(use_(&mut msg1)), &mut from_raw(s).bus);
+// poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
+// println!("ctx 1: {:?}", ctx.clone());
+// let mut msg2 = Message::Nop;
+// match poll.clone() {
+// Poll::Yield(Context::Intercore(i)) => msg2 = i.clone(),
+// _ => (),
+// }
+// ctx = intercore(from_raw(s), Some(use_(&mut msg2)), &mut from_raw(s).bus);
+// poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
+// println!("ctx 2: {:?}", ctx.clone());
+// let mut msg3 = Message::Nop;
+// match poll.clone() {
+// Poll::Yield(Context::Intercore(i)) => msg3 = i.clone(),
+// _ => (),
+// }
+// ctx = intercore(from_raw(s), Some(use_(&mut msg3)), &mut from_raw(s).bus);
+// poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
+// println!("ctx 3: {:?}", ctx.clone());
+// println!("poll: {:?}", poll.clone());
+// match poll.clone() {
+// Poll::End(Context::Node(s)) => assert_eq!(format!("{}", s), "[11 11 12 12]"),
+// _ => assert_eq!(1, 0),
+// }
+// }
+//
 #[test]
-pub fn k_pubsub() {
-    let ref mut sched = Scheduler::with_channel(0);
-    let s = into_raw(sched);
-    let code = "p0:pub[0;8]; s1:sub[0;p0]; s2:sub[0;p0]; snd[p0;11]; snd[p0;12]; print[rcv s1; rcv s2; rcv s1; rcv s2]";
-    let shell = from_raw(s).spawn(Job::Cps(CpsTask::new(sched.mem())),
-                                  Termination::Corecursive,
-                                  Some(code));
+pub fn k_partial1() {
+    let mut mem = Memory::new();
+    let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
 
-    let t = into_raw(sched.tasks.get_mut(shell.0).expect("no shell"));
-    from_raw(t).0.exec(Some(code));
-    let mut poll;
-    let mut msg1 = Message::Nop;
-    let mut ctx = Context::Nil;
-    poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
-    match poll.clone() {
-        Poll::Yield(Context::Intercore(i)) => msg1 = i.clone(),
-        _ => (),
-    }
-    ctx = intercore(from_raw(s), Some(use_(&mut msg1)), &mut from_raw(s).bus);
-    poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
-    println!("ctx 1: {:?}", ctx.clone());
-    let mut msg2 = Message::Nop;
-    match poll.clone() {
-        Poll::Yield(Context::Intercore(i)) => msg2 = i.clone(),
-        _ => (),
-    }
-    ctx = intercore(from_raw(s), Some(use_(&mut msg2)), &mut from_raw(s).bus);
-    poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
-    println!("ctx 2: {:?}", ctx.clone());
-    let mut msg3 = Message::Nop;
-    match poll.clone() {
-        Poll::Yield(Context::Intercore(i)) => msg3 = i.clone(),
-        _ => (),
-    }
-    ctx = intercore(from_raw(s), Some(use_(&mut msg3)), &mut from_raw(s).bus);
-    poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
-    println!("ctx 3: {:?}", ctx.clone());
-    println!("poll: {:?}", poll.clone());
-    match poll.clone() {
-        Poll::End(Context::Node(s)) => assert_eq!(format!("{}", s), "[11 11 12 12]"),
-        _ => assert_eq!(1, 0),
-    }
+    let code = h.borrow_mut().parse(&"aa:{[x;y]x+y};bb:aa[;2];bb 3".to_string());
+    assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
+               "5");
 }
 
 #[test]
@@ -494,7 +599,6 @@ pub fn k_vecop_vv() {
     let h = handle::new(Interpreter::new(unsafe { UnsafeShared::new(&mut mem as *mut Memory) }).unwrap());
 
     let code = h.borrow_mut().parse(&"(1;2;3)+(1;2;3)".to_string());
-    // let a: Vec<i64> = vec![2, 4, 6];
     assert_eq!(format!("{}", h.borrow_mut().run(code, Context::Nil, None).unwrap()),
                "#i[2;4;6]");
 }

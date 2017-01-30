@@ -1,5 +1,4 @@
-use commands::ast::Value;
-use commands::ast::AST;
+use commands::ast::{AST, Atom, Value};
 
 pub struct Mul<'ast> {
     lvalue: &'ast AST<'ast>,
@@ -15,13 +14,13 @@ pub fn new<'ast>(lvalue: &'ast AST<'ast>, rvalue: &'ast AST<'ast>) -> Mul<'ast> 
 
 impl<'ast> Mul<'ast> {
     fn a_a(l: i64, r: i64) -> AST<'ast> {
-        AST::Value(Value::Number(l * r))
+        AST::Atom(Atom::Value(Value::Number(l * r)))
     }
-    fn l_a(l: &'ast AST<'ast>, r: &'ast AST<'ast>) -> AST<'ast> {
-        AST::Value(Value::Number(1))
+    fn l_a(l: &'ast Atom<'ast>, r: &'ast Atom<'ast>) -> AST<'ast> {
+        AST::Atom(Atom::Value(Value::Number(1)))
     }
-    fn a_l(l: &'ast AST<'ast>, r: &'ast AST<'ast>) -> AST<'ast> {
-        AST::Value(Value::Number(1))
+    fn a_l(l: &'ast Atom<'ast>, r: &'ast Atom<'ast>) -> AST<'ast> {
+        AST::Atom(Atom::Value(Value::Number(1)))
     }
 
     fn l_l(l: &[i64], r: &[i64]) -> AST<'ast> {
@@ -29,7 +28,7 @@ impl<'ast> Mul<'ast> {
             .zip(r)
             .map(|(l, r)| l * r)
             .collect();
-        AST::Value(Value::VecInt(a))
+        AST::Atom(Atom::Value(Value::VecInt(a)))
     }
 
     fn vf_vf(l: &[f64], r: &[f64]) -> AST<'ast> {
@@ -37,7 +36,7 @@ impl<'ast> Mul<'ast> {
             .zip(r)
             .map(|(l, r)| l * r)
             .collect();
-        AST::Value(Value::VecFloat(a))
+        AST::Atom(Atom::Value(Value::VecFloat(a)))
     }
 }
 
@@ -45,9 +44,15 @@ impl<'ast> Iterator for Mul<'ast> {
     type Item = AST<'ast>;
     fn next(&mut self) -> Option<Self::Item> {
         match (self.lvalue, self.rvalue) {
-            (&AST::Value(Value::Number(l)), &AST::Value(Value::Number(r))) => Some(Self::a_a(l, r)),
-            (&AST::Value(Value::VecFloat(ref l)), &AST::Value(Value::VecFloat(ref r))) => Some(Self::vf_vf(l, r)),
-            (&AST::Value(Value::VecInt(ref l)), &AST::Value(Value::VecInt(ref r))) => Some(Self::l_l(l, r)),
+            (&AST::Atom(Atom::Value(Value::Number(l))), &AST::Atom(Atom::Value(Value::Number(r)))) => {
+                Some(Self::a_a(l, r))
+            }
+            (&AST::Atom(Atom::Value(Value::VecFloat(ref l))), &AST::Atom(Atom::Value(Value::VecFloat(ref r)))) => {
+                Some(Self::vf_vf(l, r))
+            }
+            (&AST::Atom(Atom::Value(Value::VecInt(ref l))), &AST::Atom(Atom::Value(Value::VecInt(ref r)))) => {
+                Some(Self::l_l(l, r))
+            }
             _ => None,
         }
     }

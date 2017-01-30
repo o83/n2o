@@ -1,6 +1,6 @@
 use reactors::task::{Task, Context, Poll, Error};
 use streams::interpreter::*;
-use commands::ast::AST;
+use commands::ast::{Atom, AST};
 use handle::*;
 use intercore::bus::{send, Memory};
 use reactors::scheduler::Scheduler;
@@ -29,7 +29,7 @@ impl<'a> CpsTask<'a> {
         let x = into_raw(self);
         let r = from_raw(x).interpreter.run(n, intercore, sched);
         match r {
-            Ok(&AST::Yield(ref ic)) => {
+            Ok(&AST::Atom(Atom::Yield(ref ic))) => {
                 if let &Context::Intercore(msg) = ic {
                     match sched {
                         Some(ref s) => {
