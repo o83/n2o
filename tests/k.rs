@@ -190,7 +190,7 @@ pub fn k_adverb() {
 
     let code = h.borrow_mut().parse(&"{x+2}/(1;2;3)".to_string());
     assert_eq!(format!("{:?}", code),
-               "VecAST([AST(Adverb(Over, AST(Lambda(None, AST(Nil), VecAST([AST(Verb(Plus, AST(NameInt(0)), \
+               "VecAST([AST(Adverb(Over, AST(Lambda(None, AST(NameInt(0)), VecAST([AST(Verb(Plus, AST(NameInt(0)), \
                 AST(Value(Number(2)))))]))), AST(List(AST(Value(VecInt([1, 2, 3])))))))])");
 }
 

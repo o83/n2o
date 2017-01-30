@@ -550,10 +550,10 @@ impl<'a> Arena<'a> {
     pub fn init(asts: UnsafeCell<Vec<ASTNode<'a>>>) -> (u16, UnsafeCell<Vec<ASTNode<'a>>>) {
         let a = unsafe { &mut *asts.get() };
         assert!(a.len() == 0);
-        a.push(ASTNode::AST(AST::Nil));                   // Nil       - index 0
+        a.push(ASTNode::AST(AST::Value(Value::Nil)));     // Value Nil - index 3
         a.push(ASTNode::AST(AST::Any));                   // Any       - index 1
         a.push(ASTNode::AST(AST::Yield(Context::Nil)));   // Yield     - index 2
-        a.push(ASTNode::AST(AST::Value(Value::Nil)));     // Value Nil - index 3
+        a.push(ASTNode::AST(AST::Nil));                   // Nil       - index 0
         (a.len() as u16, asts)
     }
 
