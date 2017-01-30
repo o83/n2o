@@ -27,6 +27,16 @@ pub struct Channel {
     pub subscribers: Vec<Subscriber<Message>>,
 }
 
+impl Channel {
+    pub fn new(id: usize, cap: usize) -> Self {
+        Channel {
+            id: id,
+            publisher: Publisher::with_capacity(cap),
+            subscribers: Vec::new(),
+        }
+    }
+}
+
 impl Memory {
     pub fn new() -> Self {
         Memory {

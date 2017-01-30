@@ -15,6 +15,10 @@ build = "build.rs"
 name = "o"
 path = "src/apps/impresa.rs"
 
+[[bin]]
+name = "h"
+path = "src/apps/wrx.rs"
+
 [dependencies]
 net2            = "0.2.19"
 log             = "0.3"

@@ -38,6 +38,15 @@ impl<'a> Scheduler<'a> {
         }
     }
 
+    pub fn with_channel2(channel: Channel) -> Self {
+        Scheduler {
+            tasks: Vec::with_capacity(TASKS_MAX_CNT),
+            bus: channel,
+            io: IO::new(),
+            queues: Memory::new(),
+        }
+    }
+
     pub fn spawn(&'a mut self, t: Job<'a>, l: Termination, input: Option<&'a str>) -> TaskId {
         let last = self.tasks.len();
         self.tasks.push(T3(t, l));
