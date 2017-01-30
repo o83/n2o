@@ -13,10 +13,6 @@ build = "build.rs"
 
 [[bin]]
 name = "o"
-path = "src/apps/impresa.rs"
-
-[[bin]]
-name = "h"
 path = "src/apps/wrx.rs"
 
 [dependencies]
