@@ -54,13 +54,19 @@ pub fn print<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena
 pub fn spawn<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     println!("Spawn Args: {:?}", args);
     let (core, txt) = (0, "a:1".to_string());
-    // let (core, txt) = match args {
-    // &AST::Cons(&Atom::Value(Value::Number(c)), &AST::Cons(&Atom::Value(Value::SequenceInt(n)), t)) => {
-    // (c, "test".to_string())
-    // }
-    // _ => (0, "".to_string()),
-    // };
-    //
+
+    let (core, txt) = match args {
+        &AST::Vector(ref v) if v.len() == 2 => {
+            match (&v[0], &v[1]) {
+                (&AST::Atom(Atom::Value(Value::Number(c))), &AST::Atom(Atom::Value(Value::SequenceInt(n)))) => {
+                    (c, "test".to_string())
+                }
+                _ => (0, "".to_string()),
+            }
+        }
+        _ => (0, "".to_string()),
+    };
+
     i.edge = Message::Spawn(Spawn {
         from: 0,
         to: 0, // core as usize,
@@ -71,16 +77,19 @@ pub fn spawn<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena
 
 pub fn publisher<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     println!("Pub Args: {:?}", args);
-    // let (core, cap) = match args {
-    // &AST::Cons(&Atom::Value(Value::Number(cap)), tail) => {
-    // match tail {
-    // &AST::Cons(&Atom::Value(Value::Number(core)), tail) => (core as usize, cap as usize),
-    // _ => panic!("oops!"),
-    // }
-    // }
-    // _ => panic!("oops!"),
-    // };
-    //
+
+    let (core, cap) = match args {
+        &AST::Vector(ref v) if v.len() == 2 => {
+            match (&v[0], &v[1]) {
+                (&AST::Atom(Atom::Value(Value::Number(cap))), &AST::Atom(Atom::Value(Value::Number(core)))) => {
+                    (core as usize, cap as usize)
+                }
+                _ => panic!("oops!"),
+            }
+        }
+        _ => panic!("oops!"),
+    };
+
     i.edge = Message::Pub(Pub {
         from: 0,
         task_id: 0,
@@ -93,16 +102,19 @@ pub fn publisher<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a A
 
 pub fn subscriber<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     println!("Sub Args: {:?}", args);
-    // let (core, pub_id) = match args {
-    // &AST::Cons(&Atom::Value(Value::Number(pub_id)), tail) => {
-    // match tail {
-    // &AST::Cons(&Atom::Value(Value::Number(core)), tail) => (core as usize, pub_id as usize),
-    // _ => panic!("oops!"),
-    // }
-    // }
-    // _ => panic!("oops!"),
-    // };
-    //
+
+    let (core, pub_id) = match args {
+        &AST::Vector(ref v) if v.len() == 2 => {
+            match (&v[0], &v[1]) {
+                (&AST::Atom(Atom::Value(Value::Number(pub_id))), &AST::Atom(Atom::Value(Value::Number(core)))) => {
+                    (core as usize, pub_id as usize)
+                }
+                _ => panic!("oops!"),
+            }
+        }
+        _ => panic!("oops!"),
+    };
+
     i.edge = Message::Sub(Sub {
         from: i.task_id,
         task_id: i.task_id,
@@ -114,17 +126,19 @@ pub fn subscriber<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a 
 
 pub fn send<'a>(i: &'a mut Interpreter<'a>, args: &'a AST<'a>, arena: &'a Arena<'a>) -> Context<'a> {
     println!("Send Args: {:?}", args);
-    let (val, pub_id) = (42, 0);
-    // let (val, pub_id) = match args {
-    // &AST::Cons(&Atom::Value(Value::Number(val)), tail) => {
-    // match tail {
-    // &AST::Cons(&Atom::Value(Value::Number(pub_id)), tail) => (val, pub_id),
-    // _ => panic!("oops!"),
-    // }
-    // }
-    // _ => panic!("oops!"),
-    // };
-    //
+
+    let (val, pub_id) = match args {
+        &AST::Vector(ref v) if v.len() == 2 => {
+            match (&v[0], &v[1]) {
+                (&AST::Atom(Atom::Value(Value::Number(val))), &AST::Atom(Atom::Value(Value::Number(pub_id)))) => {
+                    (val, pub_id)
+                }
+                _ => panic!("oops!"),
+            }
+        }
+        _ => panic!("oops!"),
+    };
+
     let mut p = i.queues.publishers().get(pub_id as usize).expect(&format!("Wrong publisher id: {}", pub_id));
     if let Some(slot) = p.next() {
         *slot = val;

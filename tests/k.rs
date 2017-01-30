@@ -518,51 +518,53 @@ pub fn rust_pubsub() {
         }
     }
 }
-// #[test]
-// pub fn k_pubsub() {
-// let ref mut sched = Scheduler::with_channel(0);
-// let s = into_raw(sched);
-// let code = "p0:pub[0;8]; s1:sub[0;p0]; s2:sub[0;p0]; snd[p0;11]; snd[p0;12]; print[rcv s1; rcv s2; rcv s1; rcv s2]";
-// let shell = from_raw(s).spawn(Job::Cps(CpsTask::new(sched.mem())),
-// Termination::Corecursive,
-// Some(code));
-//
-// let t = into_raw(sched.tasks.get_mut(shell.0).expect("no shell"));
-// from_raw(t).0.exec(Some(code));
-// let mut poll;
-// let mut msg1 = Message::Nop;
-// let mut ctx = Context::Nil;
-// poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
-// match poll.clone() {
-// Poll::Yield(Context::Intercore(i)) => msg1 = i.clone(),
-// _ => (),
-// }
-// ctx = intercore(from_raw(s), Some(use_(&mut msg1)), &mut from_raw(s).bus);
-// poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
-// println!("ctx 1: {:?}", ctx.clone());
-// let mut msg2 = Message::Nop;
-// match poll.clone() {
-// Poll::Yield(Context::Intercore(i)) => msg2 = i.clone(),
-// _ => (),
-// }
-// ctx = intercore(from_raw(s), Some(use_(&mut msg2)), &mut from_raw(s).bus);
-// poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
-// println!("ctx 2: {:?}", ctx.clone());
-// let mut msg3 = Message::Nop;
-// match poll.clone() {
-// Poll::Yield(Context::Intercore(i)) => msg3 = i.clone(),
-// _ => (),
-// }
-// ctx = intercore(from_raw(s), Some(use_(&mut msg3)), &mut from_raw(s).bus);
-// poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
-// println!("ctx 3: {:?}", ctx.clone());
-// println!("poll: {:?}", poll.clone());
-// match poll.clone() {
-// Poll::End(Context::Node(s)) => assert_eq!(format!("{}", s), "[11 11 12 12]"),
-// _ => assert_eq!(1, 0),
-// }
-// }
-//
+
+#[test]
+pub fn k_pubsub() {
+    let ref mut sched = Scheduler::with_channel(0);
+    let s = into_raw(sched);
+    let code = "p0:pub[0;8]; s1:sub[0;p0]; s2:sub[0;p0]; snd[p0;11]; snd[p0;12]; print[rcv s1; rcv s2; rcv s1; rcv s2]";
+    let shell = from_raw(s).spawn(Job::Cps(CpsTask::new(sched.mem())),
+                                  Termination::Corecursive,
+                                  Some(code));
+
+    let t = into_raw(sched.tasks.get_mut(shell.0).expect("no shell"));
+    from_raw(t).0.exec(Some(code));
+    let mut poll;
+    let mut msg1 = Message::Nop;
+    let mut ctx = Context::Nil;
+    poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
+    match poll.clone() {
+        Poll::Yield(Context::Intercore(i)) => msg1 = i.clone(),
+        _ => (),
+    }
+    ctx = intercore(from_raw(s), Some(use_(&mut msg1)), &mut from_raw(s).bus);
+    poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
+    println!("ctx 1: {:?}", ctx.clone());
+    let mut msg2 = Message::Nop;
+    match poll.clone() {
+        Poll::Yield(Context::Intercore(i)) => msg2 = i.clone(),
+        _ => (),
+    }
+    ctx = intercore(from_raw(s), Some(use_(&mut msg2)), &mut from_raw(s).bus);
+    poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
+    println!("ctx 2: {:?}", ctx.clone());
+    let mut msg3 = Message::Nop;
+    match poll.clone() {
+        Poll::Yield(Context::Intercore(i)) => msg3 = i.clone(),
+        _ => (),
+    }
+    ctx = intercore(from_raw(s), Some(use_(&mut msg3)), &mut from_raw(s).bus);
+    poll = from_raw(t).0.poll(ctx.clone(), from_raw(sched));
+    println!("ctx 3: {:?}", ctx.clone());
+    println!("poll: {:?}", poll.clone());
+    match poll.clone() {
+        Poll::End(Context::Node(s)) => assert_eq!(format!("{}", s), "[11 11 12 12]"),
+        _ => assert_eq!(1, 0),
+    }
+}
+
+
 #[test]
 pub fn k_partial1() {
     let mut mem = Memory::new();
