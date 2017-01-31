@@ -493,6 +493,7 @@ impl<'a> Arena<'a> {
         }
     }
 
+    #[inline(always)]
     pub fn ast(&self, n: AST<'a>) -> &'a AST<'a> {
         let ast = unsafe { &mut *self.asts.get() };
         ast.push(n);
@@ -503,6 +504,7 @@ impl<'a> Arena<'a> {
         self.ast(AST::Vector(v))
     }
 
+    #[inline(always)]
     pub fn cont(&self, n: Cont<'a>) -> &'a Cont<'a> {
         let conts = unsafe { &mut *self.conts.get() };
         conts.push(n);
@@ -561,10 +563,10 @@ impl<'a> Arena<'a> {
     pub fn init(asts: UnsafeCell<Vec<AST<'a>>>) -> (u16, UnsafeCell<Vec<AST<'a>>>) {
         let a = unsafe { &mut *asts.get() };
         assert!(a.len() == 0);
-        a.push(AST::Atom(Atom::Value(Value::Nil)));     // Value Nil - index 3
+        a.push(AST::Atom(Atom::Value(Value::Nil)));     // Value Nil - index 0
         a.push(AST::Atom(Atom::Any));                   // Any       - index 1
         a.push(AST::Atom(Atom::Yield(Context::Nil)));   // Yield     - index 2
-        a.push(AST::Atom(Atom::Nil));                   // Nil       - index 0
+        a.push(AST::Atom(Atom::Nil));                   // Nil       - index 3
         (a.len() as u16, asts)
     }
 
