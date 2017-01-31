@@ -12,7 +12,7 @@ macro_rules! op {
 
 macro_rules! dyad_map_expr {
     ($l:tt, =, $r:tt,Float) => {
-        if $l - $r < 1e-10 { 1 } else { 0 } // TODO: Float tolerance
+        if ($l - $r).abs() < 1e-10 { 1 } else { 0 } // TODO: Float tolerance
     };
     ($l:tt, =, $r:tt,Number) => {
         if $l == $r { 1 } else { 0 }
