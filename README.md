@@ -8,6 +8,17 @@ TL;DR Autobalancing low-latency non-blocking zero-copy CAS-multicursor queues wi
 [![Crates IO](https://img.shields.io/crates/d/kernel.svg)](https://crates.io/crates/kernel)
 [![Crates IO](https://img.shields.io/crates/v/kernel.svg)](https://crates.io/crates/kernel)
 
+Articles
+--------
+
+* [2016-11-15 O-CPS Интерпретатор](https://tonpa.guru/stream/2016/2016-11-15%20О-CPS%20Интерпретатор.htm)
+* [2016-11-15 Векторный DSL](https://tonpa.guru/stream/2016/2016-11-15%20Векторный%20DSL.htm)
+* [2016-11-25 Лямбда Калкулус на Стримах](https://tonpa.guru/stream/2016/2016-11-25%20Лямбда%20Калкулус%20на%20Стримах.htm)
+* [2016-11-29 Архитектура К-подобного языка и его операционной среды](https://tonpa.guru/stream/2016/2016-11-29%20Архитектура%20К-подобного%20языка%20и%20его%20операционной%20среды.htm)
+* [2016-11-29 Неизвестная Миру Лямбда Кодировка с CPS Континуатором](https://tonpa.guru/stream/2016/2016-11-29%20Неизвестная%20Миру%20Лямбда%20Кодировка%20с%20CPS%20Континуатором.htm)
+* [2016-12-02 CPS Interpreter in Rust Language](https://tonpa.guru/stream/2016/2016-12-02%20CPS%20Interpreter%20in%20Rust%20Language.htm)
+
+
 Features
 --------
 
