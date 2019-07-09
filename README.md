@@ -17,7 +17,17 @@ Articles
 * [2016-11-29 Архитектура К-подобного языка и его операционной среды](https://tonpa.guru/stream/2016/2016-11-29%20Архитектура%20К-подобного%20языка%20и%20его%20операционной%20среды.htm)
 * [2016-11-29 Неизвестная Миру Лямбда Кодировка с CPS Континуатором](https://tonpa.guru/stream/2016/2016-11-29%20Неизвестная%20Миру%20Лямбда%20Кодировка%20с%20CPS%20Континуатором.htm)
 * [2016-12-02 CPS Interpreter in Rust Language](https://tonpa.guru/stream/2016/2016-12-02%20CPS%20Interpreter%20in%20Rust%20Language.htm)
-
+* [2016-12-06 Сферические факториалы](https://tonpa.guru/stream/2016/2016-12-06%20Сферические%20факториалы.htm)
+* [2016-12-13 Замена Heap на преалоцированный Vec + Lifetime переменные](https://tonpa.guru/stream/2016/2016-12-13%20Замена%20Heap%20на%20преалоцированный%20Vec%20+%20Lifetime%20переменные.htm)
+* [2016-12-21 Аккерман на О](https://tonpa.guru/stream/2016/2016-12-21%20Аккерман%20на%20О.htm)
+* [2016-12-27 Аккерман в L1](https://tonpa.guru/stream/2016/2016-12-27%20Аккерман%20в%20L1.txt)
+* [2016-12-30 Последний гвоздь в гроб Хаскеля и C++ в этом году!](https://tonpa.guru/stream/2016/2016-12-30%20Последний%20гвоздь%20в%20гроб%20Хаскеля%20и%20C++%20в%20этом%20году!.txt)
+* [2017-01-01 O-CPS SPEC](https://tonpa.guru/stream/2017/2017-01-01%20O-CPS%20SPEC.htm)
+* [2017-01-10 Safe and Static Methods for Memory Management](https://tonpa.guru/stream/2017/2017-01-10%20Safe%20and%20Static%20Methods%20for%20Memory%20Management.htm)
+* [2017-01-12 Дефорестизационные Интерпретаторы O2](https://tonpa.guru/stream/2017/2017-01-12%20Дефорестизационные%20Интерпретаторы%20O2.htm)
+* [2017-01-16 Генерация AVX mm256_mul_pd](https://tonpa.guru/stream/2017/2017-01-16%20Генерация%20AVX%20mm256_mul_pd.htm)
+* [2017-01-17 Pony vs O-CPS](https://tonpa.guru/stream/2017/2017-01-17%20Pony%20vs%20O-CPS.htm)
+* [2017-02-19 O-CPS +AVX2](https://tonpa.guru/stream/2017/2017-02-19%20O-CPS%20+AVX2.htm)
 
 Features
 --------
